@@ -31,7 +31,7 @@ class StageGasDynamics:
         :param D2:
         :param delta_r_rk:
         :param n:
-        :param epsilon:
+        :param epsilon: Степень парциальности. Необходима для вычисления затрат на трение и вентиляцию
         :param g_lk: относительный расход утечек в концевых лабиринтах
         :param g_ld: относительный расход перетечек в лабиринтных уплотнениях сопловых диафрагм
         :param g_lb: относительный расход перетечек поверх бондажа рабочих лопаток
@@ -222,8 +222,8 @@ class StageGasDynamics:
         if ('H0' in self._kwargs) or ('p2' in self._kwargs):
             self.L_t = self.H0 * self.eta_t
             logger.debug('%s _compute_stage_parameters L_t = %s' % (self.str(), self.L_t))
-            # удельная работа ступени, отнесенная к расходу через СА первой ступени с учетом потерь из-за утечек
             self.L_t_rel = self.L_t * self.G_stage_in / self.G_turbine - self.L_t * (self.g_ld + self.g_lk + self.g_lb)
+            "Удельная работа ступени, отнесенная к расходу через СА первой ступени с учетом потерь из-за утечек"
         self.T_st = self.T2 + self. h_z / self.c_p_gas + self.h_tv / self.c_p_gas
         self.T_st_stag = self.T_st + self.h_v / self.c_p_gas
         self.work_fluid.T2 = self.T_st

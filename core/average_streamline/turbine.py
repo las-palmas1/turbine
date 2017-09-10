@@ -41,7 +41,6 @@ class Turbine:
         self._c21_init = None
         self._H01_init = None
         self._rho1 = None
-        self._phi1 = 0.97
         self._T_t_stag_cycle = None
         self._p_t_stag_cycle = None
         self._L_t_cycle = None
@@ -114,18 +113,29 @@ class Turbine:
                                                             self.c21_init, self.n, KeroseneCombustionProducts(),
                                                             self.T_g_stag, self.p_g_stag, self.alpha_air,
                                                             self.G_turbine, self.l1_D1_ratio, self.H01_init,
-                                                            self.rho1, self.phi1, self.alpha11, self.k_n,
+                                                            self.rho1, self.alpha11, self.k_n,
                                                             self.T_t_stag_cycle,
                                                             self.p_t_stag_cycle, **self._kwargs)
         except AssertionError:
             pass
 
-    def compute_geometry(self, compute_heat_drop_auto=True):
+    def compute_geometry(self, compute_heat_drop_auto=True, auto_set_rho=True):
+        """
+        :param compute_heat_drop_auto: bool, optional \n
+            Если True, то при расчете геометрии происходит расчет преварительного распределения
+            теплоперепада по ступеням
+        :param auto_set_rho: bool, optional \n
+            Если True, то после расчета геометрии по относительному удлинению лопатки РК на выходе
+            на каждой ступени вычисляется степень реактивности
+        :return: None
+        """
         logger.info('%s РАСЧЕТ ГЕОМЕТРИИ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
         if compute_heat_drop_auto is True:
             specify_h01(self.geom)
         else:
             self.geom.compute_output(compute_heat_drop_auto=compute_heat_drop_auto)
+        if auto_set_rho:
+            self._set_rho()
 
     def compute_stages_gas_dynamics(self, precise_heat_drop=True):
         logger.info('\n%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
@@ -208,19 +218,19 @@ class Turbine:
             assert False, 'turbine stages have not computed yet'
 
     @classmethod
-    def rho_func(cls, l2_d2_ratio):
+    def _rho_func(cls, l2_d2_ratio):
         x = np.array([0.7, 1 / 2, 1 / 3, 1 / 4, 1 / 6, 1 / 9])
         y = np.array([0.7, 0.6, 0.5, 0.4, 0.3, 0.2])
         rho_interp = interp1d(x, y)
         return rho_interp(l2_d2_ratio)
 
-    def set_rho(self):
+    def _set_rho(self):
         """
         Задает степени реактивности на всех ступенях в зависимости от отношения
         длины лопатки РК к диаметру на выходе из РК
         """
         for i in self.geom:
-            i.rho = self.rho_func(i.l1 / i.D1)
+            i.rho = self._rho_func(i.l1 / i.D1)
 
     def set_l_b_ratio(self, x0, delta, sa_rk_ratio):
         """
@@ -275,6 +285,9 @@ class Turbine:
 
     @property
     def eta_m(self):
+        """
+        Механический КПД.
+        """
         assert self._eta_m is not None, 'eta_m must not be None'
         return self._eta_m
 
@@ -284,6 +297,10 @@ class Turbine:
 
     @property
     def L_t_cycle(self):
+        """
+        Величниа работы турбины из расчета цикла. Необходима для расчета параметров последней ступени
+        при расчете турбины компрессора.
+        """
         assert self._L_t_cycle is not None, 'L_t_cycle must not be None'
         return self._L_t_cycle
 
@@ -298,6 +315,10 @@ class Turbine:
 
     @property
     def H_t_stag_cycle(self):
+        """
+        Величина теплоперепада в турбине по параметрам торможения. Необходим при вычислении коэффициента
+        возврата теплоты при расчете предварительного рапределения теплоперепадов по ступеням.
+        """
         assert self._H_t_stag_cycle is not None, 'H_t_stag_cycle must not be None'
         return self._H_t_stag_cycle
 
@@ -308,6 +329,10 @@ class Turbine:
 
     @property
     def eta_t_stag_cycle(self):
+        """
+        Величина КПД турбины по параметрам торможения из расчета цикла. Необходим при вычислении коэффициента
+        возврата теплоты при расчете предварительного рапределения теплоперепадов по ступеням.
+        """
         assert self._eta_t_stag_cycle is not None, 'eta_t_stag_cycle must not be None'
         return self._eta_t_stag_cycle
 
@@ -318,6 +343,10 @@ class Turbine:
 
     @property
     def alpha11(self):
+        """
+        Угол потока после СА первой ступени. Необходим для вычисления размеров входного сечения на
+        этапе расчета геометрии
+        """
         assert self._alpha11 is not None, 'alpha11 must not be None'
         return self._alpha11
 
@@ -328,6 +357,11 @@ class Turbine:
 
     @property
     def p_t_stag_cycle(self):
+        """
+        Давление торможения на выходе из турбины. Необходимо на этапе расчета геометрии при
+        вычислении статических параметров на выходе из турбины. Их определение необходимо для расчета
+        коэффициента избытка теплоты и расчета последней ступени силовой турбины.
+        """
         assert self._p_t_stag_cycle is not None, 'p_t_stag_cycle must not be None'
         return self._p_t_stag_cycle
 
@@ -338,6 +372,11 @@ class Turbine:
 
     @property
     def T_t_stag_cycle(self):
+        """
+        Температура торможения на выходе из турбины. Необходимо на этапе расчета геометрии при
+        вычислении статических параметров на выходе из турбины. Их определение необходимо для расчета
+        коэффициента избытка теплоты и расчета последней ступени силовой турбины.
+        """
         assert self._T_t_stag_cycle is not None, 'T_t_stag_cycle must not be None'
         return self._T_t_stag_cycle
 
@@ -347,17 +386,11 @@ class Turbine:
         self._init_turbine_geom()
 
     @property
-    def phi1(self):
-        assert self._phi1 is not None, 'phi1 must not be None'
-        return self._phi1
-
-    @phi1.setter
-    def phi1(self, value):
-        self._phi1 = value
-        self._init_turbine_geom()
-
-    @property
     def rho1(self):
+        """
+        Значение степени реактивности на первой ступени турбины. Необходимо на этапе расчета геометрии при
+        определении размеров входного кошльцевого сечения.
+        """
         assert self._rho1 is not None, 'rho1 must not be None'
         return self._rho1
 
@@ -368,6 +401,10 @@ class Turbine:
 
     @property
     def H01_init(self):
+        """
+        Начальное приближение для адиабатического теплоперепада на сопловом аппарате первой ступени. Необходимо
+        на этапе расчета геометрии при вычисления кольцевой площади на входе в рк первой ступени.
+        """
         assert self._H01_init is not None, 'H01_init must not be None'
         return self._H01_init
 
@@ -378,6 +415,10 @@ class Turbine:
 
     @property
     def c21_init(self):
+        """
+        Начальное приближение для скорости на выходе их РК первой ступени. Необходимо на этапе расчета геометрии
+        при вычислении рапределения теплоперепадов по ступеням.
+        """
         assert self._c21_init is not None, 'c21_init must not be None'
         return self._c21_init
 
@@ -388,6 +429,9 @@ class Turbine:
 
     @property
     def n(self):
+        """
+        Частота вращения.
+        """
         assert self._n is not None, 'n must not be None'
         return self._n
 
@@ -398,6 +442,9 @@ class Turbine:
 
     @property
     def l1_D1_ratio(self):
+        """
+        Относительное удлинение лопатки РК первой ступени.
+        """
         assert self._l1_D1_ratio is not None, 'l1_D1_ratio must not be None'
         return self._l1_D1_ratio
 
@@ -405,7 +452,7 @@ class Turbine:
     def l1_D1_ratio(self, value):
         self._l1_D1_ratio = value
         if self._rho1 is None:
-            self._rho1 = self.rho_func(value)
+            self._rho1 = self._rho_func(value)
         self._init_turbine_geom()
 
     @property
@@ -415,6 +462,9 @@ class Turbine:
 
     @property
     def k_n(self):
+        """
+        Коэффициент в формуле для приблизительно расчета напряжения в лопатке.
+        """
         assert self._k_n is not None, 'k_n must not be None'
         return self._k_n
 
@@ -425,6 +475,9 @@ class Turbine:
 
     @property
     def stage_number(self):
+        """
+        Число ступеней турбины.
+        """
         assert self._stage_number is not None, 'stage_number must not be None'
         return self._stage_number
 
@@ -435,6 +488,9 @@ class Turbine:
 
     @property
     def alpha_air(self):
+        """
+        Коэффициент избытка воздуха
+        """
         assert self._alpha_air is not None, 'alpha_air must not be None'
         return self._alpha_air
 
@@ -445,6 +501,9 @@ class Turbine:
 
     @property
     def G_turbine(self):
+        """
+        Расход газа через СА первой ступени.
+        """
         assert self._G_turbine is not None, 'G_turbine must not be None'
         return self._G_turbine
 
@@ -455,6 +514,7 @@ class Turbine:
 
     @property
     def p_g_stag(self):
+        """Давление торможения после КС."""
         assert self._p_g_stag is not None, 'p_g_stag must not be None'
         return self._p_g_stag
 
@@ -465,6 +525,7 @@ class Turbine:
 
     @property
     def T_g_stag(self):
+        """Температура торможения после КС."""
         assert self._T_g_stag is not None, 'T_g_stag must not be None'
         return self._T_g_stag
 
@@ -475,6 +536,7 @@ class Turbine:
 
     @property
     def gamma_sum(self):
+        """Суммарный угол раскрытия проточной части"""
         if ('gamma_av' in self._kwargs) and ('gamma_sum' in self._kwargs):
             assert self._gamma_sum is not None, 'gamma_sum must not be None'
         return self._gamma_sum
@@ -487,6 +549,7 @@ class Turbine:
 
     @property
     def gamma_out(self):
+        """Угол наклона периферии."""
         if 'gamma_out' in self._kwargs:
             assert self._gamma_out is not None, 'gamma_out must not be None'
         return self._gamma_out
@@ -499,6 +562,7 @@ class Turbine:
 
     @property
     def gamma_in(self):
+        """Угол наклона внутренней поверхности проточной части."""
         if 'gamma_in' in self._kwargs and ('gamma_out' in self._kwargs):
             assert self._gamma_in is not None, 'gamma_in must not be None'
         return self._gamma_in
@@ -511,6 +575,7 @@ class Turbine:
 
     @property
     def gamma_av(self):
+        """Угол наклона средней линии тока."""
         if 'gamma_av' in self._kwargs and ('gamma_sum' in self._kwargs):
             assert self._gamma_av is not None, 'gamma_av must not be None'
         return self._gamma_av
@@ -540,12 +605,10 @@ if __name__ == '__main__':
     turbine.T_g_stag = 1400
     turbine.T_t_stag_cycle = 500
     turbine.p_t_stag_cycle = 100e3
-    turbine.phi1 = 0.97
     turbine.stage_number = 2
     turbine.set_delta_a_b_ratio(0.22, 0)
     turbine.set_l_b_ratio(1.8, 0.2, 0.9)
-    turbine.compute_geometry()
-    turbine.set_rho()
+    turbine.compute_geometry(auto_set_rho=True)
     turbine.compute_stages_gas_dynamics()
     turbine.geom.plot_geometry()
     # turbine.geom.plot_heat_drop_distribution()

@@ -19,15 +19,24 @@ class InvalidStageSizeValue(Exception):
 
 
 class StageGeomAndHeatDrop:
+    """
+    Индекс 0 используется для обозначения параметров на входе в СА, 05 - на выходе из СА,
+    1 - на входе в РК, 2 - на выходе из РК
+    """
     def __init__(self):
         self.gamma_out = None
         self.gamma_in = None
         self.gamma_av = None
         self.l1_b_sa_ratio = None
+        "Отношение длины лопатки на входе в РК к ширине лопатки СА"
         self.l2_b_rk_ratio = None
+        "Отношение длины лопатки на выходе из РК к ширине лопатки РК"
         self.delta_a_b_sa_ratio = 0.22
+        "Отношение осевого зазора после СА к ширине лопатки СА"
         self.delta_a_b_rk_ratio = 0.22
+        "Отношение осевого зазора после РК к ширине лопатки РК"
         self.mu = 1
+        "Коэффициент использования скорости на выходе их ступени"
         self._k_b_sa = None
         self._k_b_rk = None
         self._k_delta_a_sa = None
@@ -35,15 +44,23 @@ class StageGeomAndHeatDrop:
         self.l1 = None
         self.D1 = None
         self.delta_r_rk_l2_ratio = 0.01
+        "Относительный радиальный зазор"
         self.n = None
         self.x0 = None
         self.rho = None
+        "Степень реактивности"
         self.phi = 0.97
+        "Коэффициент скорости в сопловых лопатках"
         self.psi = 0.97
+        "Коэффициент скорости в рабочих лопатках"
         self.epsilon = 1
+        "Степень парциальности. Необходима для вычисления затрат на трение и вентиляцию"
         self.g_lk = 0
+        "Отношение расхода утечек в концевых лабиринтах к расходу газа через СА первой ступени"
         self.g_ld = 0
+        "Отношение расход перетечек в лабиринтных уплотнениях сопловых диафрагм к расходу газа через СА первой ступени"
         self.g_lb = 0
+        "Отношение расход перетечек поверх бондажа рабочих лопаток к расходу газа через СА первой ступени"
 
         self.D2 = None
         self.D0 = None
@@ -54,16 +71,23 @@ class StageGeomAndHeatDrop:
         self.u1 = None
         self.u2 = None
         self.u_av = None
+        """Средняя окружная скорость на ступени. Необходима для вычисления рапределения теплоперепадов по
+        коэффициентам возврата теплоты"""
         self.H0 = None
+        "Теплоперепад на ступени"
         self.delta_a_sa = None
         self.delta_a_rk = None
         self.b_sa = None
         self.b_rk = None
         self.length = None
+        "Суммарная длина ступени"
         self.delta_r_rk = None
+        "Радиальный зазор"
         self.l0_next = None
         self.A1 = None
+        "Кольцевая площадь на входе"
         self.A2 = None
+        "Кольцевая площадь на выходе"
 
     def str(self):
         str_arr = str(self).split()
@@ -142,7 +166,7 @@ class StageGeomAndHeatDrop:
 
 class TurbineGeomAndHeatDropDistribution:
     def __init__(self, stage_number, eta_t_stag, H_t_stag, c21, n, work_fluid: KeroseneCombustionProducts, T_g_stag,
-                 p_g_stag, alpha_air, G_turbine, l1_D1_ratio, H01, rho1, phi1, alpha11, k_n, T_t_stag,
+                 p_g_stag, alpha_air, G_turbine, l1_D1_ratio, H01, rho1, alpha11, k_n, T_t_stag,
                  p_t_stag, **kwargs):
         """
         :param stage_number:
@@ -158,7 +182,6 @@ class TurbineGeomAndHeatDropDistribution:
         :param l1_D1_ratio:
         :param H01:
         :param rho1:
-        :param phi1:
         :param alpha11: угол потока после СА первой ступени
         :param k_n:
         :param T_t_stag:
@@ -178,7 +201,6 @@ class TurbineGeomAndHeatDropDistribution:
         self.l1_D1_ratio = l1_D1_ratio
         self.H01 = H01
         self.rho1 = rho1
-        self.phi1 = phi1
         self.alpha11 = alpha11
         self.k_n = k_n
         self.T_t_stag = T_t_stag
@@ -237,11 +259,11 @@ class TurbineGeomAndHeatDropDistribution:
             self.work_fluid.T1 = self.T_g_stag
             self.work_fluid.alpha = self.alpha_air
             self.H_s1 = self.H01 * (1 - self.rho1)
-            self.c11 = self.phi1 * np.sqrt(2 * self.H_s1)
+            self.c11 = self._stages[0].phi * np.sqrt(2 * self.H_s1)
             self.k_gas11 = self.work_fluid.k_av_int
             self.c_p_gas11 = self.work_fluid.c_p_av_int
             logger.debug('%s _compute_t_11 c_p_gas11 = %s' % (self.str(), self.k_gas11))
-            self.T_11 = self.T_g_stag - self.H_s1 * self.phi1 ** 2 / self.c_p_gas11
+            self.T_11 = self.T_g_stag - self.H_s1 * self._stages[0].phi ** 2 / self.c_p_gas11
             self.dT11_rel = abs(self.T_11 - self.work_fluid.T2) / self.work_fluid.T2
             self.work_fluid.T2 = self.T_11
             logger.debug('%s _compute_t_11 dT11_rel = %s' % (self.str(), self.dT11_rel))
@@ -358,6 +380,10 @@ class TurbineGeomAndHeatDropDistribution:
         self.sigma_l = self.n ** 2 * self.k_n * self.last.A2
 
     def _compute_outlet_static_parameters(self):
+        """
+        Расчет статических параметров на выходе необходим для расчета силовой турбины (посленяя ступень
+        рассчитываается по выходному статическому давлению), а также для определения коэффициента возврата теплоты
+        """
         logger.info('%s ВЫЧИСЛЕНИЕ СТАТИЧЕСКИХ ПАРАМЕТРОВ НА ВЫХОДЕ ИХ ТУРБИНЫ %s' % ('-'*10, '-'*10))
         self.work_fluid.__init__()
         self.work_fluid.alpha = self.alpha_air
@@ -398,6 +424,7 @@ class TurbineGeomAndHeatDropDistribution:
         self.eta_l = func.eta_turb_l(self.eta_t_stag, self.H_t_stag, self.H_t, self.c_t)
         self.alpha = (self.stage_number - 1) / (2 * self.stage_number) * (1 - self.eta_l) * \
                      ((self.p_g_stag / self.p_t) ** ((self.k_gas - 1) / self.k_gas) - 1)
+        "Коэффициент возврата теплоты"
 
     def compute_output(self, compute_heat_drop_auto=True):
         self._compute_geometry()
@@ -431,7 +458,7 @@ def specify_h01(turbine_geometry: TurbineGeomAndHeatDropDistribution):
 if __name__ == '__main__':
     deg = np.pi / 180
     turbine_geom = TurbineGeomAndHeatDropDistribution(2, 0.91, 300e3, 150, 10e3, KeroseneCombustionProducts(),
-                                                      1400, 1.3e6, 2.4, 9, 1 / 3.5, 180e3, 0.8, 0.96, 15 * deg,
+                                                      1400, 1.3e6, 2.4, 9, 1 / 3.5, 180e3, 0.8, 15 * deg,
                                                       6.8, 850, 120e3, gamma_av=0 * deg,
                                                       gamma_sum=15 * deg)
     turbine_geom[0].delta_a_b_sa_ratio = 0.23
