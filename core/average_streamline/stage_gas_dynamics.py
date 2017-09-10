@@ -81,13 +81,16 @@ class StageGasDynamics:
 
     def compute(self):
         if 'H0' in self._kwargs:
-            logger.info('%s РАСЧЕТ СТУПЕНИ ПО ЗАДАННОМУ ТЕПЛОПЕРЕПАДУ %s\n' % (25 * '#', 25 * '#'))
+            logger.info('%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ СТУПЕНИ ПО ЗАДАННОМУ ТЕПЛОПЕРЕПАДУ %s\n' %
+                        (25 * '#', 25 * '#'))
             self._specified_heat_drop_calculation()
         elif 'p2' in self._kwargs:
-            logger.info('%s РАСЧЕТ СТУПЕНИ ПО ДАВЛЕНИЮ НА ВЫХОДЕ %s\n' % (25 * '#', 25 * '#'))
+            logger.info('%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ СТУПЕНИ ПО ДАВЛЕНИЮ НА ВЫХОДЕ %s\n' %
+                        (25 * '#', 25 * '#'))
             self._specified_outlet_pressure_calculation()
         elif 'L_t' in self._kwargs and 'eta_t0' in self._kwargs:
-            logger.info('%s РАСЧЕТ СТУПЕНИ ПО РАБОТЕ %s\n' % (25 * '#', 25 * '#'))
+            logger.info('%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ СТУПЕНИ ПО РАБОТЕ %s\n' %
+                        (25 * '#', 25 * '#'))
             self._specified_work_calculation()
 
     def _specified_heat_drop_calculation(self):

@@ -1,10 +1,10 @@
 from core.gas import KeroseneCombustionProducts
-from .stage_geom import InvalidStageSizeValue, StageGeomAndHeatDrop, \
+from core.average_streamline.stage_geom import InvalidStageSizeValue, StageGeomAndHeatDrop, \
     TurbineGeomAndHeatDropDistribution, specify_h01
 import core.functions as func
 import logging
 import numpy as np
-from .stage_gas_dynamics import StageGasDynamics, get_first_stage_gas_dynamics, \
+from core.average_streamline.stage_gas_dynamics import StageGasDynamics, get_first_stage_gas_dynamics, \
     get_intermediate_stage, get_last_pressure_stage, get_last_work_stage
 from enum import Enum
 from scipy.interpolate import interp1d
@@ -12,8 +12,8 @@ import os
 import pickle as pk
 
 log_filename = os.path.join(os.path.dirname(__file__), 'average_streamline_calculation.log')
-logger = func.create_logger(__name__, logging.DEBUG, filename=log_filename, filemode='a',
-                            add_console_handler=False)
+logger = func.create_logger(__name__, logging.INFO, add_file_handler=False,
+                            add_console_handler=True)
 
 
 class TurbineType(Enum):
@@ -74,7 +74,7 @@ class Turbine:
         self.eta_t_stag = None
         self.eta_l = None
         self.N = None
-        self.eta_m = None
+        self._eta_m = 0.99
 
     def __getitem__(self, item) -> StageGasDynamics:
         try:
@@ -121,17 +121,17 @@ class Turbine:
             pass
 
     def compute_geometry(self, compute_heat_drop_auto=True):
-        logger.info('%s compute_geometry' % self.str())
-        self.geom.compute_output(compute_heat_drop_auto=compute_heat_drop_auto)
+        logger.info('%s РАСЧЕТ ГЕОМЕТРИИ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
         if compute_heat_drop_auto is True:
             specify_h01(self.geom)
         else:
-            pass
+            self.geom.compute_output(compute_heat_drop_auto=compute_heat_drop_auto)
 
     def compute_stages_gas_dynamics(self, precise_heat_drop=True):
-        logger.info('%s compute_gas_dynamics' % self.str())
+        logger.info('\n%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
         if self.turbine_type == TurbineType.Power:
             for num, item in enumerate(self.geom):
+                logger.info('\n%s СТУПЕНЬ %s %s\n' % (15 * '*', num + 1, 15 * '*'))
                 logger.debug('%s compute_gas_dynamics num = %s' % (self.str(), num))
                 if num == 0:
                     stage_gas_dyn = get_first_stage_gas_dynamics(item, self.T_g_stag, self.p_g_stag, self.G_turbine,
@@ -148,6 +148,7 @@ class Turbine:
         elif self.turbine_type == TurbineType.Compressor:
             L_last_stage_rel = self.L_t_cycle
             for num, item in enumerate(self.geom):
+                logger.info('\n%s СТУПЕНЬ %s %s\n' % (15 * '*', num + 1, 15 * '*'))
                 logger.debug('%s compute_gas_dynamics num = %s' % (self.str(), num))
                 if num == 0:
                     stage_gas_dyn = get_first_stage_gas_dynamics(item, self.T_g_stag, self.p_g_stag, self.G_turbine,
@@ -166,6 +167,7 @@ class Turbine:
                     self._gas_dynamics.append(stage_gas_dyn)
 
     def compute_integrate_turbine_parameters(self):
+        logger.info('\n%s РАСЧЕТ ИНТЕГРАЛЬНЫХ ПАРАМЕТРОВ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
         self.L_t_sum = 0
         for item in self:
             self.L_t_sum += item.L_t_rel
@@ -184,7 +186,6 @@ class Turbine:
                                                                       ((1 - self.work_fluid.k_av_int) /
                                                                        self.work_fluid.k_av_int))
         self.eta_t_stag = self.L_t_sum / self.H_t_stag
-        self.eta_m = 0.99
         self.N = self.L_t_sum * self.G_turbine * self.eta_m
 
     def save(self, filename='average_streamline_calculation_results'):
@@ -271,6 +272,15 @@ class Turbine:
     @turbine_type.setter
     def turbine_type(self, value: TurbineType):
         self._type = value
+
+    @property
+    def eta_m(self):
+        assert self._eta_m is not None, 'eta_m must not be None'
+        return self._eta_m
+
+    @eta_m.setter
+    def eta_m(self, value):
+        self._eta_m = value
 
     @property
     def L_t_cycle(self):

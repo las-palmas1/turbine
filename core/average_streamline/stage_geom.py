@@ -421,7 +421,7 @@ def specify_h01(turbine_geometry: TurbineGeomAndHeatDropDistribution):
         logger.debug('specify_h01 iter_number = %s' % iter_number)
         turbine_geometry.H01 = H01
         logger.debug('specify_h01 H01 = %s' % H01)
-        turbine_geometry.compute_output()
+        turbine_geometry.compute_output(compute_heat_drop_auto=True)
         dh01_rel = abs(turbine_geometry.first.H0 - turbine_geometry.H01) / turbine_geometry.H01
         logger.debug('specify_h01 dh01_rel = %s' % dh01_rel)
         H01 = turbine_geometry.first.H0
