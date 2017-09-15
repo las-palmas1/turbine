@@ -137,7 +137,7 @@ class StageGeomAndHeatDrop:
         y_out_arr = np.array([0.5 * (self.D0 + self.l0), 0.5 * (self.D05 + self.l05),
                               0.5 * (self.D05 + self.l05) + np.tan(self.gamma_out) * (self.length - self.b_sa)])
         y_av_arr = np.array([0.5 * self.D0, 0.5 * self.D05,
-                             0.5 * self.D0 + np.tan(float(self.gamma_av)) * (self.length - self.b_sa)])
+                             0.5 * self.D2 + np.tan(self.gamma_av) * self.delta_a_rk])
         plt.plot(x_sa_arr, y_sa_arr, linewidth=2, color='black')
         plt.plot(x_rk_arr, y_rk_arr, linewidth=2, color='black')
         plt.plot(x_out_arr, y_out_arr, linewidth=2, color='black')
