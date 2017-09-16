@@ -639,15 +639,17 @@ if __name__ == '__main__':
     turbine.set_l_b_ratio(1.8, 0.2, 0.9)
     turbine.compute_geometry(auto_set_rho=True, compute_heat_drop_auto=True)
     turbine.compute_stages_gas_dynamics(precise_heat_drop=True)
-    turbine.geom.plot_geometry()
+    # turbine.geom.plot_geometry()
     turbine.compute_integrate_turbine_parameters()
-    turbine.geom.plot_heat_drop_distribution()
-    for num, i in enumerate(turbine):
-        i.plot_velocity_triangle('Stage %s2' % (num + 1))
+    # turbine.geom.plot_heat_drop_distribution()
+    # for num, i in enumerate(turbine):
+    #     i.plot_velocity_triangle('Stage %s' % (num + 1))
     print('l1/b_sa = %.4f' % turbine.geom[0].l1_b_sa_ratio)
     print('l2/b_rk = %.4f' % turbine.geom[0].l2_b_rk_ratio)
     print('delta_a_sa / b_sa = %.4f' % turbine.geom[0].delta_a_b_sa_ratio)
     print('delta_a_rk / b_rk = %.4f' % turbine.geom[0].delta_a_b_rk_ratio)
+    print('pho = %.3f' % turbine.geom[0].rho)
+    print('H0 = %.3f' % turbine.geom[0].H0)
 
 
 
