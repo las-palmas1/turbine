@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1300</width>
-    <height>678</height>
+    <width>1362</width>
+    <height>741</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -74,7 +74,7 @@
             <item row="14" column="0">
              <widget class="QLabel" name="label_11">
               <property name="text">
-               <string>Статическое давление после турбины, МПа</string>
+               <string>Давление торможения после турбины, МПа</string>
               </property>
              </widget>
             </item>
@@ -118,7 +118,7 @@
             <item row="13" column="0">
              <widget class="QLabel" name="label_10">
               <property name="text">
-               <string>Статическая температура после турбины, К</string>
+               <string>Температура торможения после турбины, К</string>
               </property>
              </widget>
             </item>
@@ -342,7 +342,7 @@
              </widget>
             </item>
             <item row="13" column="1">
-             <widget class="QDoubleSpinBox" name="T_t_cycle">
+             <widget class="QDoubleSpinBox" name="T_t_stag_cycle">
               <property name="minimum">
                <double>240.000000000000000</double>
               </property>
@@ -382,7 +382,7 @@
              </widget>
             </item>
             <item row="14" column="1">
-             <widget class="QDoubleSpinBox" name="p_t_cycle">
+             <widget class="QDoubleSpinBox" name="p_t_stag_cycle">
               <property name="decimals">
                <number>4</number>
               </property>
@@ -442,7 +442,7 @@
             <item row="16" column="0">
              <widget class="QLabel" name="label">
               <property name="text">
-               <string>Удельнаяф работа турбины, кДж/кг</string>
+               <string>Удельная работа турбины, кДж/кг</string>
               </property>
              </widget>
             </item>

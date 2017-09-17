@@ -66,7 +66,7 @@ class Turbine:
             self._gamma_sum = None
         else:
             assert False, 'gamma_av and gamma_sum or gamma_in and gamma_out must be set'
-        self.L_t_sum = None
+        self.L_t_sum: float = None
         self.H_t = None
         self.H_t_stag = None
         self.eta_t = None
@@ -650,6 +650,8 @@ if __name__ == '__main__':
     print('delta_a_rk / b_rk = %.4f' % turbine.geom[0].delta_a_b_rk_ratio)
     print('pho = %.3f' % turbine.geom[0].rho)
     print('H0 = %.3f' % turbine.geom[0].H0)
+    print('L_t = %.3f' % turbine.L_t_sum)
+    print('eta_t = %.3f' % turbine.eta_t)
 
 
 
