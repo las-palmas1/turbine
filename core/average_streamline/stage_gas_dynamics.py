@@ -172,6 +172,8 @@ class StageGasDynamics:
             self.beta1 = np.arctan(self.c1_a / (self.c1 * np.cos(self.alpha1) - self.u1))
         else:
             self.beta1 = np.pi + np.arctan(self.c1_a / (self.c1 * np.cos(self.alpha1) - self.u1))
+        self.w1_a = self.w1 * np.sin(self.beta1)
+        self.w1_u = self.w1 * np.cos(self.beta1)
         self.H_l = self.rho * self.H0 * self.T1 / self.T1_ad
         self.u2 = np.pi * self.D2 * self.n / 60
         self.w2 = self.psi * np.sqrt(self.w1**2 + 2 * self.H_l + self.u2**2 - self.u1**2)
@@ -188,6 +190,8 @@ class StageGasDynamics:
         if self.c2_a / self.w2 >= 1:
             raise InvalidStageSizeValue('c2_a must be less than w2')
         self.beta2 = np.arcsin(self.c2_a / self.w2)
+        self.w2_a = self.w2 * np.sin(self.beta2)
+        self.w2_u = self.w2 * np.cos(self.beta2)
         self.c2_u = self.w2 * np.cos(self.beta2) - self.u2
         if self.c2_u >= 0:
             self.alpha2 = np.arctan(self.c2_a / self.c2_u)

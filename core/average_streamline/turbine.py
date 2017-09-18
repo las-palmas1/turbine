@@ -136,6 +136,10 @@ class Turbine:
             self.geom.compute_output(compute_heat_drop_auto=compute_heat_drop_auto)
         if auto_set_rho:
             self._set_rho()
+        self._gamma_in = self.geom.gamma_in
+        self._gamma_out = self.geom.gamma_out
+        self._gamma_av = self.geom.gamma_av
+        self._gamma_sum = self.geom.gamma_sum
 
     def compute_stages_gas_dynamics(self, precise_heat_drop=True):
         logger.info('\n%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))

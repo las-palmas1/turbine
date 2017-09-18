@@ -412,7 +412,7 @@
            <item>
             <layout class="QGridLayout" name="gridLayout_5">
              <item row="5" column="1">
-              <widget class="QDoubleSpinBox" name="doubleSpinBox_20">
+              <widget class="QDoubleSpinBox" name="l0">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -447,6 +447,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-100.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -477,7 +480,7 @@
               </widget>
              </item>
              <item row="5" column="0">
-              <widget class="QLabel" name="l0">
+              <widget class="QLabel" name="label_l0">
                <property name="text">
                 <string>l0, м</string>
                </property>
@@ -495,6 +498,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-100.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -505,6 +511,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-100.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -514,6 +523,9 @@
               <widget class="QDoubleSpinBox" name="gamma_out">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-100.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -639,6 +651,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -677,6 +692,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -701,6 +719,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -718,6 +739,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -727,6 +751,9 @@
               <widget class="QDoubleSpinBox" name="w1_u">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -738,6 +765,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -747,6 +777,9 @@
               <widget class="QDoubleSpinBox" name="w1_a">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -758,6 +791,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -767,6 +803,9 @@
               <widget class="QDoubleSpinBox" name="c1_u">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -784,6 +823,9 @@
               <widget class="QDoubleSpinBox" name="c1_a">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -809,6 +851,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -826,6 +871,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -835,6 +883,9 @@
               <widget class="QDoubleSpinBox" name="alpha2">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -860,6 +911,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -883,6 +937,9 @@
               <widget class="QDoubleSpinBox" name="alpha1">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -915,6 +972,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -925,6 +985,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -934,6 +997,9 @@
               <widget class="QDoubleSpinBox" name="w2_a">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -973,6 +1039,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -1011,6 +1080,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -1020,6 +1092,9 @@
               <widget class="QDoubleSpinBox" name="T1">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -1031,6 +1106,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -1040,6 +1118,9 @@
               <widget class="QDoubleSpinBox" name="p2">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -1051,6 +1132,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -1061,6 +1145,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -1070,6 +1157,9 @@
               <widget class="QDoubleSpinBox" name="p2_stag">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -1095,6 +1185,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -1104,6 +1197,9 @@
               <widget class="QDoubleSpinBox" name="eta_u">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -1132,9 +1228,12 @@
               </widget>
              </item>
              <item row="1" column="7">
-              <widget class="QDoubleSpinBox" name="eta_l_2">
+              <widget class="QDoubleSpinBox" name="eta_l">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -1142,9 +1241,12 @@
               </widget>
              </item>
              <item row="2" column="7">
-              <widget class="QDoubleSpinBox" name="eta_t_stage">
+              <widget class="QDoubleSpinBox" name="eta_t">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -1152,9 +1254,12 @@
               </widget>
              </item>
              <item row="3" column="7">
-              <widget class="QDoubleSpinBox" name="eta_t_stage_stag">
+              <widget class="QDoubleSpinBox" name="eta_t_stag">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -1172,6 +1277,9 @@
               <widget class="QDoubleSpinBox" name="rho_out">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
