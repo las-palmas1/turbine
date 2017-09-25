@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1588</width>
+    <width>1528</width>
     <height>675</height>
    </rect>
   </property>
@@ -336,6 +336,9 @@
                <property name="readOnly">
                 <bool>false</bool>
                </property>
+               <property name="decimals">
+                <number>3</number>
+               </property>
                <property name="maximum">
                 <double>1.000000000000000</double>
                </property>
@@ -416,6 +419,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="decimals">
+                <number>4</number>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -473,6 +479,9 @@
               <widget class="QDoubleSpinBox" name="D0">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="decimals">
+                <number>4</number>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -537,6 +546,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="decimals">
+                <number>4</number>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -553,6 +565,9 @@
               <widget class="QDoubleSpinBox" name="l1">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="decimals">
+                <number>4</number>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -571,6 +586,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="decimals">
+                <number>4</number>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -587,6 +605,9 @@
               <widget class="QDoubleSpinBox" name="l2">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="decimals">
+                <number>4</number>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -612,6 +633,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="decimals">
+                <number>4</number>
+               </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
                </property>
@@ -621,6 +645,9 @@
               <widget class="QDoubleSpinBox" name="b_rk">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="decimals">
+                <number>4</number>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
@@ -1198,6 +1225,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="decimals">
+                <number>3</number>
+               </property>
                <property name="minimum">
                 <double>-10000.000000000000000</double>
                </property>
@@ -1232,6 +1262,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="decimals">
+                <number>3</number>
+               </property>
                <property name="minimum">
                 <double>-10000.000000000000000</double>
                </property>
@@ -1245,6 +1278,9 @@
                <property name="readOnly">
                 <bool>true</bool>
                </property>
+               <property name="decimals">
+                <number>3</number>
+               </property>
                <property name="minimum">
                 <double>-10000.000000000000000</double>
                </property>
@@ -1257,6 +1293,9 @@
               <widget class="QDoubleSpinBox" name="eta_t_stag">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="decimals">
+                <number>3</number>
                </property>
                <property name="minimum">
                 <double>-10000.000000000000000</double>
@@ -1277,6 +1316,9 @@
               <widget class="QDoubleSpinBox" name="rho_out">
                <property name="readOnly">
                 <bool>true</bool>
+               </property>
+               <property name="decimals">
+                <number>3</number>
                </property>
                <property name="minimum">
                 <double>-10000.000000000000000</double>
@@ -1323,14 +1365,44 @@
     </widget>
    </item>
    <item>
-    <widget class="QFrame" name="frame_4">
+    <widget class="QFrame" name="frame_triangle_plot">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>0</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
+     <property name="minimumSize">
+      <size>
+       <width>0</width>
+       <height>0</height>
+      </size>
+     </property>
      <property name="frameShape">
       <enum>QFrame::Box</enum>
      </property>
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
+     <layout class="QHBoxLayout" name="horizontalLayout_5">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_triangle_plot"/>
+      </item>
+     </layout>
     </widget>
+   </item>
+   <item>
+    <spacer name="horizontalSpacer">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="sizeHint" stdset="0">
+      <size>
+       <width>40</width>
+       <height>20</height>
+      </size>
+     </property>
+    </spacer>
    </item>
   </layout>
  </widget>

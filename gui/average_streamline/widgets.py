@@ -4,18 +4,62 @@ import numpy as np
 from core.average_streamline.turbine import TurbineType, Turbine
 from gui.average_streamline.main_form import Ui_Form
 import gui.average_streamline.stage_data_form as stage_data_form
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+from matplotlib.axes import Axes
+
+
+class Canvas(FigureCanvas):
+    def __init__(self, parent: QtWidgets.QWidget =None):
+        fig = Figure()
+        self.axes: Axes = fig.add_subplot(111)
+        FigureCanvas.__init__(self, fig)
+        self.setParent(parent)
+
+    def plot_velocity_triangle(self, title: str, c1_u, c1_a, u1, c2_u, c2_a, u2):
+        self.axes.cla()
+        x_in = np.array([0, -c1_u, -c1_u + u1, 0])
+        y_in = np.array([c1_a, 0, 0, c1_a])
+        x_out = np.array([0, c2_u, c2_u + u2, 0])
+        y_out = np.array([c1_a, c1_a - c2_a, c1_a - c2_a, c1_a])
+        self.axes.plot(x_in, y_in, linewidth=2, color='red', label='inlet')
+        self.axes.plot(x_out, y_out, linewidth=2, color='blue', label='outlet')
+        self.axes.set_xlim(-c1_u, c2_u + u2)
+        self.axes.set_ylim(-max(c1_a, c1_u), max(c1_a, c2_u + u2))
+        self.axes.set_title(title, fontsize=10)
+        self.axes.legend(fontsize=8)
+        self.axes.grid()
+        self.draw()
+
+    def plot_heat_drop_distribution(self, stage_number, H0_arr):
+        self.axes.cla()
+        x_arr = list(range(1, stage_number + 1))
+        self.axes.plot(x_arr, H0_arr, 'o', color='red', markersize=12)
+        self.axes.plot(x_arr, H0_arr, color='red')
+        self.axes.grid()
+        self.axes.set_xticks(x_arr, x_arr)
+        self.axes.set_xlim(0.7, stage_number + 0.3)
+        self.axes.set_ylim(0, max(H0_arr) + 2e-2)
+        self.axes.set_ylabel(r'$H_i,\ МДж/кг$', fontsize=8)
+        self.axes.set_xlabel(r'$Stage\ number$', fontsize=8)
+        self.axes.set_title('Предварительное распределение\n теплоперепадов', fontsize=10)
+        self.draw()
 
 
 class StageDataWidget(QtWidgets.QWidget, stage_data_form.Ui_Form):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         self.setupUi(self)
+        self.triangle_canvas = Canvas(self)
+        self.horizontalLayout_triangle_plot.addWidget(self.triangle_canvas)
 
 
 class AveLineWidget(QtWidgets.QWidget, Ui_Form):
     def __init__(self):
         QtWidgets.QWidget.__init__(self)
         self.setupUi(self)
+        self.heat_drop_canvas = Canvas(self)
+        self.tab_init_data.layout().addWidget(self.heat_drop_canvas)
         stage_widget = StageDataWidget()
         stage_widget.H0.setVisible(False)
         stage_widget.rho.setVisible(False)
@@ -103,6 +147,8 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         self.eta_l.setValue(turbine.eta_l)
         self.c_p_gas_av.setValue(turbine.c_p_gas)
         self.k_gas_av.setValue(turbine.k_gas)
+        H0_arr = [stage_geom.H0 / 1e6 for stage_geom in turbine.geom]
+        self.heat_drop_canvas.plot_heat_drop_distribution(turbine.stage_number, H0_arr)
         for i in range(self.stackedWidget.count()):
             stage_form: StageDataWidget = self.stackedWidget.widget(i)
             stage_form.gamma_sum.setValue(np.degrees(turbine.gamma_sum))
@@ -148,8 +194,12 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_form.eta_l.setValue(turbine[i].eta_l)
             stage_form.eta_t.setValue(turbine[i].eta_t)
             stage_form.eta_t_stag.setValue(turbine[i].eta_t_stag)
+            stage_form.rho_out.setValue(turbine[i].rho)
+            stage_form.triangle_canvas.plot_velocity_triangle('Треугольник скоростей', turbine[i].c1_u,
+                                                              turbine[i].c1_a, turbine[i].u1, turbine[i].c2_u,
+                                                              turbine[i].c2_a, turbine[i].u2)
 
-    def on_compute_btn_click(self):
+    def get_turbine(self):
         if self.turbine_type.currentIndex() == 0:
             turbine_type = TurbineType.Power
         else:
@@ -197,6 +247,10 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                 turbine.geom[i].rho = stage_data.rho.value()
             if not compute_heat_drop_auto:
                 turbine.geom[i].H0 = stage_data.H0.value() * 1e3
+        return turbine, compute_heat_drop_auto, precise_heat_drop, auto_set_rho
+
+    def on_compute_btn_click(self):
+        turbine, compute_heat_drop_auto, precise_heat_drop, auto_set_rho = self.get_turbine()
         turbine.compute_geometry(compute_heat_drop_auto, auto_set_rho)
         turbine.compute_stages_gas_dynamics(precise_heat_drop)
         turbine.compute_integrate_turbine_parameters()
