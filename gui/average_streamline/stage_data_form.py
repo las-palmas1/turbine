@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_Form(object):
     def setupUi(self, Form):
         Form.setObjectName("Form")
-        Form.resize(1528, 675)
+        Form.resize(1528, 671)
         self.horizontalLayout = QtWidgets.QHBoxLayout(Form)
         self.horizontalLayout.setObjectName("horizontalLayout")
         self.frame_3 = QtWidgets.QFrame(Form)
@@ -628,9 +628,9 @@ class Ui_Form(object):
         self.frame_triangle_plot.setObjectName("frame_triangle_plot")
         self.horizontalLayout_5 = QtWidgets.QHBoxLayout(self.frame_triangle_plot)
         self.horizontalLayout_5.setObjectName("horizontalLayout_5")
-        self.horizontalLayout_triangle_plot = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_triangle_plot.setObjectName("horizontalLayout_triangle_plot")
-        self.horizontalLayout_5.addLayout(self.horizontalLayout_triangle_plot)
+        self.verticalLayout_plot = QtWidgets.QVBoxLayout()
+        self.verticalLayout_plot.setObjectName("verticalLayout_plot")
+        self.horizontalLayout_5.addLayout(self.verticalLayout_plot)
         self.horizontalLayout.addWidget(self.frame_triangle_plot)
         spacerItem3 = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Minimum)
         self.horizontalLayout.addItem(spacerItem3)

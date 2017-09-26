@@ -643,7 +643,7 @@ if __name__ == '__main__':
     turbine.set_l_b_ratio(1.8, 0.2, 0.9)
     turbine.compute_geometry(auto_set_rho=True, compute_heat_drop_auto=True)
     turbine.compute_stages_gas_dynamics(precise_heat_drop=True)
-    # turbine.geom.plot_geometry()
+    turbine.geom.plot_geometry()
     turbine.compute_integrate_turbine_parameters()
     # turbine.geom.plot_heat_drop_distribution()
     # for num, i in enumerate(turbine):

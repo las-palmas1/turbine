@@ -1,12 +1,21 @@
 from PyQt5 import QtWidgets
 import sys
 import numpy as np
+from core.average_streamline.stage_geom import TurbineGeomAndHeatDropDistribution, StageGeomAndHeatDrop
 from core.average_streamline.turbine import TurbineType, Turbine
 from gui.average_streamline.main_form import Ui_Form
 import gui.average_streamline.stage_data_form as stage_data_form
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
+from core.functions import create_logger
+import os
+import logging
+
+logger = create_logger(__name__, filename=os.path.join(os.path.dirname(__file__), 'error.log'),
+                       loggerlevel=logging.ERROR,
+                       add_file_handler=True, filemode='w',
+                       add_console_handler=False, add_datetime=True, add_module_name=True)
 
 
 class Canvas(FigureCanvas):
@@ -14,6 +23,10 @@ class Canvas(FigureCanvas):
         fig = Figure()
         self.axes: Axes = fig.add_subplot(111)
         FigureCanvas.__init__(self, fig)
+        FigureCanvas.setSizePolicy(self,
+                                   QtWidgets.QSizePolicy.Expanding,
+                                   QtWidgets.QSizePolicy.Expanding)
+        FigureCanvas.updateGeometry(self)
         self.setParent(parent)
 
     def plot_velocity_triangle(self, title: str, c1_u, c1_a, u1, c2_u, c2_a, u2):
@@ -26,7 +39,7 @@ class Canvas(FigureCanvas):
         self.axes.plot(x_out, y_out, linewidth=2, color='blue', label='outlet')
         self.axes.set_xlim(-c1_u, c2_u + u2)
         self.axes.set_ylim(-max(c1_a, c1_u), max(c1_a, c2_u + u2))
-        self.axes.set_title(title, fontsize=10)
+        self.axes.set_title(title, fontsize=9)
         self.axes.legend(fontsize=8)
         self.axes.grid()
         self.draw()
@@ -42,7 +55,44 @@ class Canvas(FigureCanvas):
         self.axes.set_ylim(0, max(H0_arr) + 2e-2)
         self.axes.set_ylabel(r'$H_i,\ МДж/кг$', fontsize=8)
         self.axes.set_xlabel(r'$Stage\ number$', fontsize=8)
-        self.axes.set_title('Предварительное распределение\n теплоперепадов', fontsize=10)
+        self.axes.set_title('Предварительное распределение\n теплоперепадов', fontsize=9)
+        self.draw()
+
+    def plot_geometry(self, turbine_geom: TurbineGeomAndHeatDropDistribution):
+        self.axes.cla()
+        for num, stage_geom in zip(range(len(turbine_geom)), turbine_geom):
+            if num == 0:
+                stage_geom.x0 = 0
+            else:
+                stage_geom.x0 = turbine_geom[num - 1].x0 + turbine_geom[num - 1].length
+            x_sa_arr = np.array([stage_geom.x0, stage_geom.x0, stage_geom.x0 + stage_geom.b_sa,
+                                 stage_geom.x0 + stage_geom.b_sa, stage_geom.x0])
+            y_sa_arr = np.array([0.5 * (stage_geom.D0 - stage_geom.l0), 0.5 * (stage_geom.D0 + stage_geom.l0),
+                                 0.5 * (stage_geom.D05 + stage_geom.l05),
+                                 0.5 * (stage_geom.D05 - stage_geom.l05), 0.5 * (stage_geom.D0 - stage_geom.l0)])
+            x0_rk = stage_geom.x0 + stage_geom.b_sa + stage_geom.delta_a_sa
+            x_rk_arr = np.array([x0_rk, x0_rk, x0_rk + stage_geom.b_rk, x0_rk + stage_geom.b_rk, x0_rk])
+            y_rk_arr = np.array([0.5 * (stage_geom.D1 - stage_geom.l1),
+                                 0.5 * (stage_geom.D1 + stage_geom.l1) - stage_geom.delta_r_rk,
+                                 0.5 * (stage_geom.D2 + stage_geom.l2) - stage_geom.delta_r_rk,
+                                 0.5 * (stage_geom.D2 - stage_geom.l2),
+                                 0.5 * (stage_geom.D1 - stage_geom.l1)])
+            x_out_arr = np.array([stage_geom.x0, stage_geom.x0 + stage_geom.b_sa,
+                                  x0_rk + stage_geom.b_rk + stage_geom.delta_a_rk])
+            y_out_arr = np.array([0.5 * (stage_geom.D0 + stage_geom.l0), 0.5 * (stage_geom.D05 + stage_geom.l05),
+                                  0.5 * (stage_geom.D05 + stage_geom.l05) +
+                                  np.tan(stage_geom.gamma_out) * (stage_geom.length - stage_geom.b_sa)])
+            y_av_arr = np.array([0.5 * stage_geom.D0, 0.5 * stage_geom.D05,
+                                 0.5 * stage_geom.D2 + np.tan(stage_geom.gamma_av) * stage_geom.delta_a_rk])
+            self.axes.plot(x_sa_arr, y_sa_arr, linewidth=1, color='red')
+            self.axes.plot(x_rk_arr, y_rk_arr, linewidth=1, color='blue')
+            self.axes.plot(x_out_arr, y_out_arr, linewidth=1, color='black')
+            self.axes.plot(x_out_arr, y_av_arr, '--', linewidth=1, color='black')
+        self.axes.grid()
+        self.axes.set_title('Геометрия турбины', fontsize=9)
+        self.axes.set_xlim(-0.01, turbine_geom[turbine_geom.stage_number - 1].x0 +
+                           turbine_geom[turbine_geom.stage_number - 1].length + 0.01)
+        self.axes.set_ylim(bottom=0)
         self.draw()
 
 
@@ -51,7 +101,9 @@ class StageDataWidget(QtWidgets.QWidget, stage_data_form.Ui_Form):
         QtWidgets.QWidget.__init__(self)
         self.setupUi(self)
         self.triangle_canvas = Canvas(self)
-        self.horizontalLayout_triangle_plot.addWidget(self.triangle_canvas)
+        self.geometry_canvas = Canvas(self)
+        self.verticalLayout_plot.addWidget(self.triangle_canvas)
+        self.verticalLayout_plot.addWidget(self.geometry_canvas)
 
 
 class AveLineWidget(QtWidgets.QWidget, Ui_Form):
@@ -59,7 +111,9 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         QtWidgets.QWidget.__init__(self)
         self.setupUi(self)
         self.heat_drop_canvas = Canvas(self)
-        self.tab_init_data.layout().addWidget(self.heat_drop_canvas)
+        self.geometry_canvas = Canvas(self)
+        self.verticalLayout_plot.addWidget(self.heat_drop_canvas)
+        self.verticalLayout_plot.addWidget(self.geometry_canvas)
         stage_widget = StageDataWidget()
         stage_widget.H0.setVisible(False)
         stage_widget.rho.setVisible(False)
@@ -149,6 +203,10 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         self.k_gas_av.setValue(turbine.k_gas)
         H0_arr = [stage_geom.H0 / 1e6 for stage_geom in turbine.geom]
         self.heat_drop_canvas.plot_heat_drop_distribution(turbine.stage_number, H0_arr)
+        self.geometry_canvas.plot_geometry(turbine.geom)
+        for i in range(self.stackedWidget.count()):
+            stage_data: StageDataWidget = self.stackedWidget.widget(i)
+            stage_data.geometry_canvas.plot_geometry(turbine.geom)
         for i in range(self.stackedWidget.count()):
             stage_form: StageDataWidget = self.stackedWidget.widget(i)
             stage_form.gamma_sum.setValue(np.degrees(turbine.gamma_sum))
@@ -249,12 +307,25 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                 turbine.geom[i].H0 = stage_data.H0.value() * 1e3
         return turbine, compute_heat_drop_auto, precise_heat_drop, auto_set_rho
 
+    def show_error_message(self, message):
+        err_message = QtWidgets.QMessageBox(self)
+        err_message.setIcon(QtWidgets.QMessageBox.Warning)
+        err_message.setWindowTitle('Error')
+        err_message.setText('An error occurred during the calculation')
+        err_message.setDetailedText('Exception message:\n%s' % message)
+        err_message.show()
+
     def on_compute_btn_click(self):
+
         turbine, compute_heat_drop_auto, precise_heat_drop, auto_set_rho = self.get_turbine()
-        turbine.compute_geometry(compute_heat_drop_auto, auto_set_rho)
-        turbine.compute_stages_gas_dynamics(precise_heat_drop)
-        turbine.compute_integrate_turbine_parameters()
-        self._set_output(turbine)
+        try:
+            turbine.compute_geometry(compute_heat_drop_auto, auto_set_rho)
+            turbine.compute_stages_gas_dynamics(precise_heat_drop)
+            turbine.compute_integrate_turbine_parameters()
+            self._set_output(turbine)
+        except Exception as ex:
+            logger.error(ex)
+            self.show_error_message(str(ex))
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

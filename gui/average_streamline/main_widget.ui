@@ -851,6 +851,9 @@
         </widget>
        </item>
        <item>
+        <layout class="QVBoxLayout" name="verticalLayout_plot"/>
+       </item>
+       <item>
         <spacer name="horizontalSpacer_2">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
