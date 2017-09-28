@@ -270,7 +270,7 @@
               </widget>
              </item>
              <item row="5" column="1">
-              <widget class="QDoubleSpinBox" name="delta_a_b_rk_ratio">
+              <widget class="QDoubleSpinBox" name="delta_a_b_sa_ratio">
                <property name="decimals">
                 <number>3</number>
                </property>
@@ -288,7 +288,7 @@
              <item row="12" column="0">
               <widget class="QLabel" name="label_48">
                <property name="text">
-                <string>Отн-ый расход утечек в концевых лабиринтах[</string>
+                <string>Отн-ый расход утечек в концевых лабиринтах</string>
                </property>
               </widget>
              </item>
@@ -306,7 +306,7 @@
               </widget>
              </item>
              <item row="4" column="1">
-              <widget class="QDoubleSpinBox" name="delta_a_b_sa_ratio">
+              <widget class="QDoubleSpinBox" name="delta_a_b_rk_ratio">
                <property name="decimals">
                 <number>3</number>
                </property>

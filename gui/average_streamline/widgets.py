@@ -316,7 +316,6 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         err_message.show()
 
     def on_compute_btn_click(self):
-
         turbine, compute_heat_drop_auto, precise_heat_drop, auto_set_rho = self.get_turbine()
         try:
             turbine.compute_geometry(compute_heat_drop_auto, auto_set_rho)
