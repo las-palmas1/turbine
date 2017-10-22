@@ -1,7 +1,7 @@
-from core.gas import KeroseneCombustionProducts
+from gas_turbine_cycle.gases import KeroseneCombustionProducts, IdealGas
 from core.average_streamline.stage_geom import InvalidStageSizeValue, StageGeomAndHeatDrop, \
     TurbineGeomAndHeatDropDistribution, specify_h01
-import core.functions as func
+import gas_turbine_cycle.tools.functions as func
 import logging
 import numpy as np
 from core.average_streamline.stage_gas_dynamics import StageGasDynamics, get_first_stage, \
@@ -11,9 +11,9 @@ from scipy.interpolate import interp1d
 import os
 import pickle as pk
 
-log_filename = os.path.join(os.path.dirname(__file__), 'average_streamline_calculation.log')
-logger = func.create_logger(__name__, logging.INFO, add_file_handler=False,
-                            add_console_handler=True)
+log_filename = os.path.join(os.path.dirname(__file__), 'average_streamline.log')
+logger = func.create_logger(__name__, logging.INFO, add_file_handler=True,
+                            add_console_handler=False, filemode='w', filename=log_filename)
 
 
 class TurbineType(Enum):
@@ -35,7 +35,7 @@ class Turbine:
         self._alpha_air = None
         self._stage_number = None
         self._k_n = 6.8
-        self._work_fluid = KeroseneCombustionProducts()
+        self._work_fluid: IdealGas = KeroseneCombustionProducts()
         self._l1_D1_ratio = None
         self._n = None
         self._c21_init = None
@@ -203,6 +203,8 @@ class Turbine:
                     stage_gas_dyn = get_last_work_stage(item, self._gas_dynamics[num - 1], self.geom[num - 1],
                                                         L_last_stage_rel, 0.9)
                     self._gas_dynamics.append(stage_gas_dyn)
+        for n, i in enumerate(self):
+            self.geom[n].H0 = i.H0
 
     def compute_integrate_turbine_parameters(self):
         logger.info('\n%s РАСЧЕТ ИНТЕГРАЛЬНЫХ ПАРАМЕТРОВ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
@@ -250,7 +252,7 @@ class Turbine:
         x = np.array([0.7, 1 / 2, 1 / 3, 1 / 4, 1 / 6, 1 / 9])
         y = np.array([0.7, 0.6, 0.5, 0.4, 0.3, 0.2])
         rho_interp = interp1d(x, y)
-        return rho_interp(l2_d2_ratio)
+        return float(rho_interp(l2_d2_ratio))
 
     def _set_rho(self):
         """
@@ -430,7 +432,7 @@ class Turbine:
     @property
     def H01_init(self):
         """
-        Начальное приближение для адиабатического теплоперепада на сопловом аппарате первой ступени. Необходимо
+        Начальное приближение для адиабатического теплоперепада на первой ступени. Необходимо
         на этапе расчета геометрии при вычисления кольцевой площади на входе в рк первой ступени.
         """
         assert self._H01_init is not None, 'H01_init must not be None'
@@ -484,7 +486,7 @@ class Turbine:
         self._init_turbine_geom()
 
     @property
-    def work_fluid(self) -> KeroseneCombustionProducts:
+    def work_fluid(self) -> IdealGas:
         assert self._work_fluid is not None, 'work_fluid must not be None'
         return self._work_fluid
 
@@ -668,7 +670,7 @@ if __name__ == '__main__':
     turbine.set_l_b_ratio(1.8, 0.2, 0.9)
     turbine.compute_geometry(auto_set_rho=True, compute_heat_drop_auto=True)
     turbine.compute_stages_gas_dynamics(precise_heat_drop=True)
-    turbine.geom.plot_geometry()
+    turbine.geom.plot_geometry(figsize=(5, 5))
     turbine.compute_integrate_turbine_parameters()
     # turbine.geom.plot_heat_drop_distribution()
     # for num, i in enumerate(turbine):

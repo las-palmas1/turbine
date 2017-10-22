@@ -8,7 +8,7 @@ import gui.average_streamline.stage_data_form as stage_data_form
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 from matplotlib.axes import Axes
-from core.functions import create_logger
+from gas_turbine_cycle.tools.functions import create_logger
 import os
 import logging
 

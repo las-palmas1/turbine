@@ -1,19 +1,21 @@
 from core.average_streamline.stage_geom import InvalidStageSizeValue, StageGeomAndHeatDrop, \
     TurbineGeomAndHeatDropDistribution
-import core.functions as func
+import gas_turbine_cycle.tools.functions as func
 import logging
-from core.gas import KeroseneCombustionProducts
+from gas_turbine_cycle.gases import KeroseneCombustionProducts, IdealGas
 import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-log_filename = os.path.join(os.path.dirname(__file__), 'average_streamline_calculation.log')
-logger = func.create_logger(__name__, logging.INFO, add_console_handler=True, add_file_handler=False)
+log_filename = os.path.join(os.path.dirname(__file__), 'average_streamline.log')
+logger = func.create_logger(__name__, logging.INFO, add_console_handler=False, add_file_handler=True,
+                            filename=log_filename, filemode='w')
 
 
 class StageGasDynamics:
-    def __init__(self, T0_stag, p0_stag, G_stage_in, G_turbine, alpha_air, work_fluid: KeroseneCombustionProducts, rho,
-                 phi, psi, l1, l2, D1, D2, delta_r_rk, n, epsilon, g_lk, g_ld, g_lb, **kwargs):
+    def __init__(self, T0_stag, p0_stag, G_stage_in, G_turbine, alpha_air, work_fluid: IdealGas,
+                 rho, phi, psi, l1, l2, D1, D2, delta_r_rk, n, epsilon,
+                 g_lk, g_ld, g_lb, **kwargs):
         """
 
         :param T0_stag:

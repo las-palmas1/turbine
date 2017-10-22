@@ -1,15 +1,15 @@
-from core.gas import KeroseneCombustionProducts
-import core.functions as func
+from gas_turbine_cycle.gases import KeroseneCombustionProducts, IdealGas
+import gas_turbine_cycle.tools.functions as func
 import logging
 import matplotlib.pyplot as plt
-from core.gas_dynamics import *
+from gas_turbine_cycle.tools.gas_dynamics import *
 from scipy.optimize import fsolve
 import os
 
 
-log_filename = os.path.join(os.path.dirname(__file__), 'average_streamline_calculation.log')
-logger = func.create_logger(__name__, logging.INFO, add_file_handler=False,
-                            add_console_handler=True)
+log_filename = os.path.join(os.path.dirname(__file__), 'average_streamline.log')
+logger = func.create_logger(__name__, logging.INFO, add_file_handler=True,
+                            add_console_handler=False, filemode='w', filename=log_filename)
 
 
 class InvalidStageSizeValue(Exception):
@@ -30,9 +30,9 @@ class StageGeomAndHeatDrop:
         self.gamma_out = None
         self.gamma_in = None
         self.gamma_av = None
-        self.l1_b_sa_ratio = None
+        self.l1_b_sa_ratio = 1.6
         "Отношение длины лопатки на входе в РК к ширине лопатки СА"
-        self.l2_b_rk_ratio = None
+        self.l2_b_rk_ratio = 1.8
         "Отношение длины лопатки на выходе из РК к ширине лопатки РК"
         self.delta_a_b_sa_ratio = 0.22
         "Отношение осевого зазора после СА к ширине лопатки СА"
@@ -141,14 +141,10 @@ class StageGeomAndHeatDrop:
                               0.5 * (self.D05 + self.l05) + np.tan(self.gamma_out) * (self.length - self.b_sa)])
         y_av_arr = np.array([0.5 * self.D0, 0.5 * self.D05,
                              0.5 * self.D2 + np.tan(self.gamma_av) * self.delta_a_rk])
-        plt.plot(x_sa_arr, y_sa_arr, linewidth=2, color='black')
-        plt.plot(x_rk_arr, y_rk_arr, linewidth=2, color='black')
+        plt.plot(x_sa_arr, y_sa_arr, linewidth=2, color='red')
+        plt.plot(x_rk_arr, y_rk_arr, linewidth=2, color='blue')
         plt.plot(x_out_arr, y_out_arr, linewidth=2, color='black')
         plt.plot(x_out_arr, y_av_arr, '--', linewidth=2, color='black')
-        plt.plot(x_sa_arr, -y_sa_arr, linewidth=2, color='black')
-        plt.plot(x_rk_arr, -y_rk_arr, linewidth=2, color='black')
-        plt.plot(x_out_arr, -y_out_arr, linewidth=2, color='black')
-        plt.plot(x_out_arr, -y_av_arr, '--', linewidth=2, color='black')
 
     @property
     def k_delta_a_rk(self):
@@ -168,7 +164,7 @@ class StageGeomAndHeatDrop:
 
 
 class TurbineGeomAndHeatDropDistribution:
-    def __init__(self, stage_number, eta_t_stag, H_t_stag, c21, n, work_fluid: KeroseneCombustionProducts, T_g_stag,
+    def __init__(self, stage_number, eta_t_stag, H_t_stag, c21, n, work_fluid: IdealGas, T_g_stag,
                  p_g_stag, alpha_air, G_turbine, l1_D1_ratio, H01, rho1, alpha11, k_n, T_t_stag,
                  p_t_stag, **kwargs):
         """
@@ -350,6 +346,7 @@ class TurbineGeomAndHeatDropDistribution:
         plt.grid()
         plt.title(title, fontsize=20)
         plt.xlim(-0.01, self._stages[self.stage_number - 1].x0 + self._stages[self.stage_number - 1].length + 0.01)
+        plt.ylim(bottom=0)
         plt.show()
 
     def _compute_heat_drop_distribution(self):
@@ -363,7 +360,7 @@ class TurbineGeomAndHeatDropDistribution:
             else:
                 item.H0 = self.H_t * (1 + self.alpha) * item.u_av ** 2 / u_av_squared_sum
 
-    def plot_heat_drop_distribution(self, figsize=(9, 7), title='Preliminary heat drop distribution'):
+    def plot_heat_drop_distribution(self, figsize=(9, 7), title='Предварительное распределение\n теплоперепадов'):
         logger.info('%s СОЗДАНИЕ ГРАФИКА ПРЕДВАРИТЕЛЬНОГО РАСПРЕДЕЛЕНИЯ ТЕПЛОПЕРЕПАДОВ %s' % ('-'*10, '-'*10))
         x_arr = list(range(1, self.stage_number + 1))
         y_arr = [item.H0 for item in self._stages]
