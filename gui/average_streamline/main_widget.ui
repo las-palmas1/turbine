@@ -9,7 +9,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1597</width>
+    <width>1649</width>
     <height>741</height>
    </rect>
   </property>
@@ -74,10 +74,225 @@
           </item>
           <item>
            <layout class="QGridLayout" name="gridLayout_2">
-            <item row="14" column="0">
-             <widget class="QLabel" name="label_11">
+            <item row="20" column="0">
+             <widget class="QLabel" name="label_H01_init">
               <property name="text">
-               <string>Давление торможения после турбины, МПа</string>
+               <string>Начальное приближение для теплоперепад на первой ступени, кДж/кг</string>
+              </property>
+             </widget>
+            </item>
+            <item row="21" column="1">
+             <widget class="QDoubleSpinBox" name="c21">
+              <property name="decimals">
+               <number>1</number>
+              </property>
+              <property name="minimum">
+               <double>10.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>600.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>10.000000000000000</double>
+              </property>
+              <property name="value">
+               <double>250.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="17" column="0">
+             <widget class="QLabel" name="label_16">
+              <property name="text">
+               <string>Частота вращения, об/мин</string>
+              </property>
+             </widget>
+            </item>
+            <item row="13" column="1">
+             <widget class="QDoubleSpinBox" name="T_t_stag_cycle">
+              <property name="minimum">
+               <double>240.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>2500.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>25.000000000000000</double>
+              </property>
+              <property name="value">
+               <double>1150.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="6" column="0">
+             <widget class="QLabel" name="label_gamma1">
+              <property name="whatsThis">
+               <string/>
+              </property>
+              <property name="text">
+               <string>Угол раскрытия проточной части, град</string>
+              </property>
+             </widget>
+            </item>
+            <item row="7" column="0">
+             <widget class="QLabel" name="label_gamma2">
+              <property name="text">
+               <string>Угол наклона средней линии, град</string>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="0">
+             <widget class="QLabel" name="label_6">
+              <property name="text">
+               <string>Коэффициент избытка воздуха</string>
+              </property>
+             </widget>
+            </item>
+            <item row="8" column="1">
+             <widget class="QDoubleSpinBox" name="alpha11">
+              <property name="decimals">
+               <number>1</number>
+              </property>
+              <property name="minimum">
+               <double>5.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>45.000000000000000</double>
+              </property>
+              <property name="value">
+               <double>17.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="9" column="1">
+             <widget class="QDoubleSpinBox" name="alpha_air">
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.500000000000000</double>
+              </property>
+              <property name="value">
+               <double>2.500000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="16" column="0">
+             <widget class="QLabel" name="label_15">
+              <property name="text">
+               <string>Расход рабочего тела на входе в турбину, кг/с</string>
+              </property>
+             </widget>
+            </item>
+            <item row="17" column="1">
+             <widget class="QDoubleSpinBox" name="n">
+              <property name="decimals">
+               <number>0</number>
+              </property>
+              <property name="maximum">
+               <double>100000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>500.000000000000000</double>
+              </property>
+              <property name="value">
+               <double>15000.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="11" column="1">
+             <widget class="QDoubleSpinBox" name="T_g_stag">
+              <property name="minimum">
+               <double>500.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>3000.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>25.000000000000000</double>
+              </property>
+              <property name="value">
+               <double>1400.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="12" column="1">
+             <widget class="QDoubleSpinBox" name="p_g_stag">
+              <property name="decimals">
+               <number>4</number>
+              </property>
+              <property name="minimum">
+               <double>0.100000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>10.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.025000000000000</double>
+              </property>
+              <property name="value">
+               <double>0.300000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="15" column="1">
+             <widget class="QDoubleSpinBox" name="eta_t_stag_cycle">
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.010000000000000</double>
+              </property>
+              <property name="value">
+               <double>0.910000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="13" column="0">
+             <widget class="QLabel" name="label_10">
+              <property name="text">
+               <string>Температура торможения после турбины, К</string>
+              </property>
+             </widget>
+            </item>
+            <item row="19" column="1">
+             <widget class="QDoubleSpinBox" name="eta_m">
+              <property name="decimals">
+               <number>3</number>
+              </property>
+              <property name="maximum">
+               <double>1.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.010000000000000</double>
+              </property>
+              <property name="value">
+               <double>0.990000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="16" column="1">
+             <widget class="QDoubleSpinBox" name="G_t">
+              <property name="minimum">
+               <double>0.100000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>1000.000000000000000</double>
+              </property>
+              <property name="value">
+               <double>25.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="19" column="0">
+             <widget class="QLabel" name="label_20">
+              <property name="text">
+               <string>Механический КПД</string>
               </property>
              </widget>
             </item>
@@ -118,220 +333,7 @@
               </property>
              </widget>
             </item>
-            <item row="13" column="0">
-             <widget class="QLabel" name="label_10">
-              <property name="text">
-               <string>Температура торможения после турбины, К</string>
-              </property>
-             </widget>
-            </item>
-            <item row="7" column="0">
-             <widget class="QLabel" name="label_gamma2">
-              <property name="text">
-               <string>Угол наклона средней линии, град</string>
-              </property>
-             </widget>
-            </item>
-            <item row="19" column="1">
-             <widget class="QDoubleSpinBox" name="G_t">
-              <property name="minimum">
-               <double>0.100000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>1000.000000000000000</double>
-              </property>
-              <property name="value">
-               <double>25.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="19" column="0">
-             <widget class="QLabel" name="label_15">
-              <property name="text">
-               <string>Расход рабочего тела на входе в турбину, кг/с</string>
-              </property>
-             </widget>
-            </item>
             <item row="20" column="1">
-             <widget class="QDoubleSpinBox" name="n">
-              <property name="decimals">
-               <number>0</number>
-              </property>
-              <property name="maximum">
-               <double>100000.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>500.000000000000000</double>
-              </property>
-              <property name="value">
-               <double>15000.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="20" column="0">
-             <widget class="QLabel" name="label_16">
-              <property name="text">
-               <string>Частота вращения, об/мин</string>
-              </property>
-             </widget>
-            </item>
-            <item row="15" column="0">
-             <widget class="QLabel" name="label_12">
-              <property name="text">
-               <string>Теплоперепад на турбине по параметрам торможения, кДж/кг</string>
-              </property>
-             </widget>
-            </item>
-            <item row="11" column="1">
-             <widget class="QDoubleSpinBox" name="T_g_stag">
-              <property name="minimum">
-               <double>500.000000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>3000.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>25.000000000000000</double>
-              </property>
-              <property name="value">
-               <double>1400.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="12" column="1">
-             <widget class="QDoubleSpinBox" name="p_g_stag">
-              <property name="decimals">
-               <number>4</number>
-              </property>
-              <property name="minimum">
-               <double>0.100000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>10.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.025000000000000</double>
-              </property>
-              <property name="value">
-               <double>0.300000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="8" column="1">
-             <widget class="QDoubleSpinBox" name="alpha11">
-              <property name="decimals">
-               <number>1</number>
-              </property>
-              <property name="minimum">
-               <double>5.000000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>45.000000000000000</double>
-              </property>
-              <property name="value">
-               <double>17.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="22" column="0">
-             <widget class="QLabel" name="label_20">
-              <property name="text">
-               <string>Механический КПД</string>
-              </property>
-             </widget>
-            </item>
-            <item row="22" column="1">
-             <widget class="QDoubleSpinBox" name="eta_m">
-              <property name="decimals">
-               <number>3</number>
-              </property>
-              <property name="maximum">
-               <double>1.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.010000000000000</double>
-              </property>
-              <property name="value">
-               <double>0.980000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="9" column="0">
-             <widget class="QLabel" name="label_6">
-              <property name="text">
-               <string>Коэффициент избытка воздуха</string>
-              </property>
-             </widget>
-            </item>
-            <item row="9" column="1">
-             <widget class="QDoubleSpinBox" name="alpha_air">
-              <property name="decimals">
-               <number>3</number>
-              </property>
-              <property name="maximum">
-               <double>1000.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.500000000000000</double>
-              </property>
-              <property name="value">
-               <double>2.500000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="6" column="0">
-             <widget class="QLabel" name="label_gamma1">
-              <property name="whatsThis">
-               <string/>
-              </property>
-              <property name="text">
-               <string>Угол раскрытия проточной части, град</string>
-              </property>
-             </widget>
-            </item>
-            <item row="10" column="1">
-             <widget class="QDoubleSpinBox" name="c21">
-              <property name="decimals">
-               <number>1</number>
-              </property>
-              <property name="minimum">
-               <double>10.000000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>600.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>10.000000000000000</double>
-              </property>
-              <property name="value">
-               <double>250.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="10" column="0">
-             <widget class="QLabel" name="label_7">
-              <property name="text">
-               <string>Скорость на выходе их РК первой ступени, м/с</string>
-              </property>
-             </widget>
-            </item>
-            <item row="18" column="1">
-             <widget class="QDoubleSpinBox" name="eta_t_stag_cycle">
-              <property name="decimals">
-               <number>3</number>
-              </property>
-              <property name="maximum">
-               <double>1.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.010000000000000</double>
-              </property>
-              <property name="value">
-               <double>0.910000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="17" column="1">
              <widget class="QDoubleSpinBox" name="H01_init">
               <property name="maximum">
                <double>5000.000000000000000</double>
@@ -344,89 +346,14 @@
               </property>
              </widget>
             </item>
-            <item row="13" column="1">
-             <widget class="QDoubleSpinBox" name="T_t_stag_cycle">
-              <property name="minimum">
-               <double>240.000000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>2500.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>25.000000000000000</double>
-              </property>
-              <property name="value">
-               <double>800.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="17" column="0">
-             <widget class="QLabel" name="label_13">
-              <property name="text">
-               <string>Теплоперепад на СА первой ступени, кДж/кг</string>
-              </property>
-             </widget>
-            </item>
-            <item row="18" column="0">
-             <widget class="QLabel" name="label_14">
-              <property name="text">
-               <string>КПД турбины по параметрам торможения</string>
-              </property>
-             </widget>
-            </item>
-            <item row="7" column="1">
-             <widget class="QDoubleSpinBox" name="gamma2">
-              <property name="minimum">
-               <double>-30.000000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>60.000000000000000</double>
-              </property>
-              <property name="value">
-               <double>4.000000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="14" column="1">
-             <widget class="QDoubleSpinBox" name="p_t_stag_cycle">
-              <property name="decimals">
-               <number>4</number>
-              </property>
-              <property name="minimum">
-               <double>0.060000000000000</double>
-              </property>
-              <property name="maximum">
-               <double>5.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>0.025000000000000</double>
-              </property>
-              <property name="value">
-               <double>0.100000000000000</double>
-              </property>
-             </widget>
-            </item>
-            <item row="15" column="1">
-             <widget class="QDoubleSpinBox" name="H_t_stag_cycle">
-              <property name="maximum">
-               <double>5000.000000000000000</double>
-              </property>
-              <property name="singleStep">
-               <double>10.000000000000000</double>
-              </property>
-              <property name="value">
-               <double>250.000000000000000</double>
-              </property>
-             </widget>
-            </item>
             <item row="21" column="0">
-             <widget class="QLabel" name="label_17">
+             <widget class="QLabel" name="label_c21">
               <property name="text">
-               <string>Относительная длина лопатки на входе в РК первой ступени</string>
+               <string>Скорость на выходе их РК первой ступени, м/с</string>
               </property>
              </widget>
             </item>
-            <item row="21" column="1">
+            <item row="18" column="1">
              <widget class="QDoubleSpinBox" name="l1_D1_ratio">
               <property name="decimals">
                <number>3</number>
@@ -445,23 +372,30 @@
               </property>
              </widget>
             </item>
-            <item row="16" column="0">
-             <widget class="QLabel" name="label">
-              <property name="text">
-               <string>Удельная работа турбины, кДж/кг</string>
+            <item row="7" column="1">
+             <widget class="QDoubleSpinBox" name="gamma2">
+              <property name="minimum">
+               <double>-30.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>60.000000000000000</double>
+              </property>
+              <property name="value">
+               <double>4.000000000000000</double>
               </property>
              </widget>
             </item>
-            <item row="16" column="1">
-             <widget class="QDoubleSpinBox" name="L_t_cycle">
-              <property name="maximum">
-               <double>5000.000000000000000</double>
+            <item row="18" column="0">
+             <widget class="QLabel" name="label_17">
+              <property name="text">
+               <string>Относительная длина лопатки на входе в РК первой ступени</string>
               </property>
-              <property name="singleStep">
-               <double>10.000000000000000</double>
-              </property>
-              <property name="value">
-               <double>220.000000000000000</double>
+             </widget>
+            </item>
+            <item row="15" column="0">
+             <widget class="QLabel" name="label_14">
+              <property name="text">
+               <string>КПД турбины по параметрам торможения</string>
               </property>
              </widget>
             </item>
@@ -506,52 +440,7 @@
              <set>Qt::AlignCenter</set>
             </property>
             <layout class="QGridLayout" name="gridLayout_4">
-             <item row="1" column="1">
-              <widget class="QSpinBox" name="stage_number">
-               <property name="font">
-                <font>
-                 <pointsize>8</pointsize>
-                </font>
-               </property>
-               <property name="minimum">
-                <number>1</number>
-               </property>
-               <property name="maximum">
-                <number>9</number>
-               </property>
-               <property name="value">
-                <number>1</number>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="label_30">
-               <property name="font">
-                <font>
-                 <pointsize>8</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string>Способ задания формы проточной части</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="0">
-              <widget class="QCheckBox" name="checkBox_rho_auto">
-               <property name="font">
-                <font>
-                 <pointsize>8</pointsize>
-                </font>
-               </property>
-               <property name="text">
-                <string>Автонастройка степени реактивности</string>
-               </property>
-               <property name="checked">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="0">
+             <item row="5" column="0">
               <widget class="QCheckBox" name="checkBox_h0_auto">
                <property name="font">
                 <font>
@@ -566,6 +455,36 @@
                </property>
                <property name="tristate">
                 <bool>false</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_30">
+               <property name="font">
+                <font>
+                 <pointsize>8</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Способ задания формы проточной части</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QSpinBox" name="stage_number">
+               <property name="font">
+                <font>
+                 <pointsize>8</pointsize>
+                </font>
+               </property>
+               <property name="minimum">
+                <number>1</number>
+               </property>
+               <property name="maximum">
+                <number>9</number>
+               </property>
+               <property name="value">
+                <number>1</number>
                </property>
               </widget>
              </item>
@@ -588,7 +507,22 @@
                </item>
               </widget>
              </item>
-             <item row="1" column="0">
+             <item row="4" column="0">
+              <widget class="QCheckBox" name="checkBox_rho_auto">
+               <property name="font">
+                <font>
+                 <pointsize>8</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Автонастройка степени реактивности</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="0">
               <widget class="QLabel" name="label_29">
                <property name="font">
                 <font>
@@ -612,7 +546,7 @@
                </property>
               </widget>
              </item>
-             <item row="2" column="1">
+             <item row="3" column="1">
               <layout class="QVBoxLayout" name="verticalLayout_6">
                <item>
                 <widget class="QRadioButton" name="gamma_sum_av">
@@ -643,7 +577,7 @@
                </item>
               </layout>
              </item>
-             <item row="5" column="0">
+             <item row="6" column="0">
               <widget class="QCheckBox" name="checkBox_precise_h0">
                <property name="font">
                 <font>
@@ -655,6 +589,43 @@
                </property>
                <property name="checked">
                 <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QComboBox" name="fuel">
+               <property name="maximumSize">
+                <size>
+                 <width>16777215</width>
+                 <height>22</height>
+                </size>
+               </property>
+               <property name="font">
+                <font>
+                 <pointsize>8</pointsize>
+                </font>
+               </property>
+               <item>
+                <property name="text">
+                 <string>Керосин</string>
+                </property>
+               </item>
+               <item>
+                <property name="text">
+                 <string>Природный газ</string>
+                </property>
+               </item>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label">
+               <property name="font">
+                <font>
+                 <pointsize>8</pointsize>
+                </font>
+               </property>
+               <property name="text">
+                <string>Топливо</string>
                </property>
               </widget>
              </item>

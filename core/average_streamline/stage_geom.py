@@ -7,9 +7,9 @@ from scipy.optimize import fsolve
 import os
 
 
-log_filename = os.path.join(os.path.dirname(__file__), 'average_streamline.log')
+log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
 logger = func.create_logger(__name__, logging.INFO, add_file_handler=True,
-                            add_console_handler=False, filemode='w', filename=log_filename)
+                            add_console_handler=False, filemode='a', filename=log_filename)
 
 
 class InvalidStageSizeValue(Exception):
@@ -30,6 +30,10 @@ class StageGeomAndHeatDrop:
         self.gamma_out = None
         self.gamma_in = None
         self.gamma_av = None
+        self.shift_out_l1_ratio = 0.015
+        "Относительный сдвиг контура проточной части после СА на периферии"
+        self.shift_in_l1_ratio = 0.015
+        "Относительный сдвиг контура проточной части после СА на втулке"
         self.l1_b_sa_ratio = 1.6
         "Отношение длины лопатки на входе в РК к ширине лопатки СА"
         self.l2_b_rk_ratio = 1.8
@@ -106,7 +110,8 @@ class StageGeomAndHeatDrop:
         logger.info('Вычисление геометрических параметров ступени')
         self.b_sa = self.l1 * self.k_b_sa
         self.delta_a_sa = self.l1 * self.k_delta_a_sa
-        self.l0 = self.l1 - (np.tan(self.gamma_in) + np.tan(self.gamma_out)) * (self.b_sa + self.delta_a_sa)
+        self.l0 = self.l1 - (np.tan(self.gamma_in) + np.tan(self.gamma_out)) * (self.b_sa + self.delta_a_sa) - \
+                  self.l1 * self.shift_in_l1_ratio - self.l1 * self.shift_out_l1_ratio
         self.l2 = self.l1 / (1 - self.k_b_rk * (np.tan(self.gamma_in) + np.tan(self.gamma_out)))
         self.delta_r_rk = self.delta_r_rk_l2_ratio * self.l2
         self.b_rk = self.l2 * self.k_b_rk
@@ -136,15 +141,18 @@ class StageGeomAndHeatDrop:
         y_rk_arr = np.array([0.5 * (self.D1 - self.l1), 0.5 * (self.D1 + self.l1) - self.delta_r_rk,
                              0.5 * (self.D2 + self.l2) - self.delta_r_rk, 0.5 * (self.D2 - self.l2),
                              0.5 * (self.D1 - self.l1)])
-        x_out_arr = np.array([self.x0, self.x0 + self.b_sa, x0_rk + self.b_rk + self.delta_a_rk])
+        x_out_arr = np.array([self.x0, self.x0 + self.b_sa, self.x0 + self.b_sa, x0_rk + self.b_rk + self.delta_a_rk])
+        x_av_arr = np.array([self.x0, self.x0 + self.b_sa, x0_rk + self.b_rk + self.delta_a_rk])
         y_out_arr = np.array([0.5 * (self.D0 + self.l0), 0.5 * (self.D05 + self.l05),
-                              0.5 * (self.D05 + self.l05) + np.tan(self.gamma_out) * (self.length - self.b_sa)])
+                              0.5 * (self.D05 + self.l05) + self.l1 * self.shift_out_l1_ratio,
+                              0.5 * (self.D05 + self.l05) + self.l1 * self.shift_out_l1_ratio +
+                              np.tan(self.gamma_out) * (self.length - self.b_sa)])
         y_av_arr = np.array([0.5 * self.D0, 0.5 * self.D05,
                              0.5 * self.D2 + np.tan(self.gamma_av) * self.delta_a_rk])
         plt.plot(x_sa_arr, y_sa_arr, linewidth=2, color='red')
         plt.plot(x_rk_arr, y_rk_arr, linewidth=2, color='blue')
         plt.plot(x_out_arr, y_out_arr, linewidth=2, color='black')
-        plt.plot(x_out_arr, y_av_arr, '--', linewidth=2, color='black')
+        plt.plot(x_av_arr, y_av_arr, '--', linewidth=2, color='black')
 
     @property
     def k_delta_a_rk(self):
@@ -164,14 +172,23 @@ class StageGeomAndHeatDrop:
 
 
 class TurbineGeomAndHeatDropDistribution:
-    def __init__(self, stage_number, eta_t_stag, H_t_stag, c21, n, work_fluid: IdealGas, T_g_stag,
-                 p_g_stag, alpha_air, G_turbine, l1_D1_ratio, H01, rho1, alpha11, k_n, T_t_stag,
-                 p_t_stag, **kwargs):
+    """
+    NOTE: расчет геометрии производится по относительным геометрическим параметрам и площади на входе в
+    РК первой ступени. Входная площадь определяется по расходу и скорости перед РК первой ступени.
+    Скорость в свою очередь определяется по заданному на первой ступене теплоперепаду и степени реактивности.
+    В результате вычисления предварительного распределения теплоперепадов по ступеням значение теплоперепада на
+    перовй ступени может оказаться отличным от того значения, которое использовалось при вычислении геометрии.
+    Производить вычисление распределения теплоперепадов по ступеням до вычисления геометрии не представляется
+    возможным, так как геометрическии параметры необходимы при расчете этого распределения. Поэтому расчет
+    распределения теплоперепадов производится итерационно, с уточнением на каждой итерации значения теплоперепада
+    на первой ступени.
+    """
+    def __init__(self, stage_number, eta_t_stag, n, work_fluid: IdealGas, T_g_stag,
+                 p_g_stag, alpha_air, G_turbine, l1_D1_ratio, alpha11, k_n, T_t_stag,
+                 auto_compute_heat_drop: bool=True, **kwargs):
         """
         :param stage_number:
         :param eta_t_stag:
-        :param H_t_stag:
-        :param c21:
         :param n: частота вращения
         :param work_fluid:
         :param T_g_stag:
@@ -179,18 +196,14 @@ class TurbineGeomAndHeatDropDistribution:
         :param alpha_air: коэффициент избытка воздуха
         :param G_turbine:
         :param l1_D1_ratio:
-        :param H01:
-        :param rho1:
         :param alpha11: угол потока после СА первой ступени
         :param k_n:
         :param T_t_stag:
-        :param p_t_stag:
-        :param kwargs: gamma_av, gamma_sum, gamma_in, gamma_out
+        :param auto_compute_heat_drop:
+        :param kwargs: gamma_av, gamma_sum, gamma_in, gamma_out, c21
         """
         self.stage_number = stage_number
         self.eta_t_stag = eta_t_stag
-        self.H_t_stag = H_t_stag
-        self.c21 = c21
         self.n = n
         self.work_fluid = work_fluid
         self.T_g_stag = T_g_stag
@@ -198,12 +211,11 @@ class TurbineGeomAndHeatDropDistribution:
         self.alpha_air = alpha_air
         self.G_turbine = G_turbine
         self.l1_D1_ratio = l1_D1_ratio
-        self.H01 = H01
-        self.rho1 = rho1
         self.alpha11 = alpha11
         self.k_n = k_n
         self.T_t_stag = T_t_stag
-        self.p_t_stag = p_t_stag
+        self.p_t_stag, self.H_t_stag = self._get_p_t_stag_and_H_t(self.work_fluid, p_g_stag, T_g_stag, T_t_stag, eta_t_stag)
+        self.auto_compute_heat_drop = auto_compute_heat_drop
         self._kwargs = kwargs
         if ('gamma_av' in kwargs) and ('gamma_sum' in kwargs):
             self.gamma_av = kwargs['gamma_av']
@@ -218,8 +230,45 @@ class TurbineGeomAndHeatDropDistribution:
         else:
             assert False, 'gamma_av and gamma_sum or gamma_in and gamma_out must be set'
         self._stages = [StageGeomAndHeatDrop() for _ in range(self.stage_number)]
+        if auto_compute_heat_drop:
+            assert 'c21' in kwargs, 'c21 is not specified'
+            self._c21 = kwargs['c21']
         for item in self._stages:
             item.n = self.n
+
+    @classmethod
+    def _get_p_t_stag_and_H_t(cls, work_fluid: IdealGas, p_g_stag, T_g_stag, T_t_stag, eta_t_stag):
+        work_fluid.__init__()
+        work_fluid.T1 = T_t_stag
+        work_fluid.T2 = T_g_stag
+        L_t = work_fluid.c_p_av_int * (T_g_stag - T_t_stag)
+        H_t = L_t / eta_t_stag
+        pi_t = (1 - L_t / (work_fluid.c_p_av_int * T_g_stag * eta_t_stag)) ** \
+               (work_fluid.k_av_int / (1 - work_fluid.k_av_int))
+        p_t_stag = p_g_stag / pi_t
+        return p_t_stag, H_t
+
+    @property
+    def c21(self):
+        """Скорость на выходе из РК первой ступени"""
+        assert self._c21 is not None, 'c21 is not specified.'
+        return self._c21
+
+    @property
+    def H01(self):
+        """Теплоперепад на первой ступени"""
+        assert self[0].H0 is not None, 'H01 is not specified'
+        return self[0].H0
+
+    @H01.setter
+    def H01(self, value):
+        self[0].H0 = value
+
+    @property
+    def rho1(self):
+        """Степень реактивности на первой ступени"""
+        assert self[0].rho is not None, 'rho1 is not specified'
+        return self[0].rho
 
     @property
     def last(self) -> StageGeomAndHeatDrop:
@@ -319,7 +368,8 @@ class TurbineGeomAndHeatDropDistribution:
             else:
                 l0 = self._stages[num - 1].l0_next
                 item.l1 = l0 / (1 - (item.k_b_sa + item.k_delta_a_sa) *
-                                (np.tan(self.gamma_in) + np.tan(self.gamma_out)))
+                                (np.tan(self.gamma_in) + np.tan(self.gamma_out)) -
+                                (item.shift_out_l1_ratio + item.shift_in_l1_ratio))
                 b_sa = item.l1 * item.k_b_sa
                 delta_a_sa = item.l1 * item.k_delta_a_sa
                 item.D1 = self._stages[num - 1].D2 + 2 * np.tan(self.gamma_av) * (self._stages[num - 1].delta_a_rk +
@@ -360,8 +410,8 @@ class TurbineGeomAndHeatDropDistribution:
             else:
                 item.H0 = self.H_t * (1 + self.alpha) * item.u_av ** 2 / u_av_squared_sum
 
-    def plot_heat_drop_distribution(self, figsize=(9, 7), title='Предварительное распределение\n теплоперепадов'):
-        logger.info('%s СОЗДАНИЕ ГРАФИКА ПРЕДВАРИТЕЛЬНОГО РАСПРЕДЕЛЕНИЯ ТЕПЛОПЕРЕПАДОВ %s' % ('-'*10, '-'*10))
+    def plot_heat_drop_distribution(self, figsize=(9, 7), title='Распределение\n теплоперепадов'):
+        logger.info('%s СОЗДАНИЕ ГРАФИКА РАСПРЕДЕЛЕНИЯ ТЕПЛОПЕРЕПАДОВ %s' % ('-'*10, '-'*10))
         x_arr = list(range(1, self.stage_number + 1))
         y_arr = [item.H0 for item in self._stages]
         plt.figure(figsize=figsize)
@@ -426,54 +476,59 @@ class TurbineGeomAndHeatDropDistribution:
                      ((self.p_g_stag / self.p_t) ** ((self.k_gas - 1) / self.k_gas) - 1)
         "Коэффициент возврата теплоты"
 
-    def compute_output(self, compute_heat_drop_auto=True):
+    def compute(self):
+        if self.auto_compute_heat_drop:
+            self._specify_h01()
+        else:
+            self._compute_output()
+
+    def _compute_output(self):
         self._compute_geometry()
         self._compute_sigma_l()
         self._compute_outlet_static_parameters()
-        if compute_heat_drop_auto is True:
-            self._compute_heat_drop_distribution()
-        else:
-            pass
 
-
-def specify_h01(turbine_geometry: TurbineGeomAndHeatDropDistribution):
-    logger.info('')
-    logger.info('%s РАСЧЕТ ГЕОМЕТРИИ ТУРИБНЫ С УТОЧНЕНИЕМ ТЕПЛОПЕРЕПАДА НА СА ПЕРВОЙ СТУПЕНИ %s\n' % ('#'*15, '#'*15))
-    dh01_rel = 1.
-    H01 = turbine_geometry.H01
-    iter_number = 0
-    while dh01_rel >= 0.01:
-        iter_number += 1
-        logger.info('%s ИТЕРАЦИЯ %s %s\n' % ('-'*20, iter_number, '-'*20))
-        logger.debug('specify_h01 iter_number = %s' % iter_number)
-        turbine_geometry.H01 = H01
-        logger.debug('specify_h01 H01 = %s' % H01)
-        turbine_geometry.compute_output(compute_heat_drop_auto=True)
-        dh01_rel = abs(turbine_geometry.first.H0 - turbine_geometry.H01) / turbine_geometry.H01
-        logger.debug('specify_h01 dh01_rel = %s' % dh01_rel)
-        H01 = turbine_geometry.first.H0
+    def _specify_h01(self):
         logger.info('')
+        logger.info(
+            '%s РАСЧЕТ ГЕОМЕТРИИ ТУРИБНЫ С УТОЧНЕНИЕМ ТЕПЛОПЕРЕПАДА НА СА ПЕРВОЙ СТУПЕНИ %s\n' % ('#' * 15, '#' * 15))
+        dh01_rel = 1.
+        H01 = self.H01
+        iter_number = 0
+        while dh01_rel >= 0.01:
+            iter_number += 1
+            logger.info('%s ИТЕРАЦИЯ %s %s\n' % ('-' * 20, iter_number, '-' * 20))
+            logger.debug('specify_h01 iter_number = %s' % iter_number)
+            self.H01 = H01
+            logger.debug('specify_h01 H01 = %s' % H01)
+            self._compute_output()
+            self._compute_heat_drop_distribution()
+            dh01_rel = abs(self.first.H0 - self.H01) / self.H01
+            logger.debug('specify_h01 dh01_rel = %s' % dh01_rel)
+            H01 = self.first.H0
+            logger.info('')
 
 
 if __name__ == '__main__':
     deg = np.pi / 180
-    turbine_geom = TurbineGeomAndHeatDropDistribution(2, 0.91, 300e3, 150, 10e3, KeroseneCombustionProducts(),
-                                                      1400, 1.3e6, 2.4, 9, 1 / 3.5, 180e3, 0.8, 15 * deg,
-                                                      6.8, 850, 120e3, gamma_av=0 * deg,
-                                                      gamma_sum=15 * deg)
+    turbine_geom = TurbineGeomAndHeatDropDistribution(2, 0.91, 10e3, KeroseneCombustionProducts(),
+                                                      1400, 1.3e6, 2.4, 4, 0.3, 15 * deg,
+                                                      6.8, 850, True, gamma_av=0 * deg,
+                                                      gamma_sum=8 * deg, c21=250)
     turbine_geom[0].delta_a_b_sa_ratio = 0.23
     turbine_geom[0].delta_a_b_rk_ratio = 0.25
     turbine_geom[0].l1_b_sa_ratio = 2
     turbine_geom[0].l2_b_rk_ratio = 2.5
     turbine_geom[0].delta_r_rk_l2_ratio = 0.01
     turbine_geom[0].mu = 1
+    turbine_geom[0].H0 = 150e3
+    turbine_geom[0].rho = 0.4
     turbine_geom[1].delta_a_b_sa_ratio = 0.25
     turbine_geom[1].delta_a_b_rk_ratio = 0.28
     turbine_geom[1].delta_r_rk_l2_ratio = 0.01
     turbine_geom[1].l1_b_sa_ratio = 2.5
     turbine_geom[1].l2_b_rk_ratio = 2.8
     turbine_geom[1].mu = 1
-    specify_h01(turbine_geom)
+    turbine_geom.compute()
     turbine_geom.plot_geometry()
     turbine_geom.plot_heat_drop_distribution(figsize=(10, 7))
     print(turbine_geom.c_t)

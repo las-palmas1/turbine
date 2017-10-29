@@ -1,6 +1,8 @@
 from PyQt5 import QtWidgets
 import sys
+import pickle as pc
 import numpy as np
+from gas_turbine_cycle.gases import KeroseneCombustionProducts, NaturalGasCombustionProducts
 from core.average_streamline.stage_geom import TurbineGeomAndHeatDropDistribution, StageGeomAndHeatDrop
 from core.average_streamline.turbine import TurbineType, Turbine
 from gui.average_streamline.main_form import Ui_Form
@@ -10,6 +12,8 @@ from matplotlib.figure import Figure
 from matplotlib.axes import Axes
 from gas_turbine_cycle.tools.functions import create_logger
 import os
+from PyQt5.QtWidgets import QFileDialog
+import gui.average_streamline.main_window_sdi_form as main_window_sdi_form
 import logging
 
 logger = create_logger(__name__, filename=os.path.join(os.path.dirname(__file__), 'error.log'),
@@ -55,7 +59,7 @@ class Canvas(FigureCanvas):
         self.axes.set_ylim(0, max(H0_arr) + 2e-2)
         self.axes.set_ylabel(r'$H_i,\ МДж/кг$', fontsize=8)
         self.axes.set_xlabel(r'$Stage\ number$', fontsize=8)
-        self.axes.set_title('Предварительное распределение\n теплоперепадов', fontsize=9)
+        self.axes.set_title('Распределение\n теплоперепадов', fontsize=9)
         self.draw()
 
     def plot_geometry(self, turbine_geom: TurbineGeomAndHeatDropDistribution):
@@ -77,17 +81,22 @@ class Canvas(FigureCanvas):
                                  0.5 * (stage_geom.D2 + stage_geom.l2) - stage_geom.delta_r_rk,
                                  0.5 * (stage_geom.D2 - stage_geom.l2),
                                  0.5 * (stage_geom.D1 - stage_geom.l1)])
-            x_out_arr = np.array([stage_geom.x0, stage_geom.x0 + stage_geom.b_sa,
+            x_out_arr = np.array([stage_geom.x0, stage_geom.x0 + stage_geom.b_sa, stage_geom.x0 + stage_geom.b_sa,
+                                  x0_rk + stage_geom.b_rk + stage_geom.delta_a_rk])
+            x_av_arr = np.array([stage_geom.x0, stage_geom.x0 + stage_geom.b_sa,
                                   x0_rk + stage_geom.b_rk + stage_geom.delta_a_rk])
             y_out_arr = np.array([0.5 * (stage_geom.D0 + stage_geom.l0), 0.5 * (stage_geom.D05 + stage_geom.l05),
                                   0.5 * (stage_geom.D05 + stage_geom.l05) +
+                                  stage_geom.l1 * stage_geom.shift_out_l1_ratio,
+                                  0.5 * (stage_geom.D05 + stage_geom.l05) +
+                                  stage_geom.l1 * stage_geom.shift_out_l1_ratio +
                                   np.tan(stage_geom.gamma_out) * (stage_geom.length - stage_geom.b_sa)])
             y_av_arr = np.array([0.5 * stage_geom.D0, 0.5 * stage_geom.D05,
                                  0.5 * stage_geom.D2 + np.tan(stage_geom.gamma_av) * stage_geom.delta_a_rk])
             self.axes.plot(x_sa_arr, y_sa_arr, linewidth=1, color='red')
             self.axes.plot(x_rk_arr, y_rk_arr, linewidth=1, color='blue')
             self.axes.plot(x_out_arr, y_out_arr, linewidth=1, color='black')
-            self.axes.plot(x_out_arr, y_av_arr, '--', linewidth=1, color='black')
+            self.axes.plot(x_av_arr, y_av_arr, '--', linewidth=1, color='black')
         self.axes.grid()
         self.axes.set_title('Геометрия турбины', fontsize=9)
         self.axes.set_xlim(-0.01, turbine_geom[turbine_geom.stage_number - 1].x0 +
@@ -182,11 +191,19 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
 
     def change_heat_drop_auto(self):
         if self.checkBox_h0_auto.isChecked():
+            self.H01_init.setVisible(True)
+            self.c21.setVisible(True)
+            self.label_c21.setVisible(True)
+            self.label_H01_init.setVisible(True)
             for i in range(self.stackedWidget.count()):
                 widget: StageDataWidget = self.stackedWidget.widget(i)
                 widget.H0.setVisible(False)
                 widget.label_H0.setVisible(False)
         else:
+            self.H01_init.setVisible(False)
+            self.c21.setVisible(False)
+            self.label_c21.setVisible(False)
+            self.label_H01_init.setVisible(False)
             for i in range(self.stackedWidget.count()):
                 widget: StageDataWidget = self.stackedWidget.widget(i)
                 widget.H0.setVisible(True)
@@ -209,6 +226,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_data.geometry_canvas.plot_geometry(turbine.geom)
         for i in range(self.stackedWidget.count()):
             stage_form: StageDataWidget = self.stackedWidget.widget(i)
+
             stage_form.gamma_sum.setValue(np.degrees(turbine.gamma_sum))
             stage_form.gamma_av.setValue(np.degrees(turbine.gamma_av))
             stage_form.gamma_in.setValue(np.degrees(turbine.gamma_in))
@@ -221,6 +239,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_form.l2.setValue(turbine.geom[i].l2)
             stage_form.b_sa.setValue(turbine.geom[i].b_sa)
             stage_form.b_rk.setValue(turbine.geom[i].b_rk)
+
             stage_form.c1.setValue(turbine[i].c1)
             stage_form.u1.setValue(turbine[i].u1)
             stage_form.c1_a.setValue(turbine[i].c1_a)
@@ -253,40 +272,211 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_form.eta_t.setValue(turbine[i].eta_t)
             stage_form.eta_t_stag.setValue(turbine[i].eta_t_stag)
             stage_form.rho_out.setValue(turbine[i].rho)
+
+            stage_form.H_s.setValue(turbine[i].H_s / 1e3)
+            stage_form.H_l.setValue(turbine[i].H_l / 1e3)
+            stage_form.T1_ad.setValue(turbine[i].T1_ad)
+            stage_form.rho1.setValue(turbine[i].rho1)
+            stage_form.rho2.setValue(turbine[i].rho2)
+            stage_form.L_st.setValue(turbine[i].L_t / 1e3)
+            stage_form.L_st_rel.setValue(turbine[i].L_t_rel / 1e3)
+            stage_form.L_u.setValue(turbine[i].L_u / 1e3)
+            stage_form.k_av.setValue(turbine[i].k_gas)
+            stage_form.c_p_av.setValue(turbine[i].c_p_gas)
+            stage_form.G_in.setValue(turbine[i].G_stage_in)
+            stage_form.G_out.setValue(turbine[i].G_stage_out)
+
             stage_form.triangle_canvas.plot_velocity_triangle('Треугольник скоростей', turbine[i].c1_u,
                                                               turbine[i].c1_a, turbine[i].u1, turbine[i].c2_u,
                                                               turbine[i].c2_a, turbine[i].u2)
 
     def get_turbine(self):
+        auto_set_rho = self.checkBox_rho_auto.isChecked()
+        auto_compute_heat_drop = self.checkBox_h0_auto.isChecked()
+        precise_heat_drop = self.checkBox_precise_h0.isChecked()
         if self.turbine_type.currentIndex() == 0:
             turbine_type = TurbineType.Power
         else:
             turbine_type = TurbineType.Compressor
-        if self.gamma_sum_av.isChecked():
-            turbine = Turbine(turbine_type, gamma_sum=np.radians(self.gamma1.value()),
-                              gamma_av=np.radians(self.gamma2.value()))
+
+        if self.fuel.currentIndex() == 0:
+            work_fluid = KeroseneCombustionProducts()
+        elif self.fuel.currentIndex() == 1:
+            work_fluid = NaturalGasCombustionProducts()
         else:
-            turbine = Turbine(turbine_type, gamma_out=np.radians(self.gamma1.value()),
-                              gamma_in=np.radians(self.gamma2.value()))
-        turbine.alpha11 = np.radians(self.alpha11.value())
-        turbine.alpha_air = self.alpha_air.value()
-        turbine.c21_init = self.c21.value()
-        turbine.T_g_stag = self.T_g_stag.value()
-        turbine.p_g_stag = self.p_g_stag.value() * 1e6
-        turbine.T_t_stag_cycle = self.T_t_stag_cycle.value()
-        turbine.p_t_stag_cycle = self.p_t_stag_cycle.value() * 1e6
-        turbine.H_t_stag_cycle = self.H_t_stag_cycle.value() * 1e3
-        turbine.L_t_cycle = self.L_t_cycle.value() * 1e3
-        turbine.H01_init = self.H01_init.value() * 1e3
-        turbine.eta_t_stag_cycle = self.eta_t_stag_cycle.value()
-        turbine.G_turbine = self.G_t.value()
-        turbine.n = self.n.value()
-        turbine.l1_D1_ratio = self.l1_D1_ratio.value()
-        turbine.eta_m = self.eta_m.value()
-        turbine.stage_number = self.stage_number.value()
-        auto_set_rho = self.checkBox_rho_auto.isChecked()
-        compute_heat_drop_auto = self.checkBox_h0_auto.isChecked()
-        precise_heat_drop = self.checkBox_precise_h0.isChecked()
+            work_fluid = KeroseneCombustionProducts()
+
+        H0_list = []
+        rho_list = []
+        for i in range(self.stage_number.value()):
+            stage_data: StageDataWidget = self.stackedWidget.widget(i)
+            if not auto_set_rho:
+                rho_list.append(stage_data.rho.value())
+            if not auto_compute_heat_drop:
+                H0_list.append(stage_data.H0.value() * 1e3)
+
+        if self.gamma_sum_av.isChecked():
+            if auto_compute_heat_drop and auto_set_rho:
+                turbine = Turbine(turbine_type,
+                                  stage_number=self.stage_number.value(),
+                                  T_g_stag=self.T_g_stag.value(),
+                                  p_g_stag=self.p_g_stag.value() * 1e6,
+                                  G_turbine=self.G_t.value(),
+                                  work_fluid=work_fluid,
+                                  alpha_air=self.alpha_air.value(),
+                                  l1_D1_ratio=self.l1_D1_ratio.value(),
+                                  n=self.n.value(),
+                                  eta_m=self.eta_m.value(),
+                                  T_t_stag_cycle=self.T_t_stag_cycle.value(),
+                                  eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
+                                  auto_compute_heat_drop=auto_compute_heat_drop,
+                                  auto_set_rho=auto_set_rho,
+                                  H01_init=self.H01_init.value()*1e3,
+                                  c21_init=self.c21.value(),
+                                  alpha11=np.radians(self.alpha11.value()),
+                                  gamma_sum=np.radians(self.gamma1.value()),
+                                  gamma_av=np.radians(self.gamma2.value()))
+            if auto_compute_heat_drop and not auto_set_rho:
+                turbine = Turbine(turbine_type,
+                                  stage_number=self.stage_number.value(),
+                                  T_g_stag=self.T_g_stag.value(),
+                                  p_g_stag=self.p_g_stag.value() * 1e6,
+                                  G_turbine=self.G_t.value(),
+                                  work_fluid=work_fluid,
+                                  alpha_air=self.alpha_air.value(),
+                                  l1_D1_ratio=self.l1_D1_ratio.value(),
+                                  n=self.n.value(),
+                                  eta_m=self.eta_m.value(),
+                                  T_t_stag_cycle=self.T_t_stag_cycle.value(),
+                                  eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
+                                  auto_compute_heat_drop=auto_compute_heat_drop,
+                                  auto_set_rho=auto_set_rho,
+                                  rho_list=rho_list,
+                                  H01_init=self.H01_init.value() * 1e3,
+                                  c21_init=self.c21.value(),
+                                  alpha11=np.radians(self.alpha11.value()),
+                                  gamma_sum=np.radians(self.gamma1.value()),
+                                  gamma_av=np.radians(self.gamma2.value()))
+            if not auto_compute_heat_drop and auto_set_rho:
+                turbine = Turbine(turbine_type,
+                                  stage_number=self.stage_number.value(),
+                                  T_g_stag=self.T_g_stag.value(),
+                                  p_g_stag=self.p_g_stag.value() * 1e6,
+                                  G_turbine=self.G_t.value(),
+                                  work_fluid=work_fluid,
+                                  alpha_air=self.alpha_air.value(),
+                                  l1_D1_ratio=self.l1_D1_ratio.value(),
+                                  n=self.n.value(),
+                                  eta_m=self.eta_m.value(),
+                                  T_t_stag_cycle=self.T_t_stag_cycle.value(),
+                                  eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
+                                  auto_compute_heat_drop=auto_compute_heat_drop,
+                                  auto_set_rho=auto_set_rho,
+                                  H0_list=H0_list,
+                                  alpha11=np.radians(self.alpha11.value()),
+                                  gamma_sum=np.radians(self.gamma1.value()),
+                                  gamma_av=np.radians(self.gamma2.value()))
+            if not auto_compute_heat_drop and not auto_set_rho:
+                turbine = Turbine(turbine_type,
+                                  stage_number=self.stage_number.value(),
+                                  T_g_stag=self.T_g_stag.value(),
+                                  p_g_stag=self.p_g_stag.value() * 1e6,
+                                  G_turbine=self.G_t.value(),
+                                  work_fluid=work_fluid,
+                                  alpha_air=self.alpha_air.value(),
+                                  l1_D1_ratio=self.l1_D1_ratio.value(),
+                                  n=self.n.value(),
+                                  eta_m=self.eta_m.value(),
+                                  T_t_stag_cycle=self.T_t_stag_cycle.value(),
+                                  eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
+                                  auto_compute_heat_drop=auto_compute_heat_drop,
+                                  auto_set_rho=auto_set_rho,
+                                  rho_list=rho_list,
+                                  H0_list=H0_list,
+                                  alpha11=np.radians(self.alpha11.value()),
+                                  gamma_sum=np.radians(self.gamma1.value()),
+                                  gamma_av=np.radians(self.gamma2.value()))
+        else:
+            if auto_compute_heat_drop and auto_set_rho:
+                turbine = Turbine(turbine_type,
+                                  stage_number=self.stage_number.value(),
+                                  T_g_stag=self.T_g_stag.value(),
+                                  p_g_stag=self.p_g_stag.value() * 1e6,
+                                  G_turbine=self.G_t.value(),
+                                  work_fluid=work_fluid,
+                                  alpha_air=self.alpha_air.value(),
+                                  l1_D1_ratio=self.l1_D1_ratio.value(),
+                                  n=self.n.value(),
+                                  eta_m=self.eta_m.value(),
+                                  T_t_stag_cycle=self.T_t_stag_cycle.value(),
+                                  eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
+                                  auto_compute_heat_drop=auto_compute_heat_drop,
+                                  auto_set_rho=auto_set_rho,
+                                  H01_init=self.H01_init.value()*1e3,
+                                  c21_init=self.c21.value(),
+                                  alpha11=np.radians(self.alpha11.value()),
+                                  gamma_out=np.radians(self.gamma1.value()),
+                                  gamma_in=np.radians(self.gamma2.value()))
+            if auto_compute_heat_drop and not auto_set_rho:
+                turbine = Turbine(turbine_type,
+                                  stage_number=self.stage_number.value(),
+                                  T_g_stag=self.T_g_stag.value(),
+                                  p_g_stag=self.p_g_stag.value() * 1e6,
+                                  G_turbine=self.G_t.value(),
+                                  work_fluid=work_fluid,
+                                  alpha_air=self.alpha_air.value(),
+                                  l1_D1_ratio=self.l1_D1_ratio.value(),
+                                  n=self.n.value(),
+                                  eta_m=self.eta_m.value(),
+                                  T_t_stag_cycle=self.T_t_stag_cycle.value(),
+                                  eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
+                                  auto_compute_heat_drop=auto_compute_heat_drop,
+                                  auto_set_rho=auto_set_rho,
+                                  rho_list=rho_list,
+                                  H01_init=self.H01_init.value() * 1e3,
+                                  c21_init=self.c21.value(),
+                                  alpha11=np.radians(self.alpha11.value()),
+                                  gamma_out=np.radians(self.gamma1.value()),
+                                  gamma_in=np.radians(self.gamma2.value()))
+            if not auto_compute_heat_drop and auto_set_rho:
+                turbine = Turbine(turbine_type,
+                                  stage_number=self.stage_number.value(),
+                                  T_g_stag=self.T_g_stag.value(),
+                                  p_g_stag=self.p_g_stag.value() * 1e6,
+                                  G_turbine=self.G_t.value(),
+                                  work_fluid=work_fluid,
+                                  alpha_air=self.alpha_air.value(),
+                                  l1_D1_ratio=self.l1_D1_ratio.value(),
+                                  n=self.n.value(),
+                                  eta_m=self.eta_m.value(),
+                                  T_t_stag_cycle=self.T_t_stag_cycle.value(),
+                                  eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
+                                  auto_compute_heat_drop=auto_compute_heat_drop,
+                                  auto_set_rho=auto_set_rho,
+                                  H0_list=H0_list,
+                                  alpha11=np.radians(self.alpha11.value()),
+                                  gamma_out=np.radians(self.gamma1.value()),
+                                  gamma_in=np.radians(self.gamma2.value()))
+            if not auto_compute_heat_drop and not auto_set_rho:
+                turbine = Turbine(turbine_type,
+                                  stage_number=self.stage_number.value(),
+                                  T_g_stag=self.T_g_stag.value(),
+                                  p_g_stag=self.p_g_stag.value() * 1e6,
+                                  G_turbine=self.G_t.value(),
+                                  work_fluid=work_fluid,
+                                  alpha_air=self.alpha_air.value(),
+                                  l1_D1_ratio=self.l1_D1_ratio.value(),
+                                  n=self.n.value(),
+                                  eta_m=self.eta_m.value(),
+                                  T_t_stag_cycle=self.T_t_stag_cycle.value(),
+                                  eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
+                                  auto_compute_heat_drop=auto_compute_heat_drop,
+                                  auto_set_rho=auto_set_rho,
+                                  rho_list=rho_list,
+                                  H0_list=H0_list,
+                                  alpha11=np.radians(self.alpha11.value()),
+                                  gamma_out=np.radians(self.gamma1.value()),
+                                  gamma_in=np.radians(self.gamma2.value()))
         for i in range(self.stage_number.value()):
             stage_data: StageDataWidget = self.stackedWidget.widget(i)
             turbine.geom[i].l1_b_sa_ratio = stage_data.l1_b_sa_ratio.value()
@@ -301,11 +491,9 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             turbine.geom[i].g_lk = stage_data.g_lk.value()
             turbine.geom[i].g_lb = stage_data.g_lb.value()
             turbine.geom[i].g_ld = stage_data.g_ld.value()
-            if not auto_set_rho:
-                turbine.geom[i].rho = stage_data.rho.value()
-            if not compute_heat_drop_auto:
-                turbine.geom[i].H0 = stage_data.H0.value() * 1e3
-        return turbine, compute_heat_drop_auto, precise_heat_drop, auto_set_rho
+            turbine.geom[i].shift_in_l1_ratio = stage_data.shift_in_l1_ratio.value()
+            turbine.geom[i].shift_out_l1_ratio = stage_data.shift_out_l1_ratio.value()
+        return turbine, precise_heat_drop
 
     def show_error_message(self, message):
         err_message = QtWidgets.QMessageBox(self)
@@ -316,9 +504,9 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         err_message.show()
 
     def on_compute_btn_click(self):
-        turbine, compute_heat_drop_auto, precise_heat_drop, auto_set_rho = self.get_turbine()
+        turbine, precise_heat_drop = self.get_turbine()
         try:
-            turbine.compute_geometry(compute_heat_drop_auto, auto_set_rho)
+            turbine.compute_geometry()
             turbine.compute_stages_gas_dynamics(precise_heat_drop)
             turbine.compute_integrate_turbine_parameters()
             self._set_output(turbine)
@@ -326,8 +514,144 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             logger.error(ex)
             self.show_error_message(str(ex))
 
+    def save_turbine_file(self, fname):
+        turbine, precise_heat_drop = self.get_turbine()
+        turbine.precise_heat_drop = precise_heat_drop
+        file = open(fname, 'wb')
+        pc.dump(turbine, file)
+        file.close()
+
+    def set_input_from_turbine_file(self, fname):
+        file = open(fname, 'rb')
+        turbine: Turbine = pc.load(file)
+        file.close()
+        precise_heat_drop = turbine.precise_heat_drop
+
+        self.stage_number.setValue(turbine.stage_number)
+
+        if turbine.turbine_type == TurbineType.Power:
+            self.turbine_type.setCurrentIndex(0)
+        elif turbine.turbine_type == TurbineType.Compressor:
+            self.turbine_type.setCurrentIndex(1)
+
+        if type(turbine.work_fluid) == KeroseneCombustionProducts:
+            self.fuel.setCurrentIndex(0)
+        elif type(turbine.work_fluid) == NaturalGasCombustionProducts:
+            self.fuel.setCurrentIndex(1)
+        if turbine.gamma_sum is not None and turbine.gamma_av is not None:
+            self.gamma_sum_av.setChecked(True)
+            self.gamma1.setValue(np.degrees(turbine.gamma_sum))
+            self.gamma2.setValue(np.degrees(turbine.gamma_av))
+        else:
+            self.gamma_in_out.setChecked(True)
+            self.gamma1.setValue(np.degrees(turbine.gamma_out))
+            self.gamma2.setValue(np.degrees(turbine.gamma_in))
+
+        if turbine.auto_set_rho:
+            self.checkBox_rho_auto.setChecked(True)
+        else:
+            self.checkBox_rho_auto.setChecked(False)
+            for i in range(self.stage_number.value()):
+                stage_data: StageDataWidget = self.stackedWidget.widget(i)
+                stage_data.rho.setValue(turbine.geom[i].rho)
+
+        if turbine.auto_compute_heat_drop:
+            self.checkBox_h0_auto.setChecked(True)
+            self.H01_init.setValue(turbine.H01_init / 1e3)
+            self.c21.setValue(turbine.c21_init)
+        else:
+            self.checkBox_h0_auto.setChecked(False)
+            for i in range(self.stage_number.value()):
+                stage_data: StageDataWidget = self.stackedWidget.widget(i)
+                stage_data.H0.setValue(turbine.geom[i].H0 / 1e3)
+
+        if precise_heat_drop:
+            self.checkBox_precise_h0.setChecked(True)
+        else:
+            self.checkBox_precise_h0.setChecked(False)
+
+        self.alpha11.setValue(np.degrees(turbine.alpha11))
+        self.alpha_air.setValue(turbine.alpha_air)
+        self.T_g_stag.setValue(turbine.T_g_stag)
+        self.p_g_stag.setValue(turbine.p_g_stag / 1e6)
+        self.T_t_stag_cycle.setValue(turbine.T_t_stag_cycle)
+        self.eta_t_stag_cycle.setValue(turbine.eta_t_stag_cycle)
+        self.G_t.setValue(turbine.G_turbine)
+        self.n.setValue(turbine.n)
+        self.l1_D1_ratio.setValue(turbine.l1_D1_ratio)
+        self.eta_m.setValue(turbine.eta_m)
+
+        for i in range(self.stage_number.value()):
+            stage_data: StageDataWidget = self.stackedWidget.widget(i)
+
+            stage_data.l1_b_sa_ratio.setValue(turbine.geom[i].l1_b_sa_ratio)
+            stage_data.l2_b_rk_ratio.setValue(turbine.geom[i].l2_b_rk_ratio)
+            stage_data.delta_a_b_rk_ratio.setValue(turbine.geom[i].delta_a_b_rk_ratio)
+            stage_data.delta_a_b_sa_ratio.setValue(turbine.geom[i].delta_a_b_sa_ratio)
+            stage_data.delta_r_rel.setValue(turbine.geom[i].delta_r_rk_l2_ratio)
+            stage_data.phi.setValue(turbine.geom[i].phi)
+            stage_data.psi.setValue(turbine.geom[i].psi)
+            stage_data.epsilon.setValue(turbine.geom[i].epsilon)
+            stage_data.mu.setValue(turbine.geom[i].mu)
+            stage_data.g_lk.setValue(turbine.geom[i].g_lk)
+            stage_data.g_ld.setValue(turbine.geom[i].g_lb)
+            stage_data.g_ld.setValue(turbine.geom[i].g_ld)
+            stage_data.shift_in_l1_ratio.setValue(turbine.geom[i].shift_in_l1_ratio)
+            stage_data.shift_out_l1_ratio.setValue(turbine.geom[i].shift_out_l1_ratio)
+
+
+class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_MainWindow):
+    def __init__(self):
+        QtWidgets.QMainWindow.__init__(self)
+        self.save_count = 0
+        self.setupUi(self)
+        self.setCentralWidget(AveLineWidget())
+        self.act_exit.triggered.connect(self.close)
+        self.act_new.triggered.connect(self.on_new_action)
+        self.act_open.triggered.connect(self.on_open_action)
+        self.act_save_as.triggered.connect(self.on_save_as_action)
+        self.act_save.triggered.connect(self.on_save_action)
+
+    def on_new_action(self):
+        self.setCentralWidget(AveLineWidget())
+        self.setWindowTitle('Unnamed')
+        self.save_count = 0
+
+    def on_open_action(self):
+        fname, _ = QFileDialog.getOpenFileName(self, 'Открыть файл', os.getcwd(),
+                                               'Turbine AveLine files  (*%s)' % 'avl')
+
+        if fname:
+            ave_line_widget: AveLineWidget = self.centralWidget()
+            ave_line_widget.set_input_from_turbine_file(fname)
+            self.setWindowTitle(fname)
+            self.save_count = 1
+
+    def on_save_as_action(self):
+        fname, _ = QFileDialog.getSaveFileName(self, 'Сохранить как...', os.getcwd(),
+                                               'Turbine AveLine files (*%s)' % 'avl')
+        if fname:
+            ave_line_widget: AveLineWidget = self.centralWidget()
+            ave_line_widget.save_turbine_file(fname)
+            self.setWindowTitle(fname)
+            self.save_count += 1
+
+    def on_save_action(self):
+        if self.save_count > 0:
+            fname = self.windowTitle()
+            ave_line_widget: AveLineWidget = self.centralWidget()
+            ave_line_widget.save_turbine_file(fname)
+        else:
+            fname, _ = QFileDialog.getSaveFileName(self, 'Сохранить как...', os.getcwd(),
+                                                   'Turbine AveLine files (*%s)' % 'avl')
+            if fname:
+                ave_line_widget: AveLineWidget = self.centralWidget()
+                ave_line_widget.save_turbine_file(fname)
+                self.setWindowTitle(fname)
+                self.save_count += 1
+
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    window = AveLineWidget()
+    window = AveStreamLineMainWindow()
     window.show()
     sys.exit(app.exec_())

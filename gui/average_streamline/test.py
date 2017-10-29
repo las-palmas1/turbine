@@ -66,8 +66,8 @@ class AveLineWidgetTest(unittest.TestCase):
 
     def test_compute_btn_click(self):
         """Тестируется правильность вывода значений в выходные поля"""
-        turbine, compute_heat_drop_auto, precise_heat_drop, auto_set_rho = self.form.get_turbine()
-        turbine.compute_geometry(compute_heat_drop_auto, auto_set_rho)
+        turbine, precise_heat_drop = self.form.get_turbine()
+        turbine.compute_geometry()
         turbine.compute_stages_gas_dynamics(precise_heat_drop)
         turbine.compute_integrate_turbine_parameters()
         QTest.mouseClick(self.form.compute_btn, Qt.LeftButton)
@@ -124,6 +124,19 @@ class AveLineWidgetTest(unittest.TestCase):
             self.assertAlmostEqual(stage_data.eta_l.value(), turbine[i].eta_l, places=3)
             self.assertAlmostEqual(stage_data.eta_u.value(), turbine[i].eta_u, places=3)
             self.assertAlmostEqual(stage_data.rho_out.value(), turbine[i].rho, places=3)
+
+            self.assertAlmostEqual(stage_data.H_s.value(), turbine[i].H_s / 1e3, places=2)
+            self.assertAlmostEqual(stage_data.H_l.value(), turbine[i].H_l / 1e3, places=2)
+            self.assertAlmostEqual(stage_data.T1_ad.value(), turbine[i].T1_ad, places=2)
+            self.assertAlmostEqual(stage_data.rho1.value(), turbine[i].rho1, places=2)
+            self.assertAlmostEqual(stage_data.rho2.value(), turbine[i].rho2, places=2)
+            self.assertAlmostEqual(stage_data.L_st.value(), turbine[i].L_t / 1e3, places=2)
+            self.assertAlmostEqual(stage_data.L_st_rel.value(), turbine[i].L_t_rel / 1e3, places=2)
+            self.assertAlmostEqual(stage_data.L_u.value(), turbine[i].L_u / 1e3, places=2)
+            self.assertAlmostEqual(stage_data.k_av.value(), turbine[i].k_gas, places=2)
+            self.assertAlmostEqual(stage_data.c_p_av.value(), turbine[i].c_p_gas, places=2)
+            self.assertAlmostEqual(stage_data.G_in.value(), turbine[i].G_stage_in, places=2)
+            self.assertAlmostEqual(stage_data.G_out.value(), turbine[i].G_stage_out, places=2)
 
 
 if __name__ == '__main__':

@@ -1,6 +1,6 @@
 from gas_turbine_cycle.gases import KeroseneCombustionProducts, IdealGas
 from core.average_streamline.stage_geom import InvalidStageSizeValue, StageGeomAndHeatDrop, \
-    TurbineGeomAndHeatDropDistribution, specify_h01
+    TurbineGeomAndHeatDropDistribution
 import gas_turbine_cycle.tools.functions as func
 import logging
 import numpy as np
@@ -11,9 +11,9 @@ from scipy.interpolate import interp1d
 import os
 import pickle as pk
 
-log_filename = os.path.join(os.path.dirname(__file__), 'average_streamline.log')
+log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
 logger = func.create_logger(__name__, logging.INFO, add_file_handler=True,
-                            add_console_handler=False, filemode='w', filename=log_filename)
+                            add_console_handler=False, filemode='a', filename=log_filename)
 
 
 class TurbineType(Enum):
@@ -22,31 +22,79 @@ class TurbineType(Enum):
 
 
 class Turbine:
-    def __init__(self, turbine_type: TurbineType, **kwargs):
+    def __init__(self, turbine_type: TurbineType, stage_number, T_g_stag, p_g_stag, G_turbine, work_fluid: IdealGas,
+                 alpha_air, l1_D1_ratio, n, T_t_stag_cycle, eta_t_stag_cycle,
+                 alpha11, k_n=6.8, eta_m=0.99,
+                 auto_set_rho: bool=True,
+                 auto_compute_heat_drop: bool=True,
+                 **kwargs):
         """
-
-        :param turbine_type:
-        :param kwargs: gamma_av, gamma_sum, gamma_in, gamma_out
+        :param turbine_type: TurbineType \n
+            Тип турбины, компрессорная или силовая.
+        :param stage_number: float \n
+            Число ступеней.
+        :param T_g_stag: float \n
+            Температура торможения после КС.
+        :param p_g_stag: float \n
+            Давление торможения после КС.
+        :param G_turbine: float \n
+            Расход газа через СА первой ступени.
+        :param work_fluid: IdealGas \n
+            Рабочее тело.
+        :param alpha_air: float \n
+            Коэффициент избытка воздуха.
+        :param l1_D1_ratio: float \n
+            Отношение длины лопатки РК первой ступени к среднему диаметру.
+        :param n: float \n
+            Частота вращения ротора турбины.
+        :param T_t_stag_cycle: float \n
+            Температура торможения на выходе из турбины. Необходимо на этапе расчета геометрии при
+            вычислении статических параметров на выходе из турбины. Их определение необходимо для расчета
+            коэффициента избытка теплоты и расчета последней ступени силовой турбины.
+        :param eta_t_stag_cycle: float \n
+            Величина КПД турбины по параметрам торможения из расчета цикла. Необходим при вычислении коэффициента
+            возврата теплоты при расчете предварительного рапределения теплоперепадов по ступеням.
+        :param alpha11: float \n
+            Угол потока после СА первой ступени. Необходим для вычисления размеров входного сечения на
+            этапе расчета геометрии.
+        :param k_n: float, optional \n
+            Коэффициент в формуле для приблизительно расчета напряжения в лопатке.
+        :param eta_m: float, optional \n
+            Механический КПД.
+        :param auto_set_rho: bool, optional \n
+            Если True, то после расчета геометрии по относительному удлинению лопатки РК на выходе
+            на каждой ступени вычисляется степень реактивности.
+        :param auto_compute_heat_drop: bool, optional \n
+            Если True, то при расчете геометрии происходит расчет преварительного распределения
+            теплоперепада по ступеням.
+        :param kwargs: Возможны следующие наборы ключевых слов: \n
+            1.  Должны быть обязаетльно указаны gamma_av и gamma_sum или gamma_in и gamma_out. Это соответственно
+                угол наклона средней линии и суммарный угол раскрытия проточной част и углы наклона образующей
+                периферии и втулки. \n
+            2.  Если параметр auto_set_rho равен False, то должен быть указан список степеней реактивности для
+                всех ступеней турбины rho_list.
+            3.  Если параметр auto_compute_heat_drop равен True, то должны быть указаны начальные приближения для
+                теплоперепада на первой ступени H01_init и скорости на выходе из РК первой ступени c21_init. Если же
+                он равен False, то должен быть указан список теплоперепадо для всех ступеней H0_list
         """
-        self._T_g_stag = None
-        self._p_g_stag = None
-        self._G_turbine = None
+        self._T_g_stag = T_g_stag
+        self._p_g_stag = p_g_stag
+        self._G_turbine = G_turbine
         self._kwargs = kwargs
-        self._alpha_air = None
-        self._stage_number = None
-        self._k_n = 6.8
-        self._work_fluid: IdealGas = KeroseneCombustionProducts()
-        self._l1_D1_ratio = None
-        self._n = None
-        self._c21_init = None
-        self._H01_init = None
-        self._rho1 = None
-        self._T_t_stag_cycle = None
-        self._p_t_stag_cycle = None
-        self._L_t_cycle = None
-        self._alpha11 = None
-        self._eta_t_stag_cycle = None
-        self._H_t_stag_cycle = None
+        self._alpha_air = alpha_air
+        self._stage_number = stage_number
+        self._k_n = k_n
+        self._work_fluid: IdealGas = work_fluid
+        self._l1_D1_ratio = l1_D1_ratio
+        self._n = n
+        self._T_t_stag_cycle = T_t_stag_cycle
+        self._p_t_stag_cycle, self._L_t_cycle, self._H_t_stag_cycle = self._get_p_t_stag_L_t_and_H_t(work_fluid,
+                                                                                                     p_g_stag,
+                                                                                                     T_g_stag,
+                                                                                                     T_t_stag_cycle,
+                                                                                                     eta_t_stag_cycle)
+        self._alpha11 = alpha11
+        self._eta_t_stag_cycle = eta_t_stag_cycle
         self._geom = None
         self.c_p_gas = None
         self.k_gas = None
@@ -54,6 +102,25 @@ class Turbine:
         self.k_gas_stag = None
         self._gas_dynamics = list()
         self._type = turbine_type
+        self.auto_set_rho = auto_set_rho
+        self.auto_compute_heat_drop = auto_compute_heat_drop
+        if not auto_set_rho:
+            assert 'rho_list' in kwargs, 'rho_list is not specified.'
+            assert len(kwargs['rho_list']) == stage_number, "Length of rho_list isn't equal to the stage number."
+            self._rho_list = kwargs['rho_list']
+        self._auto_set_rho = auto_set_rho
+        if not auto_compute_heat_drop:
+            assert 'H0_list' in kwargs, 'H0_list is not specified.'
+            assert len(kwargs['H0_list']) == stage_number, "Length of H0_list isn't equal to the stage number."
+            self._H0_list = kwargs['H0_list']
+        if auto_compute_heat_drop:
+            assert 'H01_init' in kwargs, 'H01_init is not specified.'
+            assert 'c21_init' in kwargs, 'c21_init is not specified.'
+            self._c21_init = kwargs['c21_init']
+            self._H01_init = kwargs['H01_init']
+        else:
+            self._c21_init = None
+            self._H01_init = None
         if ('gamma_av' in kwargs) and ('gamma_sum' in kwargs):
             self._gamma_av = kwargs['gamma_av']
             self._gamma_in = None
@@ -73,7 +140,20 @@ class Turbine:
         self.eta_t_stag = None
         self.eta_l = None
         self.N = None
-        self._eta_m = 0.99
+        self._eta_m = eta_m
+        self._init_turbine_geom()
+
+    @classmethod
+    def _get_p_t_stag_L_t_and_H_t(cls, work_fluid: IdealGas, p_g_stag, T_g_stag, T_t_stag, eta_t_stag):
+        work_fluid.__init__()
+        work_fluid.T1 = T_t_stag
+        work_fluid.T2 = T_g_stag
+        L_t = work_fluid.c_p_av_int * (T_g_stag - T_t_stag)
+        H_t = L_t / eta_t_stag
+        pi_t = (1 - L_t / (work_fluid.c_p_av_int * T_g_stag * eta_t_stag)) ** \
+               (work_fluid.k_av_int / (1 - work_fluid.k_av_int))
+        p_t_stag = p_g_stag / pi_t
+        return p_t_stag, L_t, H_t
 
     def __getitem__(self, item) -> StageGasDynamics:
         try:
@@ -108,33 +188,45 @@ class Turbine:
 
     def _init_turbine_geom(self):
         try:
-            self._geom = TurbineGeomAndHeatDropDistribution(self.stage_number, self.eta_t_stag_cycle,
-                                                            self.H_t_stag_cycle,
-                                                            self.c21_init, self.n, KeroseneCombustionProducts(),
-                                                            self.T_g_stag, self.p_g_stag, self.alpha_air,
-                                                            self.G_turbine, self.l1_D1_ratio, self.H01_init,
-                                                            self.rho1, self.alpha11, self.k_n,
-                                                            self.T_t_stag_cycle,
-                                                            self.p_t_stag_cycle, **self._kwargs)
+            if self._gamma_out and self._gamma_in:
+                self._geom = TurbineGeomAndHeatDropDistribution(self.stage_number, self.eta_t_stag_cycle,
+                                                                self.n, KeroseneCombustionProducts(),
+                                                                self.T_g_stag, self.p_g_stag, self.alpha_air,
+                                                                self.G_turbine, self.l1_D1_ratio,
+                                                                self.alpha11, self.k_n,
+                                                                self.T_t_stag_cycle,
+                                                                auto_compute_heat_drop=self.auto_compute_heat_drop,
+                                                                c21=self.c21_init,
+                                                                gamma_in=self.gamma_in,
+                                                                gamma_out=self.gamma_out)
+            elif self._gamma_av and self._gamma_sum:
+                self._geom = TurbineGeomAndHeatDropDistribution(self.stage_number, self.eta_t_stag_cycle,
+                                                                self.n, KeroseneCombustionProducts(),
+                                                                self.T_g_stag, self.p_g_stag, self.alpha_air,
+                                                                self.G_turbine, self.l1_D1_ratio,
+                                                                self.alpha11, self.k_n,
+                                                                self.T_t_stag_cycle,
+                                                                auto_compute_heat_drop=self.auto_compute_heat_drop,
+                                                                c21=self.c21_init,
+                                                                gamma_av=self.gamma_av,
+                                                                gamma_sum=self.gamma_sum)
+            if not self.auto_set_rho:
+                for geom, rho in zip(self.geom, self._rho_list):
+                    geom.rho = rho
+            if not self.auto_compute_heat_drop:
+                for geom, H0 in zip(self.geom, self._H0_list):
+                    geom.H0 = H0
+            if self.auto_compute_heat_drop:
+                self.geom[0].H0 = self.H01_init
         except AssertionError:
             pass
 
-    def compute_geometry(self, compute_heat_drop_auto=True, auto_set_rho=True):
-        """
-        :param compute_heat_drop_auto: bool, optional \n
-            Если True, то при расчете геометрии происходит расчет преварительного распределения
-            теплоперепада по ступеням
-        :param auto_set_rho: bool, optional \n
-            Если True, то после расчета геометрии по относительному удлинению лопатки РК на выходе
-            на каждой ступени вычисляется степень реактивности
-        :return: None
-        """
+    def compute_geometry(self):
         logger.info('%s РАСЧЕТ ГЕОМЕТРИИ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
-        if compute_heat_drop_auto is True:
-            specify_h01(self.geom)
-        else:
-            self.geom.compute_output(compute_heat_drop_auto=compute_heat_drop_auto)
-        if auto_set_rho:
+        if self.auto_set_rho:
+            self.geom[0].rho = self._rho_func(self.l1_D1_ratio)
+        self.geom.compute()
+        if self.auto_set_rho:
             self._set_rho()
         self._gamma_in = self.geom.gamma_in
         self._gamma_out = self.geom.gamma_out
@@ -208,6 +300,7 @@ class Turbine:
 
     def compute_integrate_turbine_parameters(self):
         logger.info('\n%s РАСЧЕТ ИНТЕГРАЛЬНЫХ ПАРАМЕТРОВ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
+        self.work_fluid.__init__()
         self.L_t_sum = 0
         for item in self:
             self.L_t_sum += item.L_t_rel
@@ -278,7 +371,6 @@ class Turbine:
 
     def set_delta_a_b_ratio(self, x0, delta):
         """
-
         :param x0: значение относительных зазоров на первой ступени
         :param delta: изменение значения относительных зазоров от ступени к ступени
         :return: None
@@ -334,10 +426,6 @@ class Turbine:
         assert self._L_t_cycle is not None, 'L_t_cycle must not be None'
         return self._L_t_cycle
 
-    @L_t_cycle.setter
-    def L_t_cycle(self, value):
-        self._L_t_cycle = value
-
     @property
     def geom(self) -> TurbineGeomAndHeatDropDistribution:
         assert self._geom is not None, 'geom must not be None'
@@ -352,11 +440,6 @@ class Turbine:
         assert self._H_t_stag_cycle is not None, 'H_t_stag_cycle must not be None'
         return self._H_t_stag_cycle
 
-    @H_t_stag_cycle.setter
-    def H_t_stag_cycle(self, value):
-        self._H_t_stag_cycle = value
-        self._init_turbine_geom()
-
     @property
     def eta_t_stag_cycle(self):
         """
@@ -369,6 +452,12 @@ class Turbine:
     @eta_t_stag_cycle.setter
     def eta_t_stag_cycle(self, value):
         self._eta_t_stag_cycle = value
+        self._p_t_stag_cycle, self._L_t_cycle, \
+        self._H_t_stag_cycle = self._get_p_t_stag_L_t_and_H_t(self.work_fluid,
+                                                              self.p_g_stag,
+                                                              self.T_g_stag,
+                                                              self.T_t_stag_cycle,
+                                                              self.eta_t_stag_cycle)
         self._init_turbine_geom()
 
     @property
@@ -395,11 +484,6 @@ class Turbine:
         assert self._p_t_stag_cycle is not None, 'p_t_stag_cycle must not be None'
         return self._p_t_stag_cycle
 
-    @p_t_stag_cycle.setter
-    def p_t_stag_cycle(self, value):
-        self._p_t_stag_cycle = value
-        self._init_turbine_geom()
-
     @property
     def T_t_stag_cycle(self):
         """
@@ -413,20 +497,12 @@ class Turbine:
     @T_t_stag_cycle.setter
     def T_t_stag_cycle(self, value):
         self._T_t_stag_cycle = value
-        self._init_turbine_geom()
-
-    @property
-    def rho1(self):
-        """
-        Значение степени реактивности на первой ступени турбины. Необходимо на этапе расчета геометрии при
-        определении размеров входного кошльцевого сечения.
-        """
-        assert self._rho1 is not None, 'rho1 must not be None'
-        return self._rho1
-
-    @rho1.setter
-    def rho1(self, value):
-        self._rho1 = value
+        self._p_t_stag_cycle, self._L_t_cycle, \
+        self._H_t_stag_cycle = self._get_p_t_stag_L_t_and_H_t(self.work_fluid,
+                                                              self.p_g_stag,
+                                                              self.T_g_stag,
+                                                              self.T_t_stag_cycle,
+                                                              self.eta_t_stag_cycle)
         self._init_turbine_geom()
 
     @property
@@ -435,7 +511,8 @@ class Turbine:
         Начальное приближение для адиабатического теплоперепада на первой ступени. Необходимо
         на этапе расчета геометрии при вычисления кольцевой площади на входе в рк первой ступени.
         """
-        assert self._H01_init is not None, 'H01_init must not be None'
+        if self.auto_compute_heat_drop:
+            assert self._H01_init is not None, 'H01_init must not be None'
         return self._H01_init
 
     @H01_init.setter
@@ -449,7 +526,8 @@ class Turbine:
         Начальное приближение для скорости на выходе их РК первой ступени. Необходимо на этапе расчета геометрии
         при вычислении рапределения теплоперепадов по ступеням.
         """
-        assert self._c21_init is not None, 'c21_init must not be None'
+        if self.auto_compute_heat_drop:
+            assert self._c21_init is not None, 'c21_init must not be None'
         return self._c21_init
 
     @c21_init.setter
@@ -473,7 +551,7 @@ class Turbine:
     @property
     def l1_D1_ratio(self):
         """
-        Относительное удлинение лопатки РК первой ступени.
+        Отношение длины лопатки РК первой ступени к среднему диаметру
         """
         assert self._l1_D1_ratio is not None, 'l1_D1_ratio must not be None'
         return self._l1_D1_ratio
@@ -481,8 +559,6 @@ class Turbine:
     @l1_D1_ratio.setter
     def l1_D1_ratio(self, value):
         self._l1_D1_ratio = value
-        if self._rho1 is None:
-            self._rho1 = self._rho_func(value)
         self._init_turbine_geom()
 
     @property
@@ -551,6 +627,12 @@ class Turbine:
     @p_g_stag.setter
     def p_g_stag(self, value):
         self._p_g_stag = value
+        self._p_t_stag_cycle, self._L_t_cycle, \
+        self._H_t_stag_cycle = self._get_p_t_stag_L_t_and_H_t(self.work_fluid,
+                                                              self.p_g_stag,
+                                                              self.T_g_stag,
+                                                              self.T_t_stag_cycle,
+                                                              self.eta_t_stag_cycle)
         self._init_turbine_geom()
 
     @property
@@ -562,6 +644,12 @@ class Turbine:
     @T_g_stag.setter
     def T_g_stag(self, value):
         self._T_g_stag = value
+        self._p_t_stag_cycle, self._L_t_cycle, \
+        self._H_t_stag_cycle = self._get_p_t_stag_L_t_and_H_t(self.work_fluid,
+                                                              self.p_g_stag,
+                                                              self.T_g_stag,
+                                                              self.T_t_stag_cycle,
+                                                              self.eta_t_stag_cycle)
         self._init_turbine_geom()
 
     @property
@@ -648,27 +736,47 @@ if __name__ == '__main__':
     # print(turbine.geom.c_t)
     # for num, i in enumerate(turbine):
     #     i.plot_velocity_triangle('Stage %s2' % (num + 1))
-    turbine = Turbine(TurbineType.Compressor, gamma_av=4 * deg, gamma_sum=10 * deg)
-    turbine.alpha11 = 17 * deg
-    turbine.alpha_air = 2.87
-    turbine.c21_init = 250
-    turbine.eta_t_stag_cycle = 0.91
-    turbine.G_turbine = 25
-    turbine.H01_init = 120e3
-    turbine.H_t_stag_cycle = 250e3
-    turbine.k_n = 6.8
-    turbine.l1_D1_ratio = 1 / 4
-    turbine.L_t_cycle = 220e3
-    turbine.n = 15e3
-    turbine.eta_m = 0.98
-    turbine.p_g_stag = 3e5
-    turbine.T_g_stag = 1400
-    turbine.T_t_stag_cycle = 800
-    turbine.p_t_stag_cycle = 100e3
-    turbine.stage_number = 1
-    turbine.set_delta_a_b_ratio(0.22, 0)
-    turbine.set_l_b_ratio(1.8, 0.2, 0.9)
-    turbine.compute_geometry(auto_set_rho=True, compute_heat_drop_auto=True)
+    turbine = Turbine(TurbineType.Compressor,
+                      T_g_stag=1400,
+                      p_g_stag=5.5e5,
+                      G_turbine=25,
+                      work_fluid=KeroseneCombustionProducts(),
+                      alpha_air=2.87,
+                      l1_D1_ratio=0.25,
+                      n=15e3,
+                      T_t_stag_cycle=1200,
+                      stage_number=2,
+                      eta_t_stag_cycle=0.91,
+                      k_n=6.8,
+                      eta_m=0.99,
+                      auto_compute_heat_drop=True,
+                      auto_set_rho=True,
+                      H01_init=150e3,
+                      c21_init=250,
+                      alpha11=17*deg,
+                      gamma_av=4 * deg,
+                      gamma_sum=10 * deg)
+    # turbine.alpha11 = 17 * deg
+    # turbine.alpha_air = 2.87
+    # turbine.c21_init = 250
+    # turbine.eta_t_stag_cycle = 0.91
+    # turbine.G_turbine = 25
+    # turbine.H01_init = 120e3
+    # turbine.H_t_stag_cycle = 250e3
+    # turbine.k_n = 6.8
+    # turbine.l1_D1_ratio = 1 / 4
+    # turbine.L_t_cycle = 220e3
+    # turbine.n = 15e3
+    # turbine.eta_m = 0.98
+    # turbine.p_g_stag = 3e5
+    # turbine.T_g_stag = 1400
+    # turbine.T_t_stag_cycle = 800
+    # turbine.p_t_stag_cycle = 100e3
+    # turbine.stage_number = 1
+    # turbine.set_delta_a_b_ratio(0.22, 0)
+    # turbine.set_l_b_ratio(1.8, 0.2, 0.9)
+    # turbine.geom[0].H0 = 250e3
+    turbine.compute_geometry()
     turbine.compute_stages_gas_dynamics(precise_heat_drop=True)
     turbine.geom.plot_geometry(figsize=(5, 5))
     turbine.compute_integrate_turbine_parameters()

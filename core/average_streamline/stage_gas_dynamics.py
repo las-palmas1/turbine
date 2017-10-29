@@ -7,9 +7,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import os
 
-log_filename = os.path.join(os.path.dirname(__file__), 'average_streamline.log')
+log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
 logger = func.create_logger(__name__, logging.INFO, add_console_handler=False, add_file_handler=True,
-                            filename=log_filename, filemode='w')
+                            filename=log_filename, filemode='a')
 
 
 class StageGasDynamics:

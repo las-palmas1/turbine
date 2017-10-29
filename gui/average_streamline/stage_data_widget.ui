@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1528</width>
-    <height>671</height>
+    <height>763</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -69,20 +69,20 @@
            </item>
            <item>
             <layout class="QGridLayout" name="gridLayout">
-             <item row="3" column="1">
-              <widget class="QDoubleSpinBox" name="l1_b_sa_ratio">
-               <property name="decimals">
-                <number>3</number>
+             <item row="6" column="0">
+              <widget class="QLabel" name="label">
+               <property name="toolTip">
+                <string/>
                </property>
-               <property name="singleStep">
-                <double>0.100000000000000</double>
+               <property name="whatsThis">
+                <string/>
                </property>
-               <property name="value">
-                <double>1.600000000000000</double>
+               <property name="text">
+                <string>Относительный сдвиг на периферии</string>
                </property>
               </widget>
              </item>
-             <item row="10" column="1">
+             <item row="11" column="1">
               <widget class="QDoubleSpinBox" name="epsilon">
                <property name="maximum">
                 <double>5.000000000000000</double>
@@ -95,27 +95,7 @@
                </property>
               </widget>
              </item>
-             <item row="10" column="0">
-              <widget class="QLabel" name="label_46">
-               <property name="text">
-                <string>Степень парциальности</string>
-               </property>
-              </widget>
-             </item>
-             <item row="11" column="1">
-              <widget class="QDoubleSpinBox" name="mu">
-               <property name="maximum">
-                <double>1.000000000000000</double>
-               </property>
-               <property name="singleStep">
-                <double>0.010000000000000</double>
-               </property>
-               <property name="value">
-                <double>1.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="9" column="1">
+             <item row="10" column="1">
               <widget class="QDoubleSpinBox" name="psi">
                <property name="decimals">
                 <number>3</number>
@@ -131,35 +111,28 @@
                </property>
               </widget>
              </item>
-             <item row="14" column="0">
+             <item row="11" column="0">
+              <widget class="QLabel" name="label_46">
+               <property name="text">
+                <string>Степень парциальности</string>
+               </property>
+              </widget>
+             </item>
+             <item row="15" column="0">
               <widget class="QLabel" name="label_50">
                <property name="text">
                 <string>Отн-ый расход перетечек поверх бондажа рабочих лопаток</string>
                </property>
               </widget>
              </item>
-             <item row="8" column="0">
-              <widget class="QLabel" name="label_44">
-               <property name="text">
-                <string>К-т скорости в СА</string>
-               </property>
-              </widget>
-             </item>
-             <item row="7" column="0">
-              <widget class="QLabel" name="label_43">
-               <property name="text">
-                <string>Относительный радиальный зазор</string>
-               </property>
-              </widget>
-             </item>
-             <item row="11" column="0">
+             <item row="12" column="0">
               <widget class="QLabel" name="label_47">
                <property name="text">
                 <string>К-т использования скорости на выходе</string>
                </property>
               </widget>
              </item>
-             <item row="7" column="1">
+             <item row="8" column="1">
               <widget class="QDoubleSpinBox" name="delta_r_rel">
                <property name="maximum">
                 <double>0.300000000000000</double>
@@ -172,20 +145,33 @@
                </property>
               </widget>
              </item>
-             <item row="14" column="1">
-              <widget class="QDoubleSpinBox" name="g_lb">
-               <property name="decimals">
-                <number>3</number>
-               </property>
+             <item row="12" column="1">
+              <widget class="QDoubleSpinBox" name="mu">
                <property name="maximum">
                 <double>1.000000000000000</double>
                </property>
                <property name="singleStep">
                 <double>0.010000000000000</double>
                </property>
+               <property name="value">
+                <double>1.000000000000000</double>
+               </property>
               </widget>
              </item>
-             <item row="8" column="1">
+             <item row="3" column="1">
+              <widget class="QDoubleSpinBox" name="l1_b_sa_ratio">
+               <property name="decimals">
+                <number>3</number>
+               </property>
+               <property name="singleStep">
+                <double>0.100000000000000</double>
+               </property>
+               <property name="value">
+                <double>1.600000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="9" column="1">
               <widget class="QDoubleSpinBox" name="phi">
                <property name="decimals">
                 <number>3</number>
@@ -201,42 +187,8 @@
                </property>
               </widget>
              </item>
-             <item row="2" column="1">
-              <widget class="QDoubleSpinBox" name="l2_b_rk_ratio">
-               <property name="decimals">
-                <number>3</number>
-               </property>
-               <property name="singleStep">
-                <double>0.100000000000000</double>
-               </property>
-               <property name="value">
-                <double>1.800000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="9" column="0">
-              <widget class="QLabel" name="label_45">
-               <property name="text">
-                <string>К-т скорости в РК</string>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="0">
-              <widget class="QLabel" name="label_41">
-               <property name="text">
-                <string>Относительный зазор после СА</string>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="0">
-              <widget class="QLabel" name="label_40">
-               <property name="text">
-                <string>Относительная зазор после РК</string>
-               </property>
-              </widget>
-             </item>
-             <item row="12" column="1">
-              <widget class="QDoubleSpinBox" name="g_lk">
+             <item row="15" column="1">
+              <widget class="QDoubleSpinBox" name="g_lb">
                <property name="decimals">
                 <number>3</number>
                </property>
@@ -248,6 +200,20 @@
                </property>
               </widget>
              </item>
+             <item row="8" column="0">
+              <widget class="QLabel" name="label_43">
+               <property name="text">
+                <string>Относительный радиальный зазор</string>
+               </property>
+              </widget>
+             </item>
+             <item row="9" column="0">
+              <widget class="QLabel" name="label_44">
+               <property name="text">
+                <string>К-т скорости в СА</string>
+               </property>
+              </widget>
+             </item>
              <item row="2" column="0">
               <widget class="QLabel" name="label_35">
                <property name="text">
@@ -255,17 +221,30 @@
                </property>
               </widget>
              </item>
-             <item row="13" column="0">
-              <widget class="QLabel" name="label_49">
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_rho">
                <property name="text">
-                <string>Отно-ый расход ут-к в лаб-ых упл-их сопловых диафрагм</string>
+                <string>Степень реактивности</string>
                </property>
               </widget>
              </item>
-             <item row="3" column="0">
-              <widget class="QLabel" name="label_36">
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_H0">
                <property name="text">
-                <string>Относительное удинение СА</string>
+                <string>Статический теплоперепад, кДж/кг</string>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="1">
+              <widget class="QDoubleSpinBox" name="H0">
+               <property name="maximum">
+                <double>5000.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>10.000000000000000</double>
+               </property>
+               <property name="value">
+                <double>350.000000000000000</double>
                </property>
               </widget>
              </item>
@@ -285,7 +264,36 @@
                </property>
               </widget>
              </item>
-             <item row="12" column="0">
+             <item row="10" column="0">
+              <widget class="QLabel" name="label_45">
+               <property name="text">
+                <string>К-т скорости в РК</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QDoubleSpinBox" name="rho">
+               <property name="enabled">
+                <bool>true</bool>
+               </property>
+               <property name="readOnly">
+                <bool>false</bool>
+               </property>
+               <property name="decimals">
+                <number>3</number>
+               </property>
+               <property name="maximum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.050000000000000</double>
+               </property>
+               <property name="value">
+                <double>0.400000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="13" column="0">
               <widget class="QLabel" name="label_48">
                <property name="text">
                 <string>Отн-ый расход утечек в концевых лабиринтах</string>
@@ -293,6 +301,46 @@
               </widget>
              </item>
              <item row="13" column="1">
+              <widget class="QDoubleSpinBox" name="g_lk">
+               <property name="decimals">
+                <number>3</number>
+               </property>
+               <property name="maximum">
+                <double>1.000000000000000</double>
+               </property>
+               <property name="singleStep">
+                <double>0.010000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="14" column="0">
+              <widget class="QLabel" name="label_49">
+               <property name="text">
+                <string>Отно-ый расход ут-к в лаб-ых упл-их сопловых диафрагм</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_36">
+               <property name="text">
+                <string>Относительное удинение СА</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QDoubleSpinBox" name="l2_b_rk_ratio">
+               <property name="decimals">
+                <number>3</number>
+               </property>
+               <property name="singleStep">
+                <double>0.100000000000000</double>
+               </property>
+               <property name="value">
+                <double>1.800000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="14" column="1">
               <widget class="QDoubleSpinBox" name="g_ld">
                <property name="decimals">
                 <number>3</number>
@@ -321,52 +369,56 @@
                </property>
               </widget>
              </item>
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_rho">
+             <item row="4" column="0">
+              <widget class="QLabel" name="label_40">
                <property name="text">
-                <string>Степень реактивности</string>
+                <string>Относительная зазор после РК</string>
                </property>
               </widget>
              </item>
-             <item row="0" column="1">
-              <widget class="QDoubleSpinBox" name="rho">
-               <property name="enabled">
-                <bool>true</bool>
+             <item row="5" column="0">
+              <widget class="QLabel" name="label_41">
+               <property name="text">
+                <string>Относительный зазор после СА</string>
                </property>
-               <property name="readOnly">
-                <bool>false</bool>
+              </widget>
+             </item>
+             <item row="7" column="0">
+              <widget class="QLabel" name="label_2">
+               <property name="text">
+                <string>Относительный сдвиг на втулке</string>
                </property>
+              </widget>
+             </item>
+             <item row="6" column="1">
+              <widget class="QDoubleSpinBox" name="shift_out_l1_ratio">
                <property name="decimals">
                 <number>3</number>
                </property>
                <property name="maximum">
-                <double>1.000000000000000</double>
+                <double>0.500000000000000</double>
                </property>
                <property name="singleStep">
-                <double>0.050000000000000</double>
+                <double>0.005000000000000</double>
                </property>
                <property name="value">
-                <double>0.400000000000000</double>
+                <double>0.015000000000000</double>
                </property>
               </widget>
              </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="label_H0">
-               <property name="text">
-                <string>Статический теплоперепад, кДж/кг</string>
+             <item row="7" column="1">
+              <widget class="QDoubleSpinBox" name="shift_in_l1_ratio">
+               <property name="decimals">
+                <number>3</number>
                </property>
-              </widget>
-             </item>
-             <item row="1" column="1">
-              <widget class="QDoubleSpinBox" name="H0">
                <property name="maximum">
-                <double>5000.000000000000000</double>
+                <double>0.500000000000000</double>
                </property>
                <property name="singleStep">
-                <double>10.000000000000000</double>
+                <double>0.005000000000000</double>
                </property>
                <property name="value">
-                <double>440.000000000000000</double>
+                <double>0.015000000000000</double>
                </property>
               </widget>
              </item>
@@ -686,13 +738,6 @@
                </property>
               </widget>
              </item>
-             <item row="7" column="0">
-              <widget class="QLabel" name="label_67">
-               <property name="text">
-                <string>w1_u, м/с</string>
-               </property>
-              </widget>
-             </item>
              <item row="0" column="2">
               <widget class="QLabel" name="label_69">
                <property name="text">
@@ -707,15 +752,22 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="0">
-              <widget class="QLabel" name="label_64">
+             <item row="0" column="0">
+              <widget class="QLabel" name="label_39">
                <property name="text">
-                <string>alpha1, град</string>
+                <string>c1, м/с</string>
                </property>
               </widget>
              </item>
-             <item row="5" column="1">
-              <widget class="QDoubleSpinBox" name="w1">
+             <item row="6" column="0">
+              <widget class="QLabel" name="label_66">
+               <property name="text">
+                <string>w1_a, м/с</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="3">
+              <widget class="QDoubleSpinBox" name="c2">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -727,22 +779,15 @@
                </property>
               </widget>
              </item>
-             <item row="6" column="0">
-              <widget class="QLabel" name="label_66">
+             <item row="7" column="0">
+              <widget class="QLabel" name="label_67">
                <property name="text">
-                <string>w1_a, м/с</string>
+                <string>w1_u, м/с</string>
                </property>
               </widget>
              </item>
-             <item row="0" column="0">
-              <widget class="QLabel" name="label_39">
-               <property name="text">
-                <string>c1, м/с</string>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="3">
-              <widget class="QDoubleSpinBox" name="c2">
+             <item row="5" column="1">
+              <widget class="QDoubleSpinBox" name="w1">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -761,8 +806,31 @@
                </property>
               </widget>
              </item>
-             <item row="2" column="3">
-              <widget class="QDoubleSpinBox" name="c2_a">
+             <item row="4" column="0">
+              <widget class="QLabel" name="label_64">
+               <property name="text">
+                <string>alpha1, град</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="7">
+              <widget class="QDoubleSpinBox" name="rho_out">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="decimals">
+                <number>3</number>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="3">
+              <widget class="QDoubleSpinBox" name="w2_u">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -774,8 +842,114 @@
                </property>
               </widget>
              </item>
+             <item row="3" column="3">
+              <widget class="QDoubleSpinBox" name="c2_u">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="2">
+              <widget class="QLabel" name="label_73">
+               <property name="text">
+                <string>alpha2, град</string>
+               </property>
+              </widget>
+             </item>
+             <item row="0" column="1">
+              <widget class="QDoubleSpinBox" name="c1">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="2">
+              <widget class="QLabel" name="label_72">
+               <property name="text">
+                <string>c2_u, м/с</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="0">
+              <widget class="QLabel" name="label_65">
+               <property name="text">
+                <string>w1, м/с</string>
+               </property>
+              </widget>
+             </item>
              <item row="7" column="1">
               <widget class="QDoubleSpinBox" name="w1_u">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="0">
+              <widget class="QLabel" name="label_61">
+               <property name="text">
+                <string>u1, м/с</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="1">
+              <widget class="QDoubleSpinBox" name="w1_a">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="8" column="3">
+              <widget class="QDoubleSpinBox" name="beta2">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="1" column="5">
+              <widget class="QDoubleSpinBox" name="H0_stag">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="1">
+              <widget class="QDoubleSpinBox" name="c1_a">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -800,101 +974,8 @@
                </property>
               </widget>
              </item>
-             <item row="6" column="1">
-              <widget class="QDoubleSpinBox" name="w1_a">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="1">
-              <widget class="QDoubleSpinBox" name="c1">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="1">
-              <widget class="QDoubleSpinBox" name="c1_u">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="0">
-              <widget class="QLabel" name="label_62">
-               <property name="text">
-                <string>c1_a, м/с</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="1">
-              <widget class="QDoubleSpinBox" name="c1_a">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="2">
-              <widget class="QLabel" name="label_73">
-               <property name="text">
-                <string>alpha2, град</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QLabel" name="label_61">
-               <property name="text">
-                <string>u1, м/с</string>
-               </property>
-              </widget>
-             </item>
              <item row="1" column="3">
               <widget class="QDoubleSpinBox" name="u2">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="2">
-              <widget class="QLabel" name="label_72">
-               <property name="text">
-                <string>c2_u, м/с</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="3">
-              <widget class="QDoubleSpinBox" name="c2_u">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -926,13 +1007,6 @@
                </property>
               </widget>
              </item>
-             <item row="3" column="0">
-              <widget class="QLabel" name="label_63">
-               <property name="text">
-                <string>c1_u, м/с</string>
-               </property>
-              </widget>
-             </item>
              <item row="1" column="1">
               <widget class="QDoubleSpinBox" name="u1">
                <property name="readOnly">
@@ -946,69 +1020,8 @@
                </property>
               </widget>
              </item>
-             <item row="6" column="2">
-              <widget class="QLabel" name="label_75">
-               <property name="text">
-                <string>w2_a, м/с</string>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="0">
-              <widget class="QLabel" name="label_65">
-               <property name="text">
-                <string>w1, м/с</string>
-               </property>
-              </widget>
-             </item>
              <item row="4" column="1">
               <widget class="QDoubleSpinBox" name="alpha1">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="2">
-              <widget class="QLabel" name="label_71">
-               <property name="text">
-                <string>c2_a, м/с</string>
-               </property>
-              </widget>
-             </item>
-             <item row="7" column="2">
-              <widget class="QLabel" name="label_77">
-               <property name="text">
-                <string>w2_u, м/с</string>
-               </property>
-              </widget>
-             </item>
-             <item row="8" column="2">
-              <widget class="QLabel" name="label_76">
-               <property name="text">
-                <string>beta2, град</string>
-               </property>
-              </widget>
-             </item>
-             <item row="8" column="3">
-              <widget class="QDoubleSpinBox" name="beta2">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="7" column="3">
-              <widget class="QDoubleSpinBox" name="w2_u">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -1033,36 +1046,8 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="4">
-              <widget class="QLabel" name="label_82">
-               <property name="text">
-                <string>T_ст, К</string>
-               </property>
-              </widget>
-             </item>
-             <item row="2" column="4">
-              <widget class="QLabel" name="label_80">
-               <property name="text">
-                <string>T1, К</string>
-               </property>
-              </widget>
-             </item>
-             <item row="3" column="4">
-              <widget class="QLabel" name="label_81">
-               <property name="text">
-                <string>T2, К</string>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="4">
-              <widget class="QLabel" name="label_84">
-               <property name="text">
-                <string>p1, МПа</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="5">
-              <widget class="QDoubleSpinBox" name="H0_stag">
+             <item row="3" column="1">
+              <widget class="QDoubleSpinBox" name="c1_u">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -1074,17 +1059,58 @@
                </property>
               </widget>
              </item>
-             <item row="7" column="4">
-              <widget class="QLabel" name="label_85">
-               <property name="text">
-                <string>p2, МПа</string>
+             <item row="2" column="3">
+              <widget class="QDoubleSpinBox" name="c2_a">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
                </property>
               </widget>
              </item>
-             <item row="0" column="4">
-              <widget class="QLabel" name="label_78">
+             <item row="2" column="0">
+              <widget class="QLabel" name="label_62">
                <property name="text">
-                <string>H0, кДж/кг</string>
+                <string>c1_a, м/с</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="2">
+              <widget class="QLabel" name="label_71">
+               <property name="text">
+                <string>c2_a, м/с</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="2">
+              <widget class="QLabel" name="label_75">
+               <property name="text">
+                <string>w2_a, м/с</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="2">
+              <widget class="QLabel" name="label_77">
+               <property name="text">
+                <string>w2_u, м/с</string>
+               </property>
+              </widget>
+             </item>
+             <item row="8" column="2">
+              <widget class="QLabel" name="label_76">
+               <property name="text">
+                <string>beta2, град</string>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="0">
+              <widget class="QLabel" name="label_63">
+               <property name="text">
+                <string>c1_u, м/с</string>
                </property>
               </widget>
              </item>
@@ -1095,95 +1121,27 @@
                </property>
               </widget>
              </item>
-             <item row="8" column="4">
-              <widget class="QLabel" name="label_86">
+             <item row="2" column="6">
+              <widget class="QLabel" name="label_89">
                <property name="text">
-                <string>p2*, МПа</string>
+                <string>eta_т</string>
                </property>
               </widget>
              </item>
-             <item row="3" column="5">
-              <widget class="QDoubleSpinBox" name="T2">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
+             <item row="4" column="6">
+              <widget class="QLabel" name="label_91">
+               <property name="text">
+                <string>rho</string>
                </property>
               </widget>
              </item>
-             <item row="2" column="5">
-              <widget class="QDoubleSpinBox" name="T1">
+             <item row="3" column="7">
+              <widget class="QDoubleSpinBox" name="eta_t_stag">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="5">
-              <widget class="QDoubleSpinBox" name="T_st_stag">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="7" column="5">
-              <widget class="QDoubleSpinBox" name="p2">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="4" column="5">
-              <widget class="QDoubleSpinBox" name="T_st">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="5">
-              <widget class="QDoubleSpinBox" name="p1">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="8" column="5">
-              <widget class="QDoubleSpinBox" name="p2_stag">
-               <property name="readOnly">
-                <bool>true</bool>
+               <property name="decimals">
+                <number>3</number>
                </property>
                <property name="minimum">
                 <double>-10000.000000000000000</double>
@@ -1197,13 +1155,6 @@
               <widget class="QLabel" name="label_79">
                <property name="text">
                 <string>H0*, кДж/кг</string>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="4">
-              <widget class="QLabel" name="label_83">
-               <property name="text">
-                <string>T_ст*, К</string>
                </property>
               </widget>
              </item>
@@ -1243,33 +1194,10 @@
                </property>
               </widget>
              </item>
-             <item row="2" column="6">
-              <widget class="QLabel" name="label_89">
-               <property name="text">
-                <string>eta_т</string>
-               </property>
-              </widget>
-             </item>
              <item row="3" column="6">
               <widget class="QLabel" name="label_90">
                <property name="text">
                 <string>eta_t*</string>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="7">
-              <widget class="QDoubleSpinBox" name="eta_l">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="decimals">
-                <number>3</number>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
                </property>
               </widget>
              </item>
@@ -1289,8 +1217,8 @@
                </property>
               </widget>
              </item>
-             <item row="3" column="7">
-              <widget class="QDoubleSpinBox" name="eta_t_stag">
+             <item row="1" column="7">
+              <widget class="QDoubleSpinBox" name="eta_l">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
@@ -1305,23 +1233,360 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="6">
-              <widget class="QLabel" name="label_91">
+             <item row="0" column="4">
+              <widget class="QLabel" name="label_78">
                <property name="text">
-                <string>rho</string>
+                <string>H0, кДж/кг</string>
                </property>
               </widget>
              </item>
-             <item row="4" column="7">
-              <widget class="QDoubleSpinBox" name="rho_out">
+             <item row="8" column="4">
+              <widget class="QLabel" name="label_83">
+               <property name="text">
+                <string>T_ст*, К</string>
+               </property>
+              </widget>
+             </item>
+             <item row="8" column="7">
+              <widget class="QDoubleSpinBox" name="L_st">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="4">
+              <widget class="QLabel" name="label_81">
+               <property name="text">
+                <string>T2, К</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="5">
+              <widget class="QDoubleSpinBox" name="T_st">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="5">
+              <widget class="QDoubleSpinBox" name="T1_ad">
+               <property name="readOnly">
+                <bool>false</bool>
+               </property>
+               <property name="maximum">
+                <double>3000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="8" column="6">
+              <widget class="QLabel" name="label_6">
+               <property name="text">
+                <string>Lст, кДж/кг</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="5">
+              <widget class="QDoubleSpinBox" name="T2">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="4">
+              <widget class="QLabel" name="label_5">
+               <property name="text">
+                <string>T1ад, К</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="4">
+              <widget class="QLabel" name="label_82">
+               <property name="text">
+                <string>T_ст, К</string>
+               </property>
+              </widget>
+             </item>
+             <item row="8" column="5">
+              <widget class="QDoubleSpinBox" name="T_st_stag">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="9" column="7">
+              <widget class="QDoubleSpinBox" name="L_st_rel">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="9" column="6">
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>Lст', кДж/кг</string>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="7">
+              <widget class="QDoubleSpinBox" name="p1">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="7">
+              <widget class="QDoubleSpinBox" name="p2">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="5" column="6">
+              <widget class="QLabel" name="label_84">
+               <property name="text">
+                <string>p1, МПа</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="5">
+              <widget class="QDoubleSpinBox" name="T1">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="5">
+              <widget class="QDoubleSpinBox" name="H_l">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="3" column="4">
+              <widget class="QLabel" name="label_3">
+               <property name="text">
+                <string>Hл, кДж/кг</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="4">
+              <widget class="QLabel" name="label_4">
+               <property name="text">
+                <string>Hс, кДж/кг</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="7">
+              <widget class="QDoubleSpinBox" name="p2_stag">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="6">
+              <widget class="QLabel" name="label_86">
+               <property name="text">
+                <string>p2*, МПа</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="6">
+              <widget class="QLabel" name="label_85">
+               <property name="text">
+                <string>p2, МПа</string>
+               </property>
+              </widget>
+             </item>
+             <item row="4" column="4">
+              <widget class="QLabel" name="label_80">
+               <property name="text">
+                <string>T1, К</string>
+               </property>
+              </widget>
+             </item>
+             <item row="2" column="5">
+              <widget class="QDoubleSpinBox" name="H_s">
+               <property name="readOnly">
+                <bool>false</bool>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="9" column="4">
+              <widget class="QLabel" name="label_8">
+               <property name="text">
+                <string>Lu, кДж/кг</string>
+               </property>
+              </widget>
+             </item>
+             <item row="9" column="5">
+              <widget class="QDoubleSpinBox" name="L_u">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="10" column="4">
+              <widget class="QLabel" name="label_11">
+               <property name="text">
+                <string>kср</string>
+               </property>
+              </widget>
+             </item>
+             <item row="10" column="5">
+              <widget class="QDoubleSpinBox" name="k_av">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
                <property name="decimals">
                 <number>3</number>
                </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
+               <property name="maximum">
+                <double>10.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="10" column="6">
+              <widget class="QLabel" name="label_12">
+               <property name="text">
+                <string>Cp, Дж/(кг*К)</string>
+               </property>
+              </widget>
+             </item>
+             <item row="10" column="7">
+              <widget class="QDoubleSpinBox" name="c_p_av">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="10" column="0">
+              <widget class="QLabel" name="label_10">
+               <property name="text">
+                <string>Gвх, кг/с</string>
+               </property>
+              </widget>
+             </item>
+             <item row="10" column="1">
+              <widget class="QDoubleSpinBox" name="G_in">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="10" column="2">
+              <widget class="QLabel" name="label_9">
+               <property name="text">
+                <string>Gвых, кг/с</string>
+               </property>
+              </widget>
+             </item>
+             <item row="10" column="3">
+              <widget class="QDoubleSpinBox" name="G_out">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="9" column="0">
+              <widget class="QLabel" name="label_13">
+               <property name="text">
+                <string>rho1, кг/(м^3)</string>
+               </property>
+              </widget>
+             </item>
+             <item row="9" column="2">
+              <widget class="QLabel" name="label_14">
+               <property name="text">
+                <string>rho2, кг/(м^3)</string>
+               </property>
+              </widget>
+             </item>
+             <item row="9" column="1">
+              <widget class="QDoubleSpinBox" name="rho1">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="decimals">
+                <number>3</number>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="9" column="3">
+              <widget class="QDoubleSpinBox" name="rho2">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="decimals">
+                <number>3</number>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>
