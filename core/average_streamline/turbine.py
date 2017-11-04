@@ -11,10 +11,6 @@ from scipy.interpolate import interp1d
 import os
 import pickle as pk
 
-log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
-logger = func.create_logger(__name__, logging.INFO, add_file_handler=True,
-                            add_console_handler=False, filemode='a', filename=log_filename)
-
 
 class TurbineType(Enum):
     Power = 0
@@ -142,6 +138,9 @@ class Turbine:
         self.N = None
         self._eta_m = eta_m
         self._init_turbine_geom()
+        self.log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
+        self.logger = func.create_logger(__name__, logging.INFO, add_file_handler=True,
+                                    add_console_handler=False, filemode='a', filename=self.log_filename)
 
     @classmethod
     def _get_p_t_stag_L_t_and_H_t(cls, work_fluid: IdealGas, p_g_stag, T_g_stag, T_t_stag, eta_t_stag):
@@ -222,7 +221,7 @@ class Turbine:
             pass
 
     def compute_geometry(self):
-        logger.info('%s РАСЧЕТ ГЕОМЕТРИИ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
+        self.logger.info('%s РАСЧЕТ ГЕОМЕТРИИ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
         if self.auto_set_rho:
             self.geom[0].rho = self._rho_func(self.l1_D1_ratio)
         self.geom.compute()
@@ -241,11 +240,11 @@ class Turbine:
         :return: None
         Вычисление газодинамических параметров на ступенях турбины
         """
-        logger.info('\n%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
+        self.logger.info('\n%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
         if self.turbine_type == TurbineType.Power:
             for num, item in enumerate(self.geom):
-                logger.info('\n%s СТУПЕНЬ %s %s\n' % (15 * '*', num + 1, 15 * '*'))
-                logger.debug('%s compute_gas_dynamics num = %s' % (self.str(), num))
+                self.logger.info('\n%s СТУПЕНЬ %s %s\n' % (15 * '*', num + 1, 15 * '*'))
+                self.logger.debug('%s compute_gas_dynamics num = %s' % (self.str(), num))
                 if num == 0 and self.stage_number > 1:
                     # расчет первой ступени при числе ступеней, больше одной
                     stage_gas_dyn = get_first_stage(item, self.T_g_stag, self.p_g_stag, self.G_turbine,
@@ -269,8 +268,8 @@ class Turbine:
         elif self.turbine_type == TurbineType.Compressor:
             L_last_stage_rel = self.L_t_cycle
             for num, item in enumerate(self.geom):
-                logger.info('\n%s СТУПЕНЬ %s %s\n' % (15 * '*', num + 1, 15 * '*'))
-                logger.debug('%s compute_gas_dynamics num = %s' % (self.str(), num))
+                self.logger.info('\n%s СТУПЕНЬ %s %s\n' % (15 * '*', num + 1, 15 * '*'))
+                self.logger.debug('%s compute_gas_dynamics num = %s' % (self.str(), num))
                 if num == 0 and self.stage_number > 1:
                     # расчет первой ступени при числе ступеней, больше одной
                     stage_gas_dyn = get_first_stage(item, self.T_g_stag, self.p_g_stag, self.G_turbine,
@@ -299,7 +298,7 @@ class Turbine:
             self.geom[n].H0 = i.H0
 
     def compute_integrate_turbine_parameters(self):
-        logger.info('\n%s РАСЧЕТ ИНТЕГРАЛЬНЫХ ПАРАМЕТРОВ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
+        self.logger.info('\n%s РАСЧЕТ ИНТЕГРАЛЬНЫХ ПАРАМЕТРОВ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
         self.work_fluid.__init__()
         self.L_t_sum = 0
         for item in self:
@@ -708,74 +707,26 @@ class Turbine:
 if __name__ == '__main__':
     # TODO: выяснить, как считается коэффициент использования скорости
     deg = np.pi / 180
-    # turbine = Turbine(TurbineType.Compressor, gamma_av=4 * deg, gamma_sum=10 * deg)
-    # turbine.alpha11 = 17 * deg
-    # turbine.alpha_air = 2.87
-    # turbine.c21_init = 250
-    # turbine.eta_t_stag_cycle = 0.91
-    # turbine.G_turbine = 25
-    # turbine.H01_init = 150e3
-    # turbine.H_t_stag_cycle = 350e3
-    # turbine.k_n = 6.8
-    # turbine.l1_D1_ratio = 1 / 4
-    # turbine.L_t_cycle = 320e3
-    # turbine.n = 15e3
-    # turbine.eta_m = 0.98
-    # turbine.p_g_stag = 12e5
-    # turbine.T_g_stag = 1400
-    # turbine.T_t_stag_cycle = 500
-    # turbine.p_t_stag_cycle = 100e3
-    # turbine.stage_number = 2
-    # turbine.set_delta_a_b_ratio(0.22, 0)
-    # turbine.set_l_b_ratio(1.8, 0.2, 0.9)
-    # turbine.compute_geometry(auto_set_rho=True, compute_heat_drop_auto=True)
-    # turbine.compute_stages_gas_dynamics(precise_heat_drop=True)
-    # turbine.geom.plot_geometry()
-    # turbine.compute_integrate_turbine_parameters()
-    # turbine.geom.plot_heat_drop_distribution()
-    # print(turbine.geom.c_t)
-    # for num, i in enumerate(turbine):
-    #     i.plot_velocity_triangle('Stage %s2' % (num + 1))
     turbine = Turbine(TurbineType.Compressor,
                       T_g_stag=1400,
-                      p_g_stag=5.5e5,
+                      p_g_stag=300e3,
                       G_turbine=25,
                       work_fluid=KeroseneCombustionProducts(),
-                      alpha_air=2.87,
+                      alpha_air=2.5,
                       l1_D1_ratio=0.25,
                       n=15e3,
-                      T_t_stag_cycle=1200,
+                      T_t_stag_cycle=1150,
                       stage_number=2,
                       eta_t_stag_cycle=0.91,
                       k_n=6.8,
                       eta_m=0.99,
                       auto_compute_heat_drop=True,
                       auto_set_rho=True,
-                      H01_init=150e3,
+                      H01_init=120e3,
                       c21_init=250,
                       alpha11=17*deg,
                       gamma_av=4 * deg,
                       gamma_sum=10 * deg)
-    # turbine.alpha11 = 17 * deg
-    # turbine.alpha_air = 2.87
-    # turbine.c21_init = 250
-    # turbine.eta_t_stag_cycle = 0.91
-    # turbine.G_turbine = 25
-    # turbine.H01_init = 120e3
-    # turbine.H_t_stag_cycle = 250e3
-    # turbine.k_n = 6.8
-    # turbine.l1_D1_ratio = 1 / 4
-    # turbine.L_t_cycle = 220e3
-    # turbine.n = 15e3
-    # turbine.eta_m = 0.98
-    # turbine.p_g_stag = 3e5
-    # turbine.T_g_stag = 1400
-    # turbine.T_t_stag_cycle = 800
-    # turbine.p_t_stag_cycle = 100e3
-    # turbine.stage_number = 1
-    # turbine.set_delta_a_b_ratio(0.22, 0)
-    # turbine.set_l_b_ratio(1.8, 0.2, 0.9)
-    # turbine.geom[0].H0 = 250e3
     turbine.compute_geometry()
     turbine.compute_stages_gas_dynamics(precise_heat_drop=True)
     turbine.geom.plot_geometry(figsize=(5, 5))

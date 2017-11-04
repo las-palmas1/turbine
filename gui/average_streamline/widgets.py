@@ -24,7 +24,7 @@ logger = create_logger(__name__, filename=os.path.join(os.path.dirname(__file__)
 
 class Canvas(FigureCanvas):
     def __init__(self, parent: QtWidgets.QWidget =None):
-        fig = Figure()
+        fig = Figure(figsize=(5, 4))
         self.axes: Axes = fig.add_subplot(111)
         FigureCanvas.__init__(self, fig)
         FigureCanvas.setSizePolicy(self,
@@ -64,35 +64,41 @@ class Canvas(FigureCanvas):
 
     def plot_geometry(self, turbine_geom: TurbineGeomAndHeatDropDistribution):
         self.axes.cla()
-        for num, stage_geom in zip(range(len(turbine_geom)), turbine_geom):
+        for num, geom in zip(range(len(turbine_geom)), turbine_geom):
             if num == 0:
-                stage_geom.x0 = 0
+                geom.x0 = 0
+                geom.y0 = 0.5 * geom.D0 + 0.5 * (geom.l0 + geom.p_r_out + geom.p_r_in) - \
+                             geom.p_r_out
             else:
-                stage_geom.x0 = turbine_geom[num - 1].x0 + turbine_geom[num - 1].length
-            x_sa_arr = np.array([stage_geom.x0, stage_geom.x0, stage_geom.x0 + stage_geom.b_sa,
-                                 stage_geom.x0 + stage_geom.b_sa, stage_geom.x0])
-            y_sa_arr = np.array([0.5 * (stage_geom.D0 - stage_geom.l0), 0.5 * (stage_geom.D0 + stage_geom.l0),
-                                 0.5 * (stage_geom.D05 + stage_geom.l05),
-                                 0.5 * (stage_geom.D05 - stage_geom.l05), 0.5 * (stage_geom.D0 - stage_geom.l0)])
-            x0_rk = stage_geom.x0 + stage_geom.b_sa + stage_geom.delta_a_sa
-            x_rk_arr = np.array([x0_rk, x0_rk, x0_rk + stage_geom.b_rk, x0_rk + stage_geom.b_rk, x0_rk])
-            y_rk_arr = np.array([0.5 * (stage_geom.D1 - stage_geom.l1),
-                                 0.5 * (stage_geom.D1 + stage_geom.l1) - stage_geom.delta_r_rk,
-                                 0.5 * (stage_geom.D2 + stage_geom.l2) - stage_geom.delta_r_rk,
-                                 0.5 * (stage_geom.D2 - stage_geom.l2),
-                                 0.5 * (stage_geom.D1 - stage_geom.l1)])
-            x_out_arr = np.array([stage_geom.x0, stage_geom.x0 + stage_geom.b_sa, stage_geom.x0 + stage_geom.b_sa,
-                                  x0_rk + stage_geom.b_rk + stage_geom.delta_a_rk])
-            x_av_arr = np.array([stage_geom.x0, stage_geom.x0 + stage_geom.b_sa,
-                                  x0_rk + stage_geom.b_rk + stage_geom.delta_a_rk])
-            y_out_arr = np.array([0.5 * (stage_geom.D0 + stage_geom.l0), 0.5 * (stage_geom.D05 + stage_geom.l05),
-                                  0.5 * (stage_geom.D05 + stage_geom.l05) +
-                                  stage_geom.l1 * stage_geom.shift_out_l1_ratio,
-                                  0.5 * (stage_geom.D05 + stage_geom.l05) +
-                                  stage_geom.l1 * stage_geom.shift_out_l1_ratio +
-                                  np.tan(stage_geom.gamma_out) * (stage_geom.length - stage_geom.b_sa)])
-            y_av_arr = np.array([0.5 * stage_geom.D0, 0.5 * stage_geom.D05,
-                                 0.5 * stage_geom.D2 + np.tan(stage_geom.gamma_av) * stage_geom.delta_a_rk])
+                geom.x0 = turbine_geom[num - 1].x0 + turbine_geom[num - 1].delta_x0
+                geom.y0 = turbine_geom[num - 1].y0 + turbine_geom[num - 1].delta_y0
+
+            x_sa_arr = np.array([geom.x0, geom.x0, geom.x0 + geom.b_sa, geom.x0 + geom.b_sa, geom.x0])
+            y_sa_arr = np.array([geom.y0 - geom.l0,
+                                 geom.y0,
+                                 geom.y0 + geom.b_sa * np.tan(geom.gamma_out),
+                                 geom.y0 + geom.b_sa * np.tan(geom.gamma_out) - geom.l05,
+                                 geom.y0 - geom.l0])
+            x0_rk = geom.x0 + geom.b_sa + geom.delta_a_sa
+            y0_rk = geom.y0 + np.tan(geom.gamma_out) * (geom.b_sa + geom.delta_a_sa) + geom.p_r_out
+            x_rk_arr = np.array([x0_rk, x0_rk, x0_rk + geom.b_rk, x0_rk + geom.b_rk, x0_rk])
+            y_rk_arr = np.array([y0_rk - geom.l1,
+                                 y0_rk - geom.delta_r_rk,
+                                 y0_rk - geom.delta_r_rk + np.tan(geom.gamma_out) * geom.b_rk,
+                                 y0_rk + np.tan(geom.gamma_out) * geom.b_rk - geom.l2,
+                                 y0_rk - geom.l1])
+            x_out_arr = np.array([geom.x0, geom.x0 + geom.b_sa + geom.delta_a_sa - geom.p_a_out,
+                                  geom.x0 + geom.b_sa + geom.delta_a_sa - geom.p_a_out,
+                                  x0_rk + geom.b_rk + geom.delta_a_rk])
+            x_av_arr = np.array([geom.x0, geom.x0 + geom.b_sa, x0_rk + geom.b_rk + geom.delta_a_rk])
+            y_out_arr = np.array([geom.y0,
+                                  geom.y0 + np.tan(geom.gamma_out) * (geom.b_sa + geom.delta_a_sa - geom.p_a_out),
+                                  geom.y0 + np.tan(geom.gamma_out) * (geom.b_sa + geom.delta_a_sa - geom.p_a_out) +
+                                  geom.p_r_out,
+                                  geom.y0 + np.tan(geom.gamma_out) *
+                                  (geom.b_sa + geom.delta_a_sa + geom.b_rk + geom.delta_a_rk) + geom.p_r_out])
+            y_av_arr = np.array([0.5 * geom.D0, 0.5 * geom.D05,
+                                 0.5 * geom.D2 + np.tan(geom.gamma_av) * geom.delta_a_rk])
             self.axes.plot(x_sa_arr, y_sa_arr, linewidth=1, color='red')
             self.axes.plot(x_rk_arr, y_rk_arr, linewidth=1, color='blue')
             self.axes.plot(x_out_arr, y_out_arr, linewidth=1, color='black')
@@ -239,6 +245,9 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_form.l2.setValue(turbine.geom[i].l2)
             stage_form.b_sa.setValue(turbine.geom[i].b_sa)
             stage_form.b_rk.setValue(turbine.geom[i].b_rk)
+            stage_form.delta_r.setValue(turbine.geom[i].delta_r_rk * 1e3)
+            stage_form.p_in.setValue(turbine.geom[i].p_r_in * 1e3)
+            stage_form.p_out.setValue(turbine.geom[i].p_r_out * 1e3)
 
             stage_form.c1.setValue(turbine[i].c1)
             stage_form.u1.setValue(turbine[i].u1)
@@ -491,8 +500,10 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             turbine.geom[i].g_lk = stage_data.g_lk.value()
             turbine.geom[i].g_lb = stage_data.g_lb.value()
             turbine.geom[i].g_ld = stage_data.g_ld.value()
-            turbine.geom[i].shift_in_l1_ratio = stage_data.shift_in_l1_ratio.value()
-            turbine.geom[i].shift_out_l1_ratio = stage_data.shift_out_l1_ratio.value()
+            turbine.geom[i].p_r_in_l1_ratio = stage_data.p_r_in_l1_ratio.value()
+            turbine.geom[i].p_a_in_rel = stage_data.p_a_in_rel.value()
+            turbine.geom[i].p_r_out_l1_ratio = stage_data.p_r_out_l1_ratio.value()
+            turbine.geom[i].p_a_out_rel = stage_data.p_a_out_rel.value()
         return turbine, precise_heat_drop
 
     def show_error_message(self, message):
@@ -596,8 +607,10 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_data.g_lk.setValue(turbine.geom[i].g_lk)
             stage_data.g_ld.setValue(turbine.geom[i].g_lb)
             stage_data.g_ld.setValue(turbine.geom[i].g_ld)
-            stage_data.shift_in_l1_ratio.setValue(turbine.geom[i].shift_in_l1_ratio)
-            stage_data.shift_out_l1_ratio.setValue(turbine.geom[i].shift_out_l1_ratio)
+            stage_data.p_r_in_l1_ratio.setValue(turbine.geom[i].p_r_in_l1_ratio)
+            stage_data.p_r_out_l1_ratio.setValue(turbine.geom[i].p_r_out_l1_ratio)
+            stage_data.p_a_in_rel.setValue(turbine.geom[i].p_a_in_rel)
+            stage_data.p_a_out_rel.setValue(turbine.geom[i].p_a_out_rel)
 
 
 class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_MainWindow):

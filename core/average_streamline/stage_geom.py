@@ -7,11 +7,6 @@ from scipy.optimize import fsolve
 import os
 
 
-log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
-logger = func.create_logger(__name__, logging.INFO, add_file_handler=True,
-                            add_console_handler=False, filemode='a', filename=log_filename)
-
-
 class InvalidStageSizeValue(Exception):
     def __init__(self, message):
         Exception.__init__(self, message)
@@ -30,10 +25,14 @@ class StageGeomAndHeatDrop:
         self.gamma_out = None
         self.gamma_in = None
         self.gamma_av = None
-        self.shift_out_l1_ratio = 0.015
-        "Относительный сдвиг контура проточной части после СА на периферии"
-        self.shift_in_l1_ratio = 0.015
-        "Относительный сдвиг контура проточной части после СА на втулке"
+        self.p_r_out_l1_ratio = 0.05
+        "Относительный размер перекрыши на периферии"
+        self.p_r_in_l1_ratio = 0.05
+        "Относительный размер перекрыши на втулке"
+        self.p_a_out_rel = 0.2
+        "Отношение расстояния от РК до периферийной перекрыши к величине осевого зазора"
+        self.p_a_in_rel = 0.2
+        "Отношение расстояния от РК до втулочной перекрыши к величине осевого зазора"
         self.l1_b_sa_ratio = 1.6
         "Отношение длины лопатки на входе в РК к ширине лопатки СА"
         self.l2_b_rk_ratio = 1.8
@@ -54,6 +53,10 @@ class StageGeomAndHeatDrop:
         "Относительный радиальный зазор"
         self.n = None
         self.x0 = None
+        self.y0 = None
+        "x0, y0 - координаты верхнего левого угла на графике"
+        self.delta_x0 = None
+        self.delta_y0 = None
         self.rho = None
         "Степень реактивности"
         self.phi = 0.97
@@ -68,6 +71,10 @@ class StageGeomAndHeatDrop:
         "Отношение расход перетечек в лабиринтных уплотнениях сопловых диафрагм к расходу газа через СА первой ступени"
         self.g_lb = 0
         "Отношение расход перетечек поверх бондажа рабочих лопаток к расходу газа через СА первой ступени"
+
+        self.log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
+        self.logger = func.create_logger(__name__, logging.INFO, add_file_handler=True,
+                                         add_console_handler=False, filemode='a', filename=self.log_filename)
 
         self.D2 = None
         self.D0 = None
@@ -86,6 +93,10 @@ class StageGeomAndHeatDrop:
         self.delta_a_rk = None
         self.b_sa = None
         self.b_rk = None
+        self.p_r_in = None
+        self.p_r_out = None
+        self.p_a_in = None
+        self.p_a_out = None
         self.length = None
         "Суммарная длина ступени"
         self.delta_r_rk = None
@@ -107,11 +118,15 @@ class StageGeomAndHeatDrop:
         self._k_delta_a_rk = self.delta_a_b_rk_ratio / self.l2_b_rk_ratio
 
     def compute_geometry(self):
-        logger.info('Вычисление геометрических параметров ступени')
+        self.logger.info('Вычисление геометрических параметров ступени')
         self.b_sa = self.l1 * self.k_b_sa
         self.delta_a_sa = self.l1 * self.k_delta_a_sa
+        self.p_r_in = self.p_r_in_l1_ratio * self.l1
+        self.p_r_out = self.p_r_out_l1_ratio * self.l1
+        self.p_a_in = self.p_a_in_rel * self.delta_a_sa
+        self.p_a_out = self.p_a_out_rel * self.delta_a_sa
         self.l0 = self.l1 - (np.tan(self.gamma_in) + np.tan(self.gamma_out)) * (self.b_sa + self.delta_a_sa) - \
-                  self.l1 * self.shift_in_l1_ratio - self.l1 * self.shift_out_l1_ratio
+                  self.p_r_in - self.p_r_out
         self.l2 = self.l1 / (1 - self.k_b_rk * (np.tan(self.gamma_in) + np.tan(self.gamma_out)))
         self.delta_r_rk = self.delta_r_rk_l2_ratio * self.l2
         self.b_rk = self.l2 * self.k_b_rk
@@ -124,29 +139,42 @@ class StageGeomAndHeatDrop:
         self.l0_next = self.l2 + self.delta_a_rk * (np.tan(self.gamma_in) + np.tan(self.gamma_out))
         self.A1 = np.pi * self.D1 * self.l1
         self.A2 = np.pi * self.D2 * self.l2
+        self.delta_x0 = self.length
+        self.delta_y0 = np.tan(self.gamma_out) * (self.b_sa + self.delta_a_sa +
+                                                  self.b_rk + self.delta_a_rk) + self.p_r_out
 
     def compute_velocities(self):
-        logger.info('Вычисление окружных скоростей')
+        self.logger.info('Вычисление окружных скоростей')
         self.u1 = np.pi * self.D1 * self.n / 60
         self.u2 = np.pi * self.D2 * self.n / 60
         self.u_av = np.pi * 0.5 * (self.D2 + self.D1) * self.n / 60
 
     def plot(self):
-        logger.info('Вырисовывание ступени')
+        self.logger.info('Вырисовывание ступени')
         x_sa_arr = np.array([self.x0, self.x0, self.x0 + self.b_sa, self.x0 + self.b_sa, self.x0])
-        y_sa_arr = np.array([0.5 * (self.D0 - self.l0), 0.5 * (self.D0 + self.l0), 0.5 * (self.D05 + self.l05),
-                            0.5 * (self.D05 - self.l05), 0.5 * (self.D0 - self.l0)])
+        y_sa_arr = np.array([self.y0 - self.l0,
+                             self.y0,
+                             self.y0 + self.b_sa * np.tan(self.gamma_out),
+                             self.y0 + self.b_sa * np.tan(self.gamma_out) - self.l05,
+                             self.y0 - self.l0])
         x0_rk = self.x0 + self.b_sa + self.delta_a_sa
+        y0_rk = self.y0 + np.tan(self.gamma_out) * (self.b_sa + self.delta_a_sa) + self.p_r_out
         x_rk_arr = np.array([x0_rk, x0_rk, x0_rk + self.b_rk, x0_rk + self.b_rk, x0_rk])
-        y_rk_arr = np.array([0.5 * (self.D1 - self.l1), 0.5 * (self.D1 + self.l1) - self.delta_r_rk,
-                             0.5 * (self.D2 + self.l2) - self.delta_r_rk, 0.5 * (self.D2 - self.l2),
-                             0.5 * (self.D1 - self.l1)])
-        x_out_arr = np.array([self.x0, self.x0 + self.b_sa, self.x0 + self.b_sa, x0_rk + self.b_rk + self.delta_a_rk])
+        y_rk_arr = np.array([y0_rk - self.l1,
+                             y0_rk - self.delta_r_rk,
+                             y0_rk - self.delta_r_rk + np.tan(self.gamma_out) * self.b_rk,
+                             y0_rk + np.tan(self.gamma_out) * self.b_rk - self.l2,
+                             y0_rk - self.l1])
+        x_out_arr = np.array([self.x0, self.x0 + self.b_sa + self.delta_a_sa - self.p_a_out,
+                              self.x0 + self.b_sa + self.delta_a_sa - self.p_a_out,
+                              x0_rk + self.b_rk + self.delta_a_rk])
         x_av_arr = np.array([self.x0, self.x0 + self.b_sa, x0_rk + self.b_rk + self.delta_a_rk])
-        y_out_arr = np.array([0.5 * (self.D0 + self.l0), 0.5 * (self.D05 + self.l05),
-                              0.5 * (self.D05 + self.l05) + self.l1 * self.shift_out_l1_ratio,
-                              0.5 * (self.D05 + self.l05) + self.l1 * self.shift_out_l1_ratio +
-                              np.tan(self.gamma_out) * (self.length - self.b_sa)])
+        y_out_arr = np.array([self.y0,
+                              self.y0 + np.tan(self.gamma_out) * (self.b_sa + self.delta_a_sa - self.p_a_out),
+                              self.y0 + np.tan(self.gamma_out) * (self.b_sa + self.delta_a_sa - self.p_a_out) +
+                              self.p_r_out,
+                              self.y0 + np.tan(self.gamma_out) *
+                              (self.b_sa + self.delta_a_sa + self.b_rk + self.delta_a_rk) + self.p_r_out])
         y_av_arr = np.array([0.5 * self.D0, 0.5 * self.D05,
                              0.5 * self.D2 + np.tan(self.gamma_av) * self.delta_a_rk])
         plt.plot(x_sa_arr, y_sa_arr, linewidth=2, color='red')
@@ -236,6 +264,10 @@ class TurbineGeomAndHeatDropDistribution:
         for item in self._stages:
             item.n = self.n
 
+        self.log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
+        self.logger = func.create_logger(__name__, logging.INFO, add_file_handler=True,
+                                    add_console_handler=False, filemode='a', filename=self.log_filename)
+
     @classmethod
     def _get_p_t_stag_and_H_t(cls, work_fluid: IdealGas, p_g_stag, T_g_stag, T_t_stag, eta_t_stag):
         work_fluid.__init__()
@@ -284,40 +316,40 @@ class TurbineGeomAndHeatDropDistribution:
 
     def _compute_d1_and_l1(self):
         """Вычисление среднего диаметра и длины лопатки на входе в РК первой ступени"""
-        logger.info('Вычисление среднего диаметра и длины лопатки на входе в РК первой ступени')
+        self.logger.info('Вычисление среднего диаметра и длины лопатки на входе в РК первой ступени')
         self.work_fluid.__init__()
         self._compute_t_11()
         self.p_11 = self.p_g_stag * (1 - self.H_s1 /
                                      (self.c_p_gas11 * self.T_g_stag)) ** (self.k_gas11 / (self.k_gas11 - 1))
         self.rho11 = self.p_11 / (self.work_fluid.R * self.T_11)
         self.D1_l1_product = self.G_turbine / (np.pi * self.rho11 * np.sin(self.alpha11) * self.c11)
-        logger.debug('%s _compute_d1_and_l1 D1_l1_product = %s' % (self.str(), self.D1_l1_product))
+        self.logger.debug('%s _compute_d1_and_l1 D1_l1_product = %s' % (self.str(), self.D1_l1_product))
         self.D1 = np.sqrt(self.D1_l1_product / self.l1_D1_ratio)
         self.l1 = self.D1_l1_product / self.D1
-        logger.debug('%s _compute_d1_and_l1 D1 = %s, l1 = %s' % (self.str(), self.D1, self.l1))
+        self.logger.debug('%s _compute_d1_and_l1 D1 = %s, l1 = %s' % (self.str(), self.D1, self.l1))
 
     def _compute_t_11(self):
         """Вычисляет величину температуры перед РК первой ступени T_11"""
-        logger.info('Вычисление температуры перед РК первой ступени')
+        self.logger.info('Вычисление температуры перед РК первой ступени')
         self.dT11_rel = 1.
         self._iter_number_d1_l1 = 0
         while self.dT11_rel >= 0.001:
             self._iter_number_d1_l1 += 1
-            logger.debug('%s _compute_t_11 iter_number = %s' % (self.str(), self._iter_number_d1_l1))
+            self.logger.debug('%s _compute_t_11 iter_number = %s' % (self.str(), self._iter_number_d1_l1))
             self.work_fluid.T1 = self.T_g_stag
             self.work_fluid.alpha = self.alpha_air
             self.H_s1 = self.H01 * (1 - self.rho1)
             self.c11 = self._stages[0].phi * np.sqrt(2 * self.H_s1)
             self.k_gas11 = self.work_fluid.k_av_int
             self.c_p_gas11 = self.work_fluid.c_p_av_int
-            logger.debug('%s _compute_t_11 c_p_gas11 = %s' % (self.str(), self.k_gas11))
+            self.logger.debug('%s _compute_t_11 c_p_gas11 = %s' % (self.str(), self.k_gas11))
             self.T_11 = self.T_g_stag - self.H_s1 * self._stages[0].phi ** 2 / self.c_p_gas11
             self.dT11_rel = abs(self.T_11 - self.work_fluid.T2) / self.work_fluid.T2
             self.work_fluid.T2 = self.T_11
-            logger.debug('%s _compute_t_11 dT11_rel = %s' % (self.str(), self.dT11_rel))
+            self.logger.debug('%s _compute_t_11 dT11_rel = %s' % (self.str(), self.dT11_rel))
 
     def _compute_angles(self):
-        logger.info('Вычисление углов')
+        self.logger.info('Вычисление углов')
         if ('gamma_in' in self._kwargs) and ('gamma_out' in self._kwargs):
             self.gamma_av = np.arctan(0.5 * (np.tan(self.gamma_out) - np.tan(self.gamma_in)))
             self.gamma_sum = self.gamma_in + self.gamma_out
@@ -353,9 +385,9 @@ class TurbineGeomAndHeatDropDistribution:
             raise StopIteration()
 
     def _compute_linear_dimensions(self):
-        logger.info('Расчет линейных размеров ступеней\n')
+        self.logger.info('Расчет линейных размеров ступеней\n')
         for num, item in enumerate(self._stages):
-            logger.info('Ступень %s' % (num + 1))
+            self.logger.info('Ступень %s' % (num + 1))
             item.gamma_av = self.gamma_av
             item.gamma_out = self.gamma_out
             item.gamma_in = self.gamma_in
@@ -369,7 +401,7 @@ class TurbineGeomAndHeatDropDistribution:
                 l0 = self._stages[num - 1].l0_next
                 item.l1 = l0 / (1 - (item.k_b_sa + item.k_delta_a_sa) *
                                 (np.tan(self.gamma_in) + np.tan(self.gamma_out)) -
-                                (item.shift_out_l1_ratio + item.shift_in_l1_ratio))
+                                (item.p_r_out_l1_ratio + item.p_r_in_l1_ratio))
                 b_sa = item.l1 * item.k_b_sa
                 delta_a_sa = item.l1 * item.k_delta_a_sa
                 item.D1 = self._stages[num - 1].D2 + 2 * np.tan(self.gamma_av) * (self._stages[num - 1].delta_a_rk +
@@ -378,20 +410,22 @@ class TurbineGeomAndHeatDropDistribution:
             item.compute_velocities()
 
     def _compute_geometry(self):
-        logger.info('%s РАСЧЕТ ГЕОМЕТРИИ ТУРБИНЫ %s' % ('-'*10, '-'*10))
+        self.logger.info('%s РАСЧЕТ ГЕОМЕТРИИ ТУРБИНЫ %s' % ('-'*10, '-'*10))
         self._compute_d1_and_l1()
         self._compute_angles()
         self._compute_linear_dimensions()
 
-    def plot_geometry(self, figsize=(5, 11), title='Turbine geometry'):
-        logger.info('%s РИСОВАНИЕ ГЕОМЕТРИИ ТУРБИНЫ %s ' % ('-'*10, '-'*10))
+    def plot_geometry(self, figsize=(5, 6), title='Turbine geometry'):
+        self.logger.info('%s РИСОВАНИЕ ГЕОМЕТРИИ ТУРБИНЫ %s ' % ('-'*10, '-'*10))
         plt.figure(figsize=figsize)
         for num, item in enumerate(self._stages):
             if num == 0:
                 item.x0 = 0
+                item.y0 = 0.5 * item.D0 + 0.5 * (item.l0 + item.p_r_out + item.p_r_in) - item.p_r_out
                 item.plot()
             else:
-                item.x0 = self._stages[num - 1].x0 + self._stages[num - 1].length
+                item.x0 = self._stages[num - 1].x0 + self._stages[num - 1].delta_x0
+                item.y0 = self._stages[num - 1].y0 + self._stages[num - 1].delta_y0
                 item.plot()
         plt.grid()
         plt.title(title, fontsize=20)
@@ -400,7 +434,7 @@ class TurbineGeomAndHeatDropDistribution:
         plt.show()
 
     def _compute_heat_drop_distribution(self):
-        logger.info('%s ВЫЧИСЛЕНИЕ ПРЕДВАРИТЕЛЬНОГО РАСПРЕДЕЛЕНИЯ ТЕПЛОПЕРЕПАДОВ ПО СТУПЕНЯМ %s' % ('-'*10, '-'*10))
+        self.logger.info('%s ВЫЧИСЛЕНИЕ ПРЕДВАРИТЕЛЬНОГО РАСПРЕДЕЛЕНИЯ ТЕПЛОПЕРЕПАДОВ ПО СТУПЕНЯМ %s' % ('-'*10, '-'*10))
         u_av_squared_sum = 0
         for num, item in enumerate(self._stages):
             u_av_squared_sum += item.u_av ** 2
@@ -410,8 +444,8 @@ class TurbineGeomAndHeatDropDistribution:
             else:
                 item.H0 = self.H_t * (1 + self.alpha) * item.u_av ** 2 / u_av_squared_sum
 
-    def plot_heat_drop_distribution(self, figsize=(9, 7), title='Распределение\n теплоперепадов'):
-        logger.info('%s СОЗДАНИЕ ГРАФИКА РАСПРЕДЕЛЕНИЯ ТЕПЛОПЕРЕПАДОВ %s' % ('-'*10, '-'*10))
+    def plot_heat_drop_distribution(self, figsize=(6, 4), title='Распределение\n теплоперепадов'):
+        self.logger.info('%s СОЗДАНИЕ ГРАФИКА РАСПРЕДЕЛЕНИЯ ТЕПЛОПЕРЕПАДОВ %s' % ('-'*10, '-'*10))
         x_arr = list(range(1, self.stage_number + 1))
         y_arr = [item.H0 for item in self._stages]
         plt.figure(figsize=figsize)
@@ -434,7 +468,7 @@ class TurbineGeomAndHeatDropDistribution:
         Расчет статических параметров на выходе необходим для расчета силовой турбины (посленяя ступень
         рассчитываается по выходному статическому давлению), а также для определения коэффициента возврата теплоты
         """
-        logger.info('%s ВЫЧИСЛЕНИЕ СТАТИЧЕСКИХ ПАРАМЕТРОВ НА ВЫХОДЕ ИХ ТУРБИНЫ %s' % ('-'*10, '-'*10))
+        self.logger.info('%s ВЫЧИСЛЕНИЕ СТАТИЧЕСКИХ ПАРАМЕТРОВ НА ВЫХОДЕ ИХ ТУРБИНЫ %s' % ('-'*10, '-'*10))
         self.work_fluid.__init__()
         self.work_fluid.alpha = self.alpha_air
         self.rho_t_stag = self.p_t_stag / (self.work_fluid.R * self.T_t_stag)
@@ -443,11 +477,11 @@ class TurbineGeomAndHeatDropDistribution:
         self._iter_number_static_par = 0
         while self.dT_t_rel >= 0.001:
             self._iter_number_static_par += 1
-            logger.debug('%s _compute_outlet_static_parameters _iter_number = %s' %
+            self.logger.debug('%s _compute_outlet_static_parameters _iter_number = %s' %
                          (self.str(), self._iter_number_static_par))
             self.c_p_gas_t = self.work_fluid.c_p_av_int
             self.k_gas_t = self.work_fluid.k_av_int
-            logger.debug('%s _compute_outlet_static_parameters k_gas_t = %s' % (self.str(), self.k_gas_t))
+            self.logger.debug('%s _compute_outlet_static_parameters k_gas_t = %s' % (self.str(), self.k_gas_t))
             self.a_cr_t = GasDynamicFunctions.a_cr(self.T_t_stag, self.work_fluid.k_av_int, self.work_fluid.R)
 
             def eps(c):
@@ -458,13 +492,13 @@ class TurbineGeomAndHeatDropDistribution:
 
             x = fsolve(func_to_solve, np.array([200]))
             self.c_t = x[0]
-            logger.debug('%s _compute_outlet_static_parameters c_t = %s' % (self.str(), self.c_t))
+            self.logger.debug('%s _compute_outlet_static_parameters c_t = %s' % (self.str(), self.c_t))
             self.lam_t = self.c_t / self.a_cr_t
             self.p_t = self.p_t_stag * GasDynamicFunctions.pi_lam(self.lam_t, self.work_fluid.k_av_int)
             self.T_t = self.T_t_stag * GasDynamicFunctions.tau_lam(self.lam_t, self.work_fluid.k_av_int)
-            logger.debug('%s _compute_outlet_static_parameters T_t = %s' % (self.str(), self.T_t))
+            self.logger.debug('%s _compute_outlet_static_parameters T_t = %s' % (self.str(), self.T_t))
             self.dT_t_rel = abs(self.T_t - self.work_fluid.T2) / self.work_fluid.T2
-            logger.debug('%s _compute_outlet_static_parameters dT_t_rel = %s' % (self.str(), self.dT_t_rel))
+            self.logger.debug('%s _compute_outlet_static_parameters dT_t_rel = %s' % (self.str(), self.dT_t_rel))
             self.work_fluid.T2 = self.T_t
         self.work_fluid.T1 = self.T_g_stag
         self.work_fluid.T2 = self.T_t
@@ -488,24 +522,24 @@ class TurbineGeomAndHeatDropDistribution:
         self._compute_outlet_static_parameters()
 
     def _specify_h01(self):
-        logger.info('')
-        logger.info(
+        self.logger.info('')
+        self.logger.info(
             '%s РАСЧЕТ ГЕОМЕТРИИ ТУРИБНЫ С УТОЧНЕНИЕМ ТЕПЛОПЕРЕПАДА НА СА ПЕРВОЙ СТУПЕНИ %s\n' % ('#' * 15, '#' * 15))
         dh01_rel = 1.
         H01 = self.H01
         iter_number = 0
         while dh01_rel >= 0.01:
             iter_number += 1
-            logger.info('%s ИТЕРАЦИЯ %s %s\n' % ('-' * 20, iter_number, '-' * 20))
-            logger.debug('specify_h01 iter_number = %s' % iter_number)
+            self.logger.info('%s ИТЕРАЦИЯ %s %s\n' % ('-' * 20, iter_number, '-' * 20))
+            self.logger.debug('specify_h01 iter_number = %s' % iter_number)
             self.H01 = H01
-            logger.debug('specify_h01 H01 = %s' % H01)
+            self.logger.debug('specify_h01 H01 = %s' % H01)
             self._compute_output()
             self._compute_heat_drop_distribution()
             dh01_rel = abs(self.first.H0 - self.H01) / self.H01
-            logger.debug('specify_h01 dh01_rel = %s' % dh01_rel)
+            self.logger.debug('specify_h01 dh01_rel = %s' % dh01_rel)
             H01 = self.first.H0
-            logger.info('')
+            self.logger.info('')
 
 
 if __name__ == '__main__':
@@ -530,7 +564,7 @@ if __name__ == '__main__':
     turbine_geom[1].mu = 1
     turbine_geom.compute()
     turbine_geom.plot_geometry()
-    turbine_geom.plot_heat_drop_distribution(figsize=(10, 7))
+    turbine_geom.plot_heat_drop_distribution()
     print(turbine_geom.c_t)
     print(turbine_geom.p_t)
     print(turbine_geom.T_t)
