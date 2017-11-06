@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import QFileDialog
 import gui.average_streamline.main_window_sdi_form as main_window_sdi_form
 import logging
 
-logger = create_logger(__name__, filename=os.path.join(os.path.dirname(__file__), 'error.log'),
+logger = create_logger(__name__, filename=os.path.join(os.getcwd(), 'error.log'),
                        loggerlevel=logging.ERROR,
                        add_file_handler=True, filemode='w',
                        add_console_handler=False, add_datetime=True, add_module_name=True)
@@ -339,6 +339,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   T_t_stag_cycle=self.T_t_stag_cycle.value(),
                                   eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
                                   auto_compute_heat_drop=auto_compute_heat_drop,
+                                  precise_heat_drop=precise_heat_drop,
                                   auto_set_rho=auto_set_rho,
                                   H01_init=self.H01_init.value()*1e3,
                                   c21_init=self.c21.value(),
@@ -359,6 +360,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   T_t_stag_cycle=self.T_t_stag_cycle.value(),
                                   eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
                                   auto_compute_heat_drop=auto_compute_heat_drop,
+                                  precise_heat_drop=precise_heat_drop,
                                   auto_set_rho=auto_set_rho,
                                   rho_list=rho_list,
                                   H01_init=self.H01_init.value() * 1e3,
@@ -380,6 +382,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   T_t_stag_cycle=self.T_t_stag_cycle.value(),
                                   eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
                                   auto_compute_heat_drop=auto_compute_heat_drop,
+                                  precise_heat_drop=precise_heat_drop,
                                   auto_set_rho=auto_set_rho,
                                   H0_list=H0_list,
                                   alpha11=np.radians(self.alpha11.value()),
@@ -399,6 +402,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   T_t_stag_cycle=self.T_t_stag_cycle.value(),
                                   eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
                                   auto_compute_heat_drop=auto_compute_heat_drop,
+                                  precise_heat_drop=precise_heat_drop,
                                   auto_set_rho=auto_set_rho,
                                   rho_list=rho_list,
                                   H0_list=H0_list,
@@ -421,6 +425,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
                                   auto_compute_heat_drop=auto_compute_heat_drop,
                                   auto_set_rho=auto_set_rho,
+                                  precise_heat_drop=precise_heat_drop,
                                   H01_init=self.H01_init.value()*1e3,
                                   c21_init=self.c21.value(),
                                   alpha11=np.radians(self.alpha11.value()),
@@ -440,6 +445,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   T_t_stag_cycle=self.T_t_stag_cycle.value(),
                                   eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
                                   auto_compute_heat_drop=auto_compute_heat_drop,
+                                  precise_heat_drop=precise_heat_drop,
                                   auto_set_rho=auto_set_rho,
                                   rho_list=rho_list,
                                   H01_init=self.H01_init.value() * 1e3,
@@ -461,6 +467,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   T_t_stag_cycle=self.T_t_stag_cycle.value(),
                                   eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
                                   auto_compute_heat_drop=auto_compute_heat_drop,
+                                  precise_heat_drop=precise_heat_drop,
                                   auto_set_rho=auto_set_rho,
                                   H0_list=H0_list,
                                   alpha11=np.radians(self.alpha11.value()),
@@ -480,6 +487,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   T_t_stag_cycle=self.T_t_stag_cycle.value(),
                                   eta_t_stag_cycle=self.eta_t_stag_cycle.value(),
                                   auto_compute_heat_drop=auto_compute_heat_drop,
+                                  precise_heat_drop=precise_heat_drop,
                                   auto_set_rho=auto_set_rho,
                                   rho_list=rho_list,
                                   H0_list=H0_list,
@@ -504,7 +512,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             turbine.geom[i].p_a_in_rel = stage_data.p_a_in_rel.value()
             turbine.geom[i].p_r_out_l1_ratio = stage_data.p_r_out_l1_ratio.value()
             turbine.geom[i].p_a_out_rel = stage_data.p_a_out_rel.value()
-        return turbine, precise_heat_drop
+        return turbine
 
     def show_error_message(self, message):
         err_message = QtWidgets.QMessageBox(self)
@@ -515,10 +523,10 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         err_message.show()
 
     def on_compute_btn_click(self):
-        turbine, precise_heat_drop = self.get_turbine()
+        turbine = self.get_turbine()
         try:
             turbine.compute_geometry()
-            turbine.compute_stages_gas_dynamics(precise_heat_drop)
+            turbine.compute_stages_gas_dynamics()
             turbine.compute_integrate_turbine_parameters()
             self._set_output(turbine)
         except Exception as ex:
@@ -526,8 +534,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             self.show_error_message(str(ex))
 
     def save_turbine_file(self, fname):
-        turbine, precise_heat_drop = self.get_turbine()
-        turbine.precise_heat_drop = precise_heat_drop
+        turbine = self.get_turbine()
         file = open(fname, 'wb')
         pc.dump(turbine, file)
         file.close()

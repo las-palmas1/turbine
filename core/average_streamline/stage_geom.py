@@ -16,6 +16,11 @@ class InvalidStageSizeValue(Exception):
         return self.message
 
 
+def set_logging():
+    logging.basicConfig(filemode='a', filename=os.path.join(os.getcwd(), 'average_streamline.log'),
+                        format='%(levelname)s - %(message)s', level=logging.INFO)
+
+
 class StageGeomAndHeatDrop:
     """
     Индекс 0 используется для обозначения параметров на входе в СА, 05 - на выходе из СА,
@@ -72,10 +77,6 @@ class StageGeomAndHeatDrop:
         self.g_lb = 0
         "Отношение расход перетечек поверх бондажа рабочих лопаток к расходу газа через СА первой ступени"
 
-        self.log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
-        self.logger = func.create_logger(__name__, logging.INFO, add_file_handler=True,
-                                         add_console_handler=False, filemode='a', filename=self.log_filename)
-
         self.D2 = None
         self.D0 = None
         self.D05 = None
@@ -118,7 +119,7 @@ class StageGeomAndHeatDrop:
         self._k_delta_a_rk = self.delta_a_b_rk_ratio / self.l2_b_rk_ratio
 
     def compute_geometry(self):
-        self.logger.info('Вычисление геометрических параметров ступени')
+        logging.info('Вычисление геометрических параметров ступени')
         self.b_sa = self.l1 * self.k_b_sa
         self.delta_a_sa = self.l1 * self.k_delta_a_sa
         self.p_r_in = self.p_r_in_l1_ratio * self.l1
@@ -144,13 +145,13 @@ class StageGeomAndHeatDrop:
                                                   self.b_rk + self.delta_a_rk) + self.p_r_out
 
     def compute_velocities(self):
-        self.logger.info('Вычисление окружных скоростей')
+        logging.info('Вычисление окружных скоростей')
         self.u1 = np.pi * self.D1 * self.n / 60
         self.u2 = np.pi * self.D2 * self.n / 60
         self.u_av = np.pi * 0.5 * (self.D2 + self.D1) * self.n / 60
 
     def plot(self):
-        self.logger.info('Вырисовывание ступени')
+        logging.info('Вырисовывание ступени')
         x_sa_arr = np.array([self.x0, self.x0, self.x0 + self.b_sa, self.x0 + self.b_sa, self.x0])
         y_sa_arr = np.array([self.y0 - self.l0,
                              self.y0,
@@ -264,10 +265,6 @@ class TurbineGeomAndHeatDropDistribution:
         for item in self._stages:
             item.n = self.n
 
-        self.log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
-        self.logger = func.create_logger(__name__, logging.INFO, add_file_handler=True,
-                                    add_console_handler=False, filemode='a', filename=self.log_filename)
-
     @classmethod
     def _get_p_t_stag_and_H_t(cls, work_fluid: IdealGas, p_g_stag, T_g_stag, T_t_stag, eta_t_stag):
         work_fluid.__init__()
@@ -316,40 +313,40 @@ class TurbineGeomAndHeatDropDistribution:
 
     def _compute_d1_and_l1(self):
         """Вычисление среднего диаметра и длины лопатки на входе в РК первой ступени"""
-        self.logger.info('Вычисление среднего диаметра и длины лопатки на входе в РК первой ступени')
+        logging.info('Вычисление среднего диаметра и длины лопатки на входе в РК первой ступени')
         self.work_fluid.__init__()
         self._compute_t_11()
         self.p_11 = self.p_g_stag * (1 - self.H_s1 /
                                      (self.c_p_gas11 * self.T_g_stag)) ** (self.k_gas11 / (self.k_gas11 - 1))
         self.rho11 = self.p_11 / (self.work_fluid.R * self.T_11)
         self.D1_l1_product = self.G_turbine / (np.pi * self.rho11 * np.sin(self.alpha11) * self.c11)
-        self.logger.debug('%s _compute_d1_and_l1 D1_l1_product = %s' % (self.str(), self.D1_l1_product))
+        logging.debug('%s _compute_d1_and_l1 D1_l1_product = %s' % (self.str(), self.D1_l1_product))
         self.D1 = np.sqrt(self.D1_l1_product / self.l1_D1_ratio)
         self.l1 = self.D1_l1_product / self.D1
-        self.logger.debug('%s _compute_d1_and_l1 D1 = %s, l1 = %s' % (self.str(), self.D1, self.l1))
+        logging.debug('%s _compute_d1_and_l1 D1 = %s, l1 = %s' % (self.str(), self.D1, self.l1))
 
     def _compute_t_11(self):
         """Вычисляет величину температуры перед РК первой ступени T_11"""
-        self.logger.info('Вычисление температуры перед РК первой ступени')
+        logging.info('Вычисление температуры перед РК первой ступени')
         self.dT11_rel = 1.
         self._iter_number_d1_l1 = 0
         while self.dT11_rel >= 0.001:
             self._iter_number_d1_l1 += 1
-            self.logger.debug('%s _compute_t_11 iter_number = %s' % (self.str(), self._iter_number_d1_l1))
+            logging.debug('%s _compute_t_11 iter_number = %s' % (self.str(), self._iter_number_d1_l1))
             self.work_fluid.T1 = self.T_g_stag
             self.work_fluid.alpha = self.alpha_air
             self.H_s1 = self.H01 * (1 - self.rho1)
             self.c11 = self._stages[0].phi * np.sqrt(2 * self.H_s1)
             self.k_gas11 = self.work_fluid.k_av_int
             self.c_p_gas11 = self.work_fluid.c_p_av_int
-            self.logger.debug('%s _compute_t_11 c_p_gas11 = %s' % (self.str(), self.k_gas11))
+            logging.debug('%s _compute_t_11 c_p_gas11 = %s' % (self.str(), self.k_gas11))
             self.T_11 = self.T_g_stag - self.H_s1 * self._stages[0].phi ** 2 / self.c_p_gas11
             self.dT11_rel = abs(self.T_11 - self.work_fluid.T2) / self.work_fluid.T2
             self.work_fluid.T2 = self.T_11
-            self.logger.debug('%s _compute_t_11 dT11_rel = %s' % (self.str(), self.dT11_rel))
+            logging.debug('%s _compute_t_11 dT11_rel = %s' % (self.str(), self.dT11_rel))
 
     def _compute_angles(self):
-        self.logger.info('Вычисление углов')
+        logging.info('Вычисление углов')
         if ('gamma_in' in self._kwargs) and ('gamma_out' in self._kwargs):
             self.gamma_av = np.arctan(0.5 * (np.tan(self.gamma_out) - np.tan(self.gamma_in)))
             self.gamma_sum = self.gamma_in + self.gamma_out
@@ -385,9 +382,9 @@ class TurbineGeomAndHeatDropDistribution:
             raise StopIteration()
 
     def _compute_linear_dimensions(self):
-        self.logger.info('Расчет линейных размеров ступеней\n')
+        logging.info('Расчет линейных размеров ступеней\n')
         for num, item in enumerate(self._stages):
-            self.logger.info('Ступень %s' % (num + 1))
+            logging.info('Ступень %s' % (num + 1))
             item.gamma_av = self.gamma_av
             item.gamma_out = self.gamma_out
             item.gamma_in = self.gamma_in
@@ -410,13 +407,13 @@ class TurbineGeomAndHeatDropDistribution:
             item.compute_velocities()
 
     def _compute_geometry(self):
-        self.logger.info('%s РАСЧЕТ ГЕОМЕТРИИ ТУРБИНЫ %s' % ('-'*10, '-'*10))
+        logging.info('%s РАСЧЕТ ГЕОМЕТРИИ ТУРБИНЫ %s' % ('-'*10, '-'*10))
         self._compute_d1_and_l1()
         self._compute_angles()
         self._compute_linear_dimensions()
 
     def plot_geometry(self, figsize=(5, 6), title='Turbine geometry'):
-        self.logger.info('%s РИСОВАНИЕ ГЕОМЕТРИИ ТУРБИНЫ %s ' % ('-'*10, '-'*10))
+        logging.info('%s РИСОВАНИЕ ГЕОМЕТРИИ ТУРБИНЫ %s ' % ('-'*10, '-'*10))
         plt.figure(figsize=figsize)
         for num, item in enumerate(self._stages):
             if num == 0:
@@ -434,7 +431,7 @@ class TurbineGeomAndHeatDropDistribution:
         plt.show()
 
     def _compute_heat_drop_distribution(self):
-        self.logger.info('%s ВЫЧИСЛЕНИЕ ПРЕДВАРИТЕЛЬНОГО РАСПРЕДЕЛЕНИЯ ТЕПЛОПЕРЕПАДОВ ПО СТУПЕНЯМ %s' % ('-'*10, '-'*10))
+        logging.info('%s ВЫЧИСЛЕНИЕ ПРЕДВАРИТЕЛЬНОГО РАСПРЕДЕЛЕНИЯ ТЕПЛОПЕРЕПАДОВ ПО СТУПЕНЯМ %s' % ('-'*10, '-'*10))
         u_av_squared_sum = 0
         for num, item in enumerate(self._stages):
             u_av_squared_sum += item.u_av ** 2
@@ -445,7 +442,7 @@ class TurbineGeomAndHeatDropDistribution:
                 item.H0 = self.H_t * (1 + self.alpha) * item.u_av ** 2 / u_av_squared_sum
 
     def plot_heat_drop_distribution(self, figsize=(6, 4), title='Распределение\n теплоперепадов'):
-        self.logger.info('%s СОЗДАНИЕ ГРАФИКА РАСПРЕДЕЛЕНИЯ ТЕПЛОПЕРЕПАДОВ %s' % ('-'*10, '-'*10))
+        logging.info('%s СОЗДАНИЕ ГРАФИКА РАСПРЕДЕЛЕНИЯ ТЕПЛОПЕРЕПАДОВ %s' % ('-'*10, '-'*10))
         x_arr = list(range(1, self.stage_number + 1))
         y_arr = [item.H0 for item in self._stages]
         plt.figure(figsize=figsize)
@@ -468,7 +465,7 @@ class TurbineGeomAndHeatDropDistribution:
         Расчет статических параметров на выходе необходим для расчета силовой турбины (посленяя ступень
         рассчитываается по выходному статическому давлению), а также для определения коэффициента возврата теплоты
         """
-        self.logger.info('%s ВЫЧИСЛЕНИЕ СТАТИЧЕСКИХ ПАРАМЕТРОВ НА ВЫХОДЕ ИХ ТУРБИНЫ %s' % ('-'*10, '-'*10))
+        logging.info('%s ВЫЧИСЛЕНИЕ СТАТИЧЕСКИХ ПАРАМЕТРОВ НА ВЫХОДЕ ИХ ТУРБИНЫ %s' % ('-'*10, '-'*10))
         self.work_fluid.__init__()
         self.work_fluid.alpha = self.alpha_air
         self.rho_t_stag = self.p_t_stag / (self.work_fluid.R * self.T_t_stag)
@@ -477,11 +474,11 @@ class TurbineGeomAndHeatDropDistribution:
         self._iter_number_static_par = 0
         while self.dT_t_rel >= 0.001:
             self._iter_number_static_par += 1
-            self.logger.debug('%s _compute_outlet_static_parameters _iter_number = %s' %
+            logging.debug('%s _compute_outlet_static_parameters _iter_number = %s' %
                          (self.str(), self._iter_number_static_par))
             self.c_p_gas_t = self.work_fluid.c_p_av_int
             self.k_gas_t = self.work_fluid.k_av_int
-            self.logger.debug('%s _compute_outlet_static_parameters k_gas_t = %s' % (self.str(), self.k_gas_t))
+            logging.debug('%s _compute_outlet_static_parameters k_gas_t = %s' % (self.str(), self.k_gas_t))
             self.a_cr_t = GasDynamicFunctions.a_cr(self.T_t_stag, self.work_fluid.k_av_int, self.work_fluid.R)
 
             def eps(c):
@@ -492,13 +489,13 @@ class TurbineGeomAndHeatDropDistribution:
 
             x = fsolve(func_to_solve, np.array([200]))
             self.c_t = x[0]
-            self.logger.debug('%s _compute_outlet_static_parameters c_t = %s' % (self.str(), self.c_t))
+            logging.debug('%s _compute_outlet_static_parameters c_t = %s' % (self.str(), self.c_t))
             self.lam_t = self.c_t / self.a_cr_t
             self.p_t = self.p_t_stag * GasDynamicFunctions.pi_lam(self.lam_t, self.work_fluid.k_av_int)
             self.T_t = self.T_t_stag * GasDynamicFunctions.tau_lam(self.lam_t, self.work_fluid.k_av_int)
-            self.logger.debug('%s _compute_outlet_static_parameters T_t = %s' % (self.str(), self.T_t))
+            logging.debug('%s _compute_outlet_static_parameters T_t = %s' % (self.str(), self.T_t))
             self.dT_t_rel = abs(self.T_t - self.work_fluid.T2) / self.work_fluid.T2
-            self.logger.debug('%s _compute_outlet_static_parameters dT_t_rel = %s' % (self.str(), self.dT_t_rel))
+            logging.debug('%s _compute_outlet_static_parameters dT_t_rel = %s' % (self.str(), self.dT_t_rel))
             self.work_fluid.T2 = self.T_t
         self.work_fluid.T1 = self.T_g_stag
         self.work_fluid.T2 = self.T_t
@@ -522,24 +519,24 @@ class TurbineGeomAndHeatDropDistribution:
         self._compute_outlet_static_parameters()
 
     def _specify_h01(self):
-        self.logger.info('')
-        self.logger.info(
+        logging.info('')
+        logging.info(
             '%s РАСЧЕТ ГЕОМЕТРИИ ТУРИБНЫ С УТОЧНЕНИЕМ ТЕПЛОПЕРЕПАДА НА СА ПЕРВОЙ СТУПЕНИ %s\n' % ('#' * 15, '#' * 15))
         dh01_rel = 1.
         H01 = self.H01
         iter_number = 0
         while dh01_rel >= 0.01:
             iter_number += 1
-            self.logger.info('%s ИТЕРАЦИЯ %s %s\n' % ('-' * 20, iter_number, '-' * 20))
-            self.logger.debug('specify_h01 iter_number = %s' % iter_number)
+            logging.info('%s ИТЕРАЦИЯ %s %s\n' % ('-' * 20, iter_number, '-' * 20))
+            logging.debug('specify_h01 iter_number = %s' % iter_number)
             self.H01 = H01
-            self.logger.debug('specify_h01 H01 = %s' % H01)
+            logging.debug('specify_h01 H01 = %s' % H01)
             self._compute_output()
             self._compute_heat_drop_distribution()
             dh01_rel = abs(self.first.H0 - self.H01) / self.H01
-            self.logger.debug('specify_h01 dh01_rel = %s' % dh01_rel)
+            logging.debug('specify_h01 dh01_rel = %s' % dh01_rel)
             H01 = self.first.H0
-            self.logger.info('')
+            logging.info('')
 
 
 if __name__ == '__main__':

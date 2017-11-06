@@ -66,9 +66,9 @@ class AveLineWidgetTest(unittest.TestCase):
 
     def test_compute_btn_click(self):
         """Тестируется правильность вывода значений в выходные поля"""
-        turbine, precise_heat_drop = self.form.get_turbine()
+        turbine = self.form.get_turbine()
         turbine.compute_geometry()
-        turbine.compute_stages_gas_dynamics(precise_heat_drop)
+        turbine.compute_stages_gas_dynamics()
         turbine.compute_integrate_turbine_parameters()
         QTest.mouseClick(self.form.compute_btn, Qt.LeftButton)
         self.assertAlmostEqual(self.form.eta_t.value(), turbine.eta_t, places=3)

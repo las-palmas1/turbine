@@ -6,7 +6,8 @@ from scipy.interpolate import interp1d
 
 class BladeSection:
     def __init__(self, angle1=None, angle2=None, delta1=None, delta2=None, b_a=None,
-                 gamma1_s=None, gamma1_k=None, gamma2_s=None, gamma2_k=None,
+                 gamma1_s=np.radians([12])[0], gamma1_k=np.radians([6])[0],
+                 gamma2_s=np.radians([3])[0], gamma2_k=np.radians([1.5])[0],
                  center_point_pos=0.5, x0_av=0, y0_av=0, pnt_count=20, r1=None, s2=0.001, convex='right'):
         """
         :param angle1: Угол потока на входе в решетку.
@@ -45,10 +46,71 @@ class BladeSection:
         self._r1 = r1
         self._s2 = s2
         self._convex = convex
-        try:
-            self._compute_coordinates()
-        except AssertionError:
-            pass
+        self._t = None
+        self._t_rel = None
+
+        self.x1_av: float = None
+        self.y1_av: float = None
+        self.x2_av: float = None
+        self.y2_av: float = None
+
+        # координаты полюсов спинки
+        self.x0_s: float = None
+        self.y0_s: float = None
+        self.x1_s: float = None
+        self.y1_s: float = None
+        self.x2_s: float = None
+        self.y2_s: float = None
+
+        # координаты полюсов корыта
+        self.x0_k: float = None
+        self.y0_k: float = None
+        self.x1_k: float = None
+        self.y1_k: float = None
+        self.x2_k: float = None
+        self.y2_k: float = None
+
+        # массивы координат линий профиля
+        self.x_s: np.ndarray = None
+        self.y_s: np.ndarray = None
+        self.x_k: np.ndarray = None
+        self.y_k: np.ndarray = None
+        self.x_av: np.ndarray = None
+        self.y_av: np.ndarray = None
+        self.x_in_edge: np.ndarray = None
+        self.y_in_edge: np.ndarray = None
+        self.x_out_edge: np.ndarray = None
+        self.y_out_edge: np.ndarray = None
+
+        # координаты окружностей скруглений на кромках
+        self.x01: float = None
+        self.y01: float = None
+        self.x02: float = None
+        self.y02: float = None
+
+        # координаты центра масс и площадь вычисленная разными способами
+        self.x_c: float = None
+        self.y_c: float = None
+        self.square_y: float = None
+        self.square_x: float = None
+
+        # длина хорды
+        self.chord_length: float = None
+
+    @property
+    def t(self):
+        return self._t
+
+    @t.setter
+    def t(self, value):
+        self._t = value
+        if self.chord_length:
+            self._t_rel = value / self.chord_length
+
+    @property
+    def t_rel(self):
+        """Относительный шаг"""
+        return self._t_rel
 
     @property
     def convex(self):
@@ -58,7 +120,6 @@ class BladeSection:
     @convex.setter
     def convex(self, value):
         self._convex = value
-        self._compute_coordinates()
 
     @property
     def y0_av(self):
@@ -68,7 +129,6 @@ class BladeSection:
     @y0_av.setter
     def y0_av(self, value):
         self._y0_av = value
-        self._compute_coordinates()
 
     @property
     def x0_av(self):
@@ -78,7 +138,6 @@ class BladeSection:
     @x0_av.setter
     def x0_av(self, value):
         self._x0_av = value
-        self._compute_coordinates()
 
     @property
     def center_point_pos(self):
@@ -88,7 +147,6 @@ class BladeSection:
     @center_point_pos.setter
     def center_point_pos(self, value):
         self._center_point_pos = value
-        self._compute_coordinates()
 
     @property
     def s2(self):
@@ -98,7 +156,6 @@ class BladeSection:
     @s2.setter
     def s2(self, value):
         self._s2 = value
-        self._compute_coordinates()
 
     @property
     def r1(self):
@@ -108,7 +165,6 @@ class BladeSection:
     @r1.setter
     def r1(self, value):
         self._r1 = value
-        self._compute_coordinates()
 
     @property
     def pnt_count(self):
@@ -118,7 +174,6 @@ class BladeSection:
     @pnt_count.setter
     def pnt_count(self, value):
         self._pnt_count = value
-        self._compute_coordinates()
 
     @property
     def gamma1_k(self):
@@ -128,7 +183,6 @@ class BladeSection:
     @gamma1_k.setter
     def gamma1_k(self, value):
         self._gamma1_k = value
-        self._compute_coordinates()
 
     @property
     def gamma1_s(self):
@@ -138,7 +192,6 @@ class BladeSection:
     @gamma1_s.setter
     def gamma1_s(self, value):
         self._gamma1_s = value
-        self._compute_coordinates()
 
     @property
     def gamma2_k(self):
@@ -148,7 +201,6 @@ class BladeSection:
     @gamma2_k.setter
     def gamma2_k(self, value):
         self._gamma1_k = value
-        self._compute_coordinates()
 
     @property
     def gamma2_s(self):
@@ -158,7 +210,6 @@ class BladeSection:
     @gamma2_s.setter
     def gamma2_s(self, value):
         self._gamma1_s = value
-        self._compute_coordinates()
 
     @property
     def b_a(self):
@@ -168,7 +219,6 @@ class BladeSection:
     @b_a.setter
     def b_a(self, value):
         self._b_a = value
-        self._compute_coordinates()
 
     @property
     def delta1(self):
@@ -179,7 +229,6 @@ class BladeSection:
     @delta1.setter
     def delta1(self, value):
         self._delta1 = value
-        self._compute_coordinates()
 
     @property
     def delta2(self):
@@ -190,7 +239,6 @@ class BladeSection:
     @delta2.setter
     def delta2(self, value):
         self._delta2 = value
-        self._compute_coordinates()
 
     @property
     def angle1(self):
@@ -201,7 +249,6 @@ class BladeSection:
     @angle1.setter
     def angle1(self, value):
         self._angle1 = value
-        self._compute_coordinates()
 
     @property
     def angle2(self):
@@ -212,7 +259,6 @@ class BladeSection:
     @angle2.setter
     def angle2(self, value):
         self._angle2 = value
-        self._compute_coordinates()
 
     @property
     def angle2_l(self):
@@ -360,6 +406,22 @@ class BladeSection:
         x_30 = np.array(list(x_s_30) + list(x_out_edge_30))
         y_30 = np.array(list(y_s_30) + list(y_out_edge_30))
 
+        if len(x_01) < 2:
+            x_01 = np.zeros(3)
+            y_01 = np.arange(3)
+
+        if len(x_12) < 2:
+            x_12 = np.zeros(3)
+            y_12 = np.arange(3)
+
+        if len(x_23) < 2:
+            x_23 = np.zeros(3)
+            y_23 = np.arange(3)
+
+        if len(x_30) < 2:
+            x_30 = np.zeros(3)
+            y_30 = np.arange(3)
+
         # интерполяция
         x_01_int = interp1d(y_01, x_01)
         x_12_int = interp1d(y_12, x_12)
@@ -382,7 +444,56 @@ class BladeSection:
 
         return x_c, square
 
-    def _compute_coordinates(self):
+    def move_to(self, x_c_new, y_c_new):
+        """Перемещает профиль так, чтобы в новом положении его центр находился в заданной точке."""
+        dx = x_c_new - self.x_c
+        dy = y_c_new - self.y_c
+        self.x_c += dx
+        self.y_c += dy
+
+        self.x_s += dx
+        self.y_s += dy
+        self.x_k += dx
+        self.y_k += dy
+        self.x_in_edge += dx
+        self.y_in_edge += dy
+        self.x_out_edge += dx
+        self.y_out_edge += dy
+        self.x_av += dx
+        self.y_av += dy
+
+        self.x0_av += dx
+        self.y0_av += dy
+        self.x1_av += dx
+        self.y1_av += dy
+        self.x2_av += dx
+        self.y2_av += dy
+
+        self.x0_s += dx
+        self.y0_s += dy
+        self.x1_s += dx
+        self.y1_s += dy
+        self.x2_s += dx
+        self.y2_s += dy
+
+        self.x0_k += dx
+        self.y0_k += dy
+        self.x1_k += dx
+        self.y1_k += dy
+        self.x2_k += dx
+        self.y2_k += dy
+
+        self.x01 += dx
+        self.y01 += dy
+        self.x02 += dx
+        self.y02 += dy
+
+    def _get_chord_length(self):
+        """Возвращает приближенное значение хорды профиля."""
+        res = np.sqrt((self.x01 - self.x02)**2 + (self.y01 - self.y02)**2) + self.r1 + self.s2
+        return res
+
+    def compute_profile(self):
         self.x1_av, self.y1_av, self.x2_av, self.y2_av = self._get_central_line_poles()
 
         # координаты средней линии  профиля
@@ -417,7 +528,10 @@ class BladeSection:
         self.x_s, self.y_s = self._get_bezier_cyrve_coord(self.x0_s, self.y0_s, self.x1_s, self.y1_s, self.x2_s,
                                                           self.y2_s)
         # координаты передней кромки
-        phi1 = np.arctan((self.y0_s - self.y01) / (self.x0_s - self.x01)) + np.pi
+        if np.arctan((self.y0_s - self.y01) / (self.x0_s - self.x01)) < 0:
+            phi1 = np.arctan((self.y0_s - self.y01) / (self.x0_s - self.x01)) + np.pi
+        else:
+            phi1 = np.arctan((self.y0_s - self.y01) / (self.x0_s - self.x01))
         if np.arctan((self.y0_k - self.y01) / (self.x0_k - self.x01)) < 0:
             phi2 = np.arctan((self.y0_k - self.y01) / (self.x0_k - self.x01)) + 2 * np.pi
         else:
@@ -438,6 +552,8 @@ class BladeSection:
         self.x_c, self.square_x = self._get_x_c(self.x_k, self.y_k, self.x_s, self.y_s, self.x_in_edge,
                                  self.y_in_edge, self.x_out_edge, self.y_out_edge)
 
+        self.chord_length = self._get_chord_length()
+
         if self.convex == 'left':
             self.x1_av, self.y1_av, self.x2_av, self.y2_av = self.x1_av, -self.y1_av, self.x2_av, -self.y2_av
             self.x_av, self.y_av = self.x_av, - self.y_av
@@ -451,6 +567,10 @@ class BladeSection:
             self.y_in_edge = -self.y_in_edge
             self.y_out_edge = -self.y_out_edge
             self.y_c = -self.y_c
+        elif self.convex == 'right':
+            pass
+        else:
+            raise ValueError('Parameter convex can not be equal to %s' % self.convex)
 
     def plot(self):
         plt.plot(self.y_av, self.x_av, lw=0.5, ls='--', color='black')
@@ -474,13 +594,12 @@ if __name__ == '__main__':
                       delta1=np.radians([1])[0],
                       delta2=np.radians([2])[0],
                       b_a=0.03,
-                      gamma1_k=np.radians([4.5])[0],
-                      gamma1_s=np.radians([4.5])[0],
-                      gamma2_k=np.radians([2.5])[0],
-                      gamma2_s=np.radians([2.5])[0],
                       r1=0.002,
                       convex='right',
                       pnt_count=30,
                       s2=0.0003)
-    print('y_c = %.5f' % bs.y_c)
+    bs.compute_profile()
+    print('y_c = %s' % bs.y_c)
+    bs.plot()
+    bs.move_to(10, 10)
     bs.plot()

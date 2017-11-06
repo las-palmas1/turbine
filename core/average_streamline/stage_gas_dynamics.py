@@ -1,11 +1,9 @@
 from core.average_streamline.stage_geom import InvalidStageSizeValue, StageGeomAndHeatDrop, \
-    TurbineGeomAndHeatDropDistribution
-import gas_turbine_cycle.tools.functions as func
+    TurbineGeomAndHeatDropDistribution, set_logging
 import logging
 from gas_turbine_cycle.gases import KeroseneCombustionProducts, IdealGas
 import numpy as np
 import matplotlib.pyplot as plt
-import os
 
 
 class StageGasDynamics:
@@ -36,6 +34,7 @@ class StageGasDynamics:
         :param kwargs: H0 - теплоперепад на ступени, p2 - давление на выходе из ступени, L_t - работа ступени,
                        eta_t0 - КПД ступени в первом приближении.
         """
+        set_logging()
         self.T0_stag = T0_stag
         self.p0_stag = p0_stag
         self.G_stage_in = G_stage_in
@@ -46,9 +45,6 @@ class StageGasDynamics:
         self.psi = psi
         self.l1 = l1
         self.l2 = l2
-        self.log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
-        self.logger = func.create_logger(__name__, logging.INFO, add_console_handler=False, add_file_handler=True,
-                                    filename=self.log_filename, filemode='a')
         self.D1 = D1
         self.D2 = D2
         self.rho = rho
@@ -83,15 +79,15 @@ class StageGasDynamics:
 
     def compute(self):
         if 'H0' in self._kwargs:
-            self.logger.info('%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ СТУПЕНИ ПО ЗАДАННОМУ ТЕПЛОПЕРЕПАДУ %s\n' %
+            logging.info('%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ СТУПЕНИ ПО ЗАДАННОМУ ТЕПЛОПЕРЕПАДУ %s\n' %
                         (25 * '#', 25 * '#'))
             self._specified_heat_drop_calculation()
         elif 'p2' in self._kwargs:
-            self.logger.info('%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ СТУПЕНИ ПО ДАВЛЕНИЮ НА ВЫХОДЕ %s\n' %
+            logging.info('%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ СТУПЕНИ ПО ДАВЛЕНИЮ НА ВЫХОДЕ %s\n' %
                         (25 * '#', 25 * '#'))
             self._specified_outlet_pressure_calculation()
         elif 'L_t' in self._kwargs and 'eta_t0' in self._kwargs:
-            self.logger.info('%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ СТУПЕНИ ПО РАБОТЕ %s\n' %
+            logging.info('%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ СТУПЕНИ ПО РАБОТЕ %s\n' %
                         (25 * '#', 25 * '#'))
             self._specified_work_calculation()
 
@@ -102,14 +98,14 @@ class StageGasDynamics:
         self.work_fluid.alpha = self.alpha_air
         self.dk_rel = 1.
         self._iter_number_k_gas = 0
-        self.logger.info('%s Расчет параметров ступени с уточнение k %s\n' % (15 * '-', 15 * '-'))
+        logging.info('%s Расчет параметров ступени с уточнение k %s\n' % (15 * '-', 15 * '-'))
         while self.dk_rel >= 0.001:
             self._iter_number_k_gas += 1
-            self.logger.info('ИТЕРАЦИЯ %s' % self._iter_number_k_gas)
-            self.logger.debug('%s _specified_heat_drop_calculation _iter_number_k_gas = %s' %
+            logging.info('ИТЕРАЦИЯ %s' % self._iter_number_k_gas)
+            logging.debug('%s _specified_heat_drop_calculation _iter_number_k_gas = %s' %
                          (self.str(), self._iter_number_k_gas))
             self._compute_stage_parameters()
-            self.logger.info('Residual = %.4f' % self.dk_rel)
+            logging.info('Residual = %.4f' % self.dk_rel)
 
     def _specified_outlet_pressure_calculation(self):
         """Вычисляет параметры ступени по заданному выходному давлению"""
@@ -118,37 +114,37 @@ class StageGasDynamics:
         self.work_fluid.alpha = self.alpha_air
         self.dk_rel = 1.
         self._iter_number_k_gas = 0
-        self.logger.info('%s Расчет параметров ступени с уточнение k %s\n' % (15 * '-', 15 * '-'))
+        logging.info('%s Расчет параметров ступени с уточнение k %s\n' % (15 * '-', 15 * '-'))
         while self.dk_rel >= 0.001:
             self._iter_number_k_gas += 1
-            self.logger.info('ИТЕРАЦИЯ %s' % self._iter_number_k_gas)
-            self.logger.debug('%s _specified_outlet_pressure_calculation _iter_number_k_gas = %s' %
+            logging.info('ИТЕРАЦИЯ %s' % self._iter_number_k_gas)
+            logging.debug('%s _specified_outlet_pressure_calculation _iter_number_k_gas = %s' %
                          (self.str(), self._iter_number_k_gas))
             self.H0 = self.work_fluid.c_p_av_int * \
                         self.T0_stag * (1 - (self.p0_stag / self.p2) **
                                        ((1 - self.work_fluid.k_av_int) / self.work_fluid.k_av_int))
-            self.logger.debug('%s _specified_outlet_pressure_calculation H0 = %s' % (self.str(), self.H0))
+            logging.debug('%s _specified_outlet_pressure_calculation H0 = %s' % (self.str(), self.H0))
             self._compute_stage_parameters()
-            self.logger.info('Residual(k) = %.4f' % self.dk_rel)
+            logging.info('Residual(k) = %.4f' % self.dk_rel)
 
     def _specified_work_calculation(self):
         """Вычисляет параметры ступени по заданной работе"""
         self.d_eta_t_rel = 1
         eta_t = self._eta_t0
         self._iter_number_eta_t = 0
-        self.logger.info('%s Расчет параметров ступени с уточнение КПД по статическим параметрам %s\n' %
+        logging.info('%s Расчет параметров ступени с уточнение КПД по статическим параметрам %s\n' %
                     (15 * '-', 15 * '-'))
         while self.d_eta_t_rel >= 0.001:
             self._iter_number_eta_t += 1
-            self.logger.info('%s ИТЕРАЦИЯ %s %s\n' % ('-' * 10, self._iter_number_eta_t, '-' * 10))
-            self.logger.debug('%s _specified_work_calculation _iter_number_eta_t = %s' %
+            logging.info('%s ИТЕРАЦИЯ %s %s\n' % ('-' * 10, self._iter_number_eta_t, '-' * 10))
+            logging.debug('%s _specified_work_calculation _iter_number_eta_t = %s' %
                          (self.str(), self._iter_number_eta_t))
             self.H0 = self.L_t / eta_t
             self._specified_heat_drop_calculation()
             self.d_eta_t_rel = abs(self.eta_t - eta_t) / eta_t
             eta_t = self.eta_t
-            self.logger.info('')
-            self.logger.info('Residual(eta_t) = %.4f\n' % self.d_eta_t_rel)
+            logging.info('')
+            logging.info('Residual(eta_t) = %.4f\n' % self.d_eta_t_rel)
 
     def _compute_stage_parameters(self):
         """Вычисляет параметры ступени по известному теплоперепаду без уточнения k"""
@@ -159,7 +155,7 @@ class StageGasDynamics:
         self.T1 = self.T0_stag - self.H_s * self.phi ** 2 / self.c_p_gas
         self.T1_ad = self.T0_stag - self.H_s / self.c_p_gas
         self.k_gas = self.work_fluid.k_av_int
-        self.logger.debug('%s _compute_stage_parameters k = %s' % (self.str(), self.k_gas))
+        logging.debug('%s _compute_stage_parameters k = %s' % (self.str(), self.k_gas))
         self.p1 = self.p0_stag * (self.T1_ad / self.T0_stag) ** (self.k_gas / (self.k_gas - 1))
         self.A1_a = np.pi * self.D1 * self.l1
         self.rho1 = self.p1 / (self.work_fluid.R * self.T1)
@@ -227,7 +223,7 @@ class StageGasDynamics:
         self.eta_l = self.eta_l_touch - self.zeta_tv
         if ('H0' in self._kwargs) or ('p2' in self._kwargs):
             self.L_t = self.H0 * self.eta_t
-            self.logger.debug('%s _compute_stage_parameters L_t = %s' % (self.str(), self.L_t))
+            logging.debug('%s _compute_stage_parameters L_t = %s' % (self.str(), self.L_t))
         self.L_t_rel = self.L_t * self.G_stage_in / self.G_turbine - self.L_t * (self.g_ld + self.g_lk + self.g_lb)
         "Удельная работа ступени, отнесенная к расходу через СА первой ступени с учетом потерь из-за утечек"
         self.T_st = self.T2 + self. h_z / self.c_p_gas + self.h_tv / self.c_p_gas
@@ -237,7 +233,7 @@ class StageGasDynamics:
             self.dk_rel = abs(self.k_gas - self.work_fluid.k_av_int) / self.k_gas
         except TypeError:
             self.dk_rel = max(abs(self.k_gas - self.work_fluid.k_av_int) / self.k_gas)
-        self.logger.debug('%s _compute_stage_parameters dk_rel = %s' % (self.str(), self.dk_rel))
+            logging.debug('%s _compute_stage_parameters dk_rel = %s' % (self.str(), self.dk_rel))
         self.p2_stag = self.p2 * (self.T_st_stag / self.T_st) ** (self.k_gas / (self.k_gas - 1))
         self.H0_stag = self.c_p_gas * self.T0_stag * (1 - (self.p2_stag / self.p0_stag) ** ((self.k_gas - 1) / self.k_gas))
         self.eta_t_stag = self.L_t / self.H0_stag
