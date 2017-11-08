@@ -5,10 +5,10 @@ from scipy.interpolate import interp1d
 
 
 class BladeSection:
-    def __init__(self, angle1=None, angle2=None, delta1=None, delta2=None, b_a=None,
+    def __init__(self, angle1=None, angle2=None, b_a=None, delta1=np.radians([6])[0], delta2=np.radians([1])[0],
                  gamma1_s=np.radians([12])[0], gamma1_k=np.radians([6])[0],
                  gamma2_s=np.radians([3])[0], gamma2_k=np.radians([1.5])[0],
-                 center_point_pos=0.5, x0_av=0, y0_av=0, pnt_count=20, r1=None, s2=0.001, convex='right'):
+                 center_point_pos=0.5, x0_av=0, y0_av=0, pnt_count=20, r1=0.004, s2=0.001, convex='right'):
         """
         :param angle1: Угол потока на входе в решетку.
         :param angle2: Угол потока на выходе из решетки.
@@ -195,21 +195,21 @@ class BladeSection:
 
     @property
     def gamma2_k(self):
-        assert self._gamma1_k is not None, 'gamma2_k must not be None'
-        return self._gamma1_k
+        assert self._gamma2_k is not None, 'gamma2_k must not be None'
+        return self._gamma2_k
 
     @gamma2_k.setter
     def gamma2_k(self, value):
-        self._gamma1_k = value
+        self._gamma2_k = value
 
     @property
     def gamma2_s(self):
-        assert self._gamma1_s is not None, 'gamma2_s must not be None'
-        return self._gamma1_s
+        assert self._gamma2_s is not None, 'gamma2_s must not be None'
+        return self._gamma2_s
 
     @gamma2_s.setter
     def gamma2_s(self, value):
-        self._gamma1_s = value
+        self._gamma2_s = value
 
     @property
     def b_a(self):
@@ -548,9 +548,9 @@ class BladeSection:
         self.y_out_edge = self.y02 + self.s2 * np.sin(phi)
 
         self.y_c, self.square_y = self._get_y_c(self.x_k, self.y_k, self.x_s, self.y_s, self.x_in_edge,
-                                 self.y_in_edge, self.x_out_edge, self.y_out_edge)
+                                                self.y_in_edge, self.x_out_edge, self.y_out_edge)
         self.x_c, self.square_x = self._get_x_c(self.x_k, self.y_k, self.x_s, self.y_s, self.x_in_edge,
-                                 self.y_in_edge, self.x_out_edge, self.y_out_edge)
+                                                self.y_in_edge, self.x_out_edge, self.y_out_edge)
 
         self.chord_length = self._get_chord_length()
 

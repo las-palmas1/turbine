@@ -86,7 +86,10 @@ class StageParametersRadialDistribution:
         self.L_u_av = L_u_av
         self.c2_a_av = c2_a_av
         self.c2_u_av = c2_u_av
-        self.R = self.c_p * (self.k - 1) / self.k
+
+    @property
+    def R(self):
+        return self.c_p * (self.k - 1) / self.k
 
     def T0(self, r):
         return self.T0_stag(r) - self.c0(r) ** 2 / (2 * self.c_p)
@@ -277,8 +280,9 @@ class StageProfiler(StageParametersRadialDistribution):
                  c1_av, alpha1_av, L_u_av, c2_a_av, c2_u_av,
                  b_a_sa, b_a_rk,
                  delta_a_sa, delta_a_rk,
-                 z_sa: int, z_rk: int,
+                 t_rel_av_sa=0.8, t_rel_av_rk=0.7,
                  x0=0., y0=0.,
+                 auto_sections_par: bool = True,
                  r1_rel_sa=0.04,
                  r1_rel_rk=0.04,
                  gamma2_sa=np.radians([3])[0],
@@ -332,14 +336,18 @@ class StageProfiler(StageParametersRadialDistribution):
                 Величина осевого зазора после СА.
         :param delta_a_rk: float. \n
                 Величина осевого зазора после РК.
-        :param z_sa: float. \n
-                Количество лопаток на СА.
-        :param z_rk: float. \n
-                Количество лопаток на РК.
+        :param t_rel_av_sa: float. \n
+                Относительный шаг на среднем радиусе СА.
+        :param t_rel_av_rk: float. \n
+                Относительный шаг на среднем радиусе РК.
         :param x0: float. \n
                 Координата входного полюса средней линии втулочного профиля СА.
         :param y0: float. \n
                 Координата входного полюса средней линии втулочного профиля СА.
+        :param auto_sections_par: bool, optional. \n
+                Если равен True, то параметры сечений (углы отставания, скругления,
+                углы между касательными на входе и выходе) будут определяться автоматически. Если равен False, то
+                параметры каждого сечения можно задавать вручную или оставить равным по умолчанию.
         :param r1_rel_sa: float, optional. \n
                 Относительный радиус входной кромки СА (по отношению к осевой ширине)
         :param r1_rel_rk: float, optional. \n
@@ -370,10 +378,11 @@ class StageProfiler(StageParametersRadialDistribution):
         StageParametersRadialDistribution.__init__(self, profiling_type, p0_stag, T0_stag, c0, alpha0,
                                                    c_p, k, D1_in, D1_av, D1_out, n, c1_av,
                                                    alpha1_av, L_u_av, c2_a_av, c2_u_av, phi, psi)
+        assert section_num % 2 == 1, 'The section number must be odd.'
         self.section_num = section_num
         self.b_a_sa = b_a_sa
-        self.z_sa = z_sa
-        self.z_rk = z_rk
+        self.t_rel_av_sa = t_rel_av_sa
+        self.t_rel_av_rk = t_rel_av_rk
         self.b_a_rk = b_a_rk
         self.pnt_cnt = pnt_cnt
         self.x0 = x0
@@ -389,9 +398,14 @@ class StageProfiler(StageParametersRadialDistribution):
         self.gamma2_k_rel_sa = gamma2_k_rel_sa
         self.gamma2_k_rel_rk = gamma2_k_rel_rk
         self.center: bool = center
+        self.auto_sections_par = auto_sections_par
         self._sa_sections: typing.List[BladeSection] = [BladeSection() for _ in range(section_num)]
         self._rk_sections: typing.List[BladeSection] = [BladeSection() for _ in range(section_num)]
         self.x0_next = None
+        self.z_sa = None
+        self.z_rk = None
+        self.t_av_sa = None
+        self.t_av_rk = None
         "Координата x0 для следующей ступени"
 
     @property
@@ -406,58 +420,90 @@ class StageProfiler(StageParametersRadialDistribution):
         res = np.linspace(0.5 * self.D1_in, 0.5 * self.D1_out, self.section_num)
         return res
 
-    def _get_delta(self, M):
+    def get_delta(self, M):
         """Возвращает значение угла отставания в зависимости от величина числа Маха на входе в профиль."""
-        mach = np.array([0.1, 0.2, 0.6, 0.8, 0.95, 1.4])
-        delta = np.radians([0, 0.1, 0.33, 0.7, 1.5, 3])
+        mach = np.array([0, 0.1, 0.2, 0.6, 0.8, 0.95, 1.4, 1.9, 3])
+        delta = np.radians([0, 0, 0.1, 0.33, 0.7, 1.5, 3, 5, 5])
         res = interp1d(mach, delta)(M)
         return res
 
-    def _get_gamma1(self, angle1_l):
+    def get_gamma1(self, angle1_l):
         """Возвращает значение угла между касательными к контуру у входной кромки."""
         angle1_l_arr = np.radians([10, 30, 150, 170])
-        gamma1_arr = np.radians([55, 45, 10, 4])
+        gamma1_arr = np.radians([48, 40, 8, 4])
         res = interp1d(angle1_l_arr, gamma1_arr)(angle1_l)
         return res
 
-    def _init_sections(self):
+    def init_sections(self):
+        """Инициализация входных параметров всех сечений"""
         radiuses = self._get_radius()
         for section, radius in zip(self.sa_sections, radiuses):
-            section.b_a = self.b_a_sa
-            section.angle1 = self.alpha0(radius)
-            section.delta1 = self._get_delta(self.M_c0(radius))
-            section.angle2 = self.alpha1(radius)
-            section.delta2 = self._get_delta(self.M_c1(radius))
-            section.r1 = self.r1_rel_sa * self.b_a_sa
-            section.x0_av = self.x0
-            section.y0_av = self.y0
-            section.gamma1_k = self._get_gamma1(section.angle1_l) * self.gamma1_k_rel_sa
-            section.gamma1_s = self._get_gamma1(section.angle1_l) * (1 - self.gamma1_k_rel_sa)
-            section.gamma2_k = self.gamma2_sa * self.gamma2_k_rel_sa
-            section.gamma2_s = self.gamma2_sa * (1 - self.gamma2_k_rel_sa)
-            section.convex = 'left'
-            section.pnt_count = self.pnt_cnt
+            if self.auto_sections_par:
+                section.b_a = self.b_a_sa
+                section.angle1 = self.alpha0(radius)
+                section.delta1 = self.get_delta(self.M_c0(radius))
+                section.angle2 = self.alpha1(radius)
+                section.delta2 = self.get_delta(self.M_c1(radius))
+                section.r1 = self.r1_rel_sa * self.b_a_sa
+                section.x0_av = self.x0
+                section.y0_av = self.y0
+                section.gamma1_k = self.get_gamma1(section.angle1_l) * self.gamma1_k_rel_sa
+                section.gamma1_s = self.get_gamma1(section.angle1_l) * (1 - self.gamma1_k_rel_sa)
+                section.gamma2_k = self.gamma2_sa * self.gamma2_k_rel_sa
+                section.gamma2_s = self.gamma2_sa * (1 - self.gamma2_k_rel_sa)
+                section.convex = 'left'
+                section.pnt_count = self.pnt_cnt
+            else:
+                section.b_a = self.b_a_sa
+                section.angle1 = self.alpha0(radius)
+                section.angle2 = self.alpha1(radius)
+                section.convex = 'left'
+                section.pnt_count = self.pnt_cnt
+                section.x0_av = self.x0
+                section.y0_av = self.y0
 
         for section, radius in zip(self.rk_sections, radiuses):
-            section.b_a = self.b_a_rk
-            section.angle1 = self.beta1(radius)
-            section.delta1 = self._get_delta(self.M_w1(radius))
-            section.angle2 = self.beta2(radius)
-            section.delta2 = self._get_delta(self.M_w2(radius))
-            section.r1 = self.r1_rel_rk * self.b_a_rk
-            section.x0_av = self.x0 + self.b_a_sa + self.delta_a_sa
-            section.y0_av = self.y0
-            section.gamma1_k = self._get_gamma1(section.angle1_l) * self.gamma1_k_rel_rk
-            section.gamma1_s = self._get_gamma1(section.angle1_l) * (1 - self.gamma1_k_rel_rk)
-            section.gamma2_k = self.gamma2_rk * self.gamma2_k_rel_rk
-            section.gamma2_s = self.gamma2_rk * (1 - self.gamma2_k_rel_rk)
-            section.convex = 'right'
-            section.pnt_count = self.pnt_cnt
+            if self.auto_sections_par:
+                section.b_a = self.b_a_rk
+                section.angle1 = self.beta1(radius)
+                section.delta1 = self.get_delta(self.M_w1(radius))
+                section.angle2 = self.beta2(radius)
+                section.delta2 = self.get_delta(self.M_w2(radius))
+                section.r1 = self.r1_rel_rk * self.b_a_rk
+                section.x0_av = self.x0 + self.b_a_sa + self.delta_a_sa
+                section.y0_av = self.y0
+                section.gamma1_k = self.get_gamma1(section.angle1_l) * self.gamma1_k_rel_rk
+                section.gamma1_s = self.get_gamma1(section.angle1_l) * (1 - self.gamma1_k_rel_rk)
+                section.gamma2_k = self.gamma2_rk * self.gamma2_k_rel_rk
+                section.gamma2_s = self.gamma2_rk * (1 - self.gamma2_k_rel_rk)
+                section.convex = 'right'
+                section.pnt_count = self.pnt_cnt
+            else:
+                section.b_a = self.b_a_rk
+                section.angle1 = self.beta1(radius)
+                section.angle2 = self.beta2(radius)
+                section.x0_av = self.x0 + self.b_a_sa + self.delta_a_sa
+                section.y0_av = self.y0
+                section.convex = 'right'
+                section.pnt_count = self.pnt_cnt
+
+    def _get_average_sections(self):
+        sa_section = self.sa_sections[int(self.section_num / 2)]
+        rk_section = self.rk_sections[int(self.section_num / 2)]
+        return sa_section, rk_section
 
     def _compute_step(self):
         """Рассчитывает величины абсолютных и относительных шагов."""
+        sa_av_section, rk_av_section = self._get_average_sections()
+
+        self.z_sa = int(np.pi * self.D1_av / (self.t_rel_av_sa * sa_av_section.chord_length))
         self.t_av_sa = np.pi * self.D1_av / self.z_sa
+        self.t_rel_av_sa = self.t_av_sa / sa_av_section.chord_length
+
+        self.z_rk = int(np.pi * self.D1_av / (self.t_rel_av_rk * rk_av_section.chord_length))
         self.t_av_rk = np.pi * self.D1_av / self.z_rk
+        self.t_rel_av_rk = self.t_av_rk / rk_av_section.chord_length
+
         radiuses = self._get_radius()
         for section, radius in zip(self.sa_sections, radiuses):
             section.t = 2 * np.pi * radius / self.z_sa
@@ -465,7 +511,6 @@ class StageProfiler(StageParametersRadialDistribution):
             section.t = 2 * np.pi * radius / self.z_rk
 
     def compute_sections(self):
-        self._init_sections()
         for section in self.sa_sections:
             section.compute_profile()
         for section in self.rk_sections:
@@ -518,10 +563,12 @@ class StageProfiler(StageParametersRadialDistribution):
         plt.title(r'$\frac{r - r_{вт}}{r_{п} - r_{вт}} = %.3f$' % radius_rel, fontsize=14)
         plt.show()
 
-    def plot_profile_3d(self):
+    def plot_profile_3d(self, axes=None):
         radiuses = self._get_radius()
-        fig = plt.figure(figsize=(8, 6))
-        axes = Axes3D(fig)
+        show = not bool(axes)
+        if not axes:
+            fig = plt.figure(figsize=(8, 6))
+            axes = Axes3D(fig)
         for n, radius in enumerate(radiuses):
             sa_section = self.sa_sections[n]
             rk_section = self.rk_sections[n]
@@ -534,64 +581,8 @@ class StageProfiler(StageParametersRadialDistribution):
             axes.plot(xs=rk_section.x_out_edge, ys=rk_section.y_out_edge, zs=radius, color='blue', lw=0.7)
             axes.plot(xs=rk_section.x_s, ys=rk_section.y_s, zs=radius, color='blue', lw=0.7)
             axes.plot(xs=rk_section.x_k, ys=rk_section.y_k, zs=radius, color='blue', lw=0.7)
-        plt.show()
+        if show:
+            plt.show()
 
 if __name__ == '__main__':
-    turbine = Turbine(TurbineType.Compressor,
-                      T_g_stag=1400,
-                      p_g_stag=300e3,
-                      G_turbine=25,
-                      work_fluid=KeroseneCombustionProducts(),
-                      alpha_air=2.5,
-                      l1_D1_ratio=0.25,
-                      n=15e3,
-                      T_t_stag_cycle=1150,
-                      stage_number=2,
-                      eta_t_stag_cycle=0.91,
-                      k_n=6.8,
-                      eta_m=0.99,
-                      auto_compute_heat_drop=True,
-                      precise_heat_drop=False,
-                      auto_set_rho=True,
-                      H01_init=120e3,
-                      c21_init=250,
-                      alpha11=np.radians([17])[0],
-                      gamma_av=np.radians([4])[0],
-                      gamma_sum=np.radians([10])[0])
-    turbine.compute_geometry()
-    turbine.compute_stages_gas_dynamics()
-    turbine.compute_integrate_turbine_parameters()
-    # turbine[0].plot_velocity_triangle()
-    # turbine.geom.plot_geometry(figsize=(5, 5))
-
-    stage_prof = StageProfiler(profiling_type=ProfilingType.ConstantCirculation,
-                               p0_stag=lambda r: turbine[0].p0_stag,
-                               T0_stag=lambda r: turbine[0].T0_stag,
-                               c0=lambda r: 100,
-                               alpha0=lambda r: np.radians([90])[0],
-                               c_p=turbine.c_p_gas,
-                               k=turbine.k_gas,
-                               D1_in=turbine.geom[0].D1 - turbine.geom[0].l1,
-                               D1_av=turbine.geom[0].D1,
-                               D1_out=turbine.geom[0].D1 + turbine.geom[0].l1,
-                               n=turbine.n,
-                               c1_av=turbine[0].c1,
-                               alpha1_av=turbine[0].alpha1,
-                               L_u_av=turbine[0].L_u,
-                               c2_a_av=turbine[0].c2_a,
-                               c2_u_av=turbine[0].c2_u,
-                               b_a_sa=turbine.geom[0].b_sa,
-                               b_a_rk=turbine.geom[0].b_rk,
-                               delta_a_sa=turbine.geom[0].delta_a_sa,
-                               delta_a_rk=turbine.geom[0].delta_a_rk,
-                               z_sa=11,
-                               z_rk=17,
-                               center=True,
-                               section_num=3,
-                               x0=0.,
-                               y0=0.,
-                               pnt_cnt=35)
-    stage_prof.compute_sections()
-    stage_prof.plot_parameter_distribution(['alpha1', 'alpha2', 'beta1', 'beta2'])
-    stage_prof.plot_profile_2d(2, width_rel=3)
-    stage_prof.plot_profile_3d()
+    pass
