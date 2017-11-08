@@ -8,6 +8,7 @@ from core.average_streamline.stage_gas_dynamics import StageGasDynamics, get_fir
 from enum import Enum
 from scipy.interpolate import interp1d
 import os
+import pickle as pk
 
 
 class TurbineType(Enum):

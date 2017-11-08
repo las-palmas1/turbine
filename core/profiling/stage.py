@@ -174,8 +174,8 @@ class StageParametersRadialDistribution:
             raise InvalidStageSizeValue('w1 can not be calculated')
         return np.sqrt(self.c1(r) ** 2 + self.u(r) ** 2 - 2 * self.u(r) * self.c1(r) * np.cos(self.alpha1(r)))
 
-    def T1_w(self, r):
-        return self.T0(r) + self.w1(r) / (2 * self.c_p)
+    def T1_w_stag(self, r):
+        return self.T1(r) + self.w1(r) / (2 * self.c_p)
 
     def beta1(self, r):
         if self.c1(r) * np.cos(self.alpha1(r)) - self.u(r) >= 0:
@@ -346,8 +346,9 @@ class StageProfiler(StageParametersRadialDistribution):
                 Координата входного полюса средней линии втулочного профиля СА.
         :param auto_sections_par: bool, optional. \n
                 Если равен True, то параметры сечений (углы отставания, скругления,
-                углы между касательными на входе и выходе) будут определяться автоматически. Если равен False, то
-                параметры каждого сечения можно задавать вручную или оставить равным по умолчанию.
+                углы между касательными на входе и выходе) будут определяться автоматически по интегральным
+                показателям для ступени. Если равен False, то параметры каждого сечения можно задавать вручную или
+                оставить равными по умолчанию.
         :param r1_rel_sa: float, optional. \n
                 Относительный радиус входной кромки СА (по отношению к осевой ширине)
         :param r1_rel_rk: float, optional. \n

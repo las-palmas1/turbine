@@ -3,7 +3,9 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtTest import QTest
 from PyQt5.QtCore import Qt
 from gui.average_streamline.widgets import AveLineWidget, StageDataWidget
+from core.average_streamline.turbine import Turbine, TurbineType
 import sys
+from gas_turbine_cycle.gases import NaturalGasCombustionProducts
 import numpy as np
 
 app = QApplication(sys.argv)
@@ -71,6 +73,7 @@ class AveLineWidgetTest(unittest.TestCase):
         turbine.compute_stages_gas_dynamics()
         turbine.compute_integrate_turbine_parameters()
         QTest.mouseClick(self.form.compute_btn, Qt.LeftButton)
+        self.assertNotEqual(self.form.turbine, None)
         self.assertAlmostEqual(self.form.eta_t.value(), turbine.eta_t, places=3)
         self.assertAlmostEqual(self.form.L_t_sum.value(), turbine.L_t_sum / 1e3, places=2)
         self.assertAlmostEqual(self.form.H_t_stag.value(), turbine.H_t_stag / 1e3, places=2)
@@ -141,6 +144,88 @@ class AveLineWidgetTest(unittest.TestCase):
             self.assertAlmostEqual(stage_data.c_p_av.value(), turbine[i].c_p_gas, places=2)
             self.assertAlmostEqual(stage_data.G_in.value(), turbine[i].G_stage_in, places=2)
             self.assertAlmostEqual(stage_data.G_out.value(), turbine[i].G_stage_out, places=2)
+            self.assertAlmostEqual(stage_data.T1_w_stag.value(), turbine[i].T1_w_stag, places=1)
+
+    def test_setting_input_data_from_turbine(self):
+        turbine = Turbine(turbine_type=TurbineType.Compressor,
+                          stage_number=2,
+                          T_g_stag=1450,
+                          p_g_stag=400e3,
+                          G_turbine=25,
+                          work_fluid=NaturalGasCombustionProducts(),
+                          alpha_air=2.6,
+                          l1_D1_ratio=0.20,
+                          n=15e3,
+                          T_t_stag_cycle=1050,
+                          eta_t_stag_cycle=0.91,
+                          alpha11=np.radians([17])[0],
+                          auto_set_rho=False,
+                          rho_list=[0.35, 0.45],
+                          auto_compute_heat_drop=True,
+                          H01_init=220e3,
+                          c21_init=250,
+                          gamma_in=np.radians([7])[0],
+                          gamma_out=np.radians([8])[0],
+                          precise_heat_drop=False)
+
+        turbine.geom[0].l1_b_sa_ratio = 2.1
+        turbine.geom[0].l2_b_rk_ratio = 2.5
+        turbine.geom[0].delta_a_b_sa_ratio = 0.4
+        turbine.geom[0].delta_a_b_rk_ratio = 0.35
+        turbine.geom[0].p_r_out_l1_ratio = 0.045
+        turbine.geom[0].p_r_in_l1_ratio = 0.055
+        turbine.geom[0].p_a_out_rel = 0.35
+        turbine.geom[0].p_a_in_rel = 0.25
+        turbine.geom[0].delta_r_rk_l2_ratio = 0.02
+        turbine.geom[0].phi = 0.95
+        turbine.geom[0].psi = 0.95
+        turbine.geom[0].g_lb = 0.01
+        turbine.geom[0].g_ld = 0.02
+        turbine.geom[0].g_lk = 0.015
+        turbine.geom[0].g_cool = 0.07
+
+        self.form.set_input_from_turbine(turbine)
+
+        self.assertEqual(turbine.stage_number, self.form.stage_number.value())
+        self.assertEqual(self.form.turbine_type.currentIndex(), 1)
+        self.assertEqual(self.form.fuel.currentIndex(), 1)
+        self.assertTrue(self.form.gamma_in_out.isChecked())
+        self.assertAlmostEqual(self.form.gamma1.value(), np.degrees(turbine.gamma_out), places=1)
+        self.assertAlmostEqual(self.form.gamma2.value(), np.degrees(turbine.gamma_in), places=1)
+        self.assertFalse(self.form.checkBox_rho_auto.isChecked())
+        self.assertTrue(self.form.checkBox_h0_auto.isChecked())
+        self.assertFalse(self.form.checkBox_precise_h0.isChecked())
+        self.assertAlmostEqual(self.form.H01_init.value(), turbine.H01_init / 1e3, places=1)
+        self.assertAlmostEqual(self.form.c21.value(), turbine.c21_init, places=1)
+
+        self.assertAlmostEqual(self.form.T_g_stag.value(), turbine.T_g_stag, 2)
+        self.assertAlmostEqual(self.form.p_g_stag.value(), turbine.p_g_stag / 1e6, places=3)
+        self.assertAlmostEqual(self.form.G_t.value(), turbine.G_turbine, places=2)
+        self.assertAlmostEqual(self.form.alpha_air.value(), turbine.alpha_air, places=2)
+        self.assertAlmostEqual(self.form.alpha11.value(), np.degrees(turbine.alpha11), places=1)
+        self.assertAlmostEqual(self.form.l1_D1_ratio.value(), turbine.l1_D1_ratio, places=2)
+        self.assertAlmostEqual(self.form.n.value(), turbine.n, places=0)
+        self.assertAlmostEqual(self.form.T_t_stag_cycle.value(), turbine.T_t_stag_cycle, places=0)
+        self.assertAlmostEqual(self.form.eta_t_stag_cycle.value(), turbine.eta_t_stag_cycle, places=2)
+
+        for i in range(turbine.stage_number):
+            stage_data: StageDataWidget = self.form.stackedWidget.widget(i)
+            geom = turbine.geom[i]
+            self.assertAlmostEqual(stage_data.l1_b_sa_ratio.value(), geom.l1_b_sa_ratio, places=2)
+            self.assertAlmostEqual(stage_data.l2_b_rk_ratio.value(), geom.l2_b_rk_ratio, places=2)
+            self.assertAlmostEqual(stage_data.delta_a_b_sa_ratio.value(), geom.delta_a_b_sa_ratio, places=2)
+            self.assertAlmostEqual(stage_data.delta_a_b_rk_ratio.value(), geom.delta_a_b_rk_ratio, places=2)
+            self.assertAlmostEqual(stage_data.p_r_out_l1_ratio.value(), geom.p_r_out_l1_ratio, places=2)
+            self.assertAlmostEqual(stage_data.p_r_in_l1_ratio.value(), geom.p_r_in_l1_ratio, places=2)
+            self.assertAlmostEqual(stage_data.p_a_out_rel.value(), geom.p_a_out_rel, places=2)
+            self.assertAlmostEqual(stage_data.p_a_in_rel.value(), geom.p_a_in_rel, places=2)
+            self.assertAlmostEqual(stage_data.delta_r_rel.value(), geom.delta_r_rk_l2_ratio, places=2)
+            self.assertAlmostEqual(stage_data.phi.value(), geom.phi, places=2)
+            self.assertAlmostEqual(stage_data.psi.value(), geom.psi, places=2)
+            self.assertAlmostEqual(stage_data.g_lb.value(), geom.g_lb, places=2)
+            self.assertAlmostEqual(stage_data.g_ld.value(), geom.g_ld, places=2)
+            self.assertAlmostEqual(stage_data.g_lk.value(), geom.g_lk, places=2)
+            self.assertAlmostEqual(stage_data.g_cool.value(), geom.g_cool, places=2)
 
 
 if __name__ == '__main__':

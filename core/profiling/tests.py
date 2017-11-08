@@ -60,7 +60,8 @@ class StageProfilerTest(unittest.TestCase):
                                         section_num=3,
                                         x0=0.,
                                         y0=0.,
-                                        pnt_cnt=35)
+                                        pnt_cnt=35,
+                                        gamma1_k_rel_rk=0.5)
 
     def test_blade_number_computing(self):
         self.stage_prof.init_sections()
@@ -273,7 +274,60 @@ class TurbineProfilerTest(unittest.TestCase):
                                                 c_in=lambda r: 90,
                                                 alpha_in=lambda r: np.radians([90])[0],
                                                 center=True)
+        self.turbine_profiler[0].profiling_type = ProfilingType.ConstantAngle
+        self.turbine_profiler[0].gamma1_k_rel_rk = 0.5
+        self.turbine_profiler[1].profiling_type = ProfilingType.ConstantAngle
+        self.turbine_profiler[1].auto_sections_par = False
+        self.turbine_profiler[1].rk_sections[0].gamma1_s = np.radians([15])[0]
+        self.turbine_profiler[1].rk_sections[0].gamma1_k = np.radians([7])[0]
+        self.turbine_profiler.compute_stage_profiles()
 
-    # def test_parameter_transfer(self):
-    #     """Тестирование правильности передачи параметров из расчета по средней линии тока в профайлер"""
-    #     self.turbine_profiler.compute_stage_profiles()
+    def test_parameter_transfer(self):
+        """Тестирование правильности передачи параметров из расчета по средней линии тока в профайлер"""
+
+        stage_prof = self.turbine_profiler[0]
+        geom = self.turbine.geom[0]
+        gas_dynamic = self.turbine[0]
+
+        self.assertEqual(stage_prof.c_p, gas_dynamic.c_p_gas)
+        self.assertEqual(stage_prof.k, gas_dynamic.k_gas)
+        self.assertEqual(stage_prof.D1_in, geom.D1 - geom.l1)
+        self.assertEqual(stage_prof.D1_av, geom.D1)
+        self.assertEqual(stage_prof.D1_out, geom.D1 + geom.l1)
+        self.assertEqual(stage_prof.c1_av, gas_dynamic.c1)
+        self.assertEqual(stage_prof.alpha1_av, gas_dynamic.alpha1)
+        self.assertEqual(stage_prof.n, gas_dynamic.n)
+        self.assertEqual(stage_prof.L_u_av, gas_dynamic.L_u)
+        self.assertEqual(stage_prof.c2_a_av, gas_dynamic.c2_a)
+        self.assertEqual(stage_prof.c2_u_av, gas_dynamic.c2_u)
+        self.assertEqual(stage_prof.b_a_sa, geom.b_sa)
+        self.assertEqual(stage_prof.b_a_rk, geom.b_rk)
+        self.assertEqual(stage_prof.delta_a_sa, geom.delta_a_sa)
+        self.assertEqual(stage_prof.delta_a_rk, geom.delta_a_rk)
+
+        stage_prof = self.turbine_profiler[1]
+        geom = self.turbine.geom[1]
+        gas_dynamic = self.turbine[1]
+
+        self.assertEqual(self.turbine_profiler[0].T2_stag, stage_prof.T0_stag)
+        self.assertEqual(self.turbine_profiler[0].p2_stag, stage_prof.p0_stag)
+        self.assertEqual(self.turbine_profiler[0].alpha2, stage_prof.alpha0)
+        self.assertEqual(self.turbine_profiler[0].c2, stage_prof.c0)
+        self.assertEqual(stage_prof.c_p, gas_dynamic.c_p_gas)
+        self.assertEqual(stage_prof.k, gas_dynamic.k_gas)
+        self.assertEqual(stage_prof.D1_in, geom.D1 - geom.l1)
+        self.assertEqual(stage_prof.D1_av, geom.D1)
+        self.assertEqual(stage_prof.D1_out, geom.D1 + geom.l1)
+        self.assertEqual(stage_prof.c1_av, gas_dynamic.c1)
+        self.assertEqual(stage_prof.alpha1_av, gas_dynamic.alpha1)
+        self.assertEqual(stage_prof.n, gas_dynamic.n)
+        self.assertEqual(stage_prof.L_u_av, gas_dynamic.L_u)
+        self.assertEqual(stage_prof.c2_a_av, gas_dynamic.c2_a)
+        self.assertEqual(stage_prof.c2_u_av, gas_dynamic.c2_u)
+        self.assertEqual(stage_prof.b_a_sa, geom.b_sa)
+        self.assertEqual(stage_prof.b_a_rk, geom.b_rk)
+        self.assertEqual(stage_prof.delta_a_sa, geom.delta_a_sa)
+        self.assertEqual(stage_prof.delta_a_rk, geom.delta_a_rk)
+
+    def test_plot(self):
+        self.turbine_profiler.plot_3d()

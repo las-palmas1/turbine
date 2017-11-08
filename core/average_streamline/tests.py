@@ -27,6 +27,8 @@ class TurbineTest(unittest.TestCase):
                                          alpha11=np.radians(17),
                                          gamma_av=np.radians(4),
                                          gamma_sum=np.radians(10))
+        self.comp_turb_h0_auto.geom[0].g_cool = 0.03
+        self.comp_turb_h0_auto.geom[1].g_cool = 0.03
         self.comp_turb_h0_hand = Turbine(TurbineType.Compressor,
                                          T_g_stag=1400,
                                          p_g_stag=5.5e5,
@@ -103,11 +105,16 @@ class TurbineTest(unittest.TestCase):
         self.assertNotEqual(self.comp_turb_h0_auto.eta_t, None)
         self.assertNotEqual(self.comp_turb_h0_auto.eta_t_stag, None)
 
-        L_st1 = self.comp_turb_h0_auto[0].c_p_gas * (self.comp_turb_h0_auto[0].T0_stag -
-                                                     self.comp_turb_h0_auto[0].T_st_stag)
-        L_st2 = self.comp_turb_h0_auto[1].c_p_gas * (self.comp_turb_h0_auto[1].T0_stag -
-                                                     self.comp_turb_h0_auto[1].T_st_stag)
+        gd1 = self.comp_turb_h0_auto[0]
+        gd2 = self.comp_turb_h0_auto[1]
+
+        L_st1 = gd1.c_p_gas * (gd1.T0_stag - gd1.T_st_stag) * (1 - gd1.g_lb - gd1.g_lk - gd1.g_ld + gd1.g_cool)
+        L_st2 = gd2.c_p_gas * (gd2.T0_stag - gd2.T_st_stag) * (gd2.G_stage_in / gd2.G_turbine -
+                                                               gd2.g_lb - gd2.g_lk - gd2.g_ld + gd2.g_cool)
         self.assertAlmostEqual(abs((L_st1 + L_st2) - self.comp_turb_h0_auto.L_t_cycle) / (L_st1 + L_st2), 0, places=2)
+
+        self.assertEqual(self.comp_turb_h0_auto[0].L_t_rel + self.comp_turb_h0_auto[1].L_t_rel,
+                         self.comp_turb_h0_auto.L_t_cycle)
 
         H_t_old = self.comp_turb_h0_auto.H_t_stag_cycle
         self.comp_turb_h0_auto.eta_t_stag_cycle = self.comp_turb_h0_auto.eta_t_stag_cycle - 0.01
@@ -187,6 +194,7 @@ class TurbineTest(unittest.TestCase):
         self.assertEqual(self.comp_turb_h0_auto[0].T_st_stag, self.comp_turb_h0_auto[1].T0_stag)
         self.assertEqual(self.comp_turb_h0_auto[0].p2_stag, self.comp_turb_h0_auto[1].p0_stag)
         self.assertEqual(self.comp_turb_h0_auto[0].G_turbine, self.comp_turb_h0_auto[1].G_turbine)
+        self.assertEqual(self.comp_turb_h0_auto[0].G_stage_out, self.comp_turb_h0_auto[1].G_stage_in)
         self.assertEqual(self.comp_turb_h0_auto[0].alpha_air, self.comp_turb_h0_auto[1].alpha_air)
         self.assertEqual(self.comp_turb_h0_auto.geom[0].l1, self.comp_turb_h0_auto[0].l1)
         self.assertEqual(self.comp_turb_h0_auto.geom[0].l2, self.comp_turb_h0_auto[0].l2)

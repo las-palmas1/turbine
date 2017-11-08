@@ -137,6 +137,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         self.stackedWidget.addWidget(stage_widget)
         self.change_rho_auto()
         self.change_heat_drop_auto()
+        self.turbine: Turbine = None
         self.prevPage_btn.clicked.connect(self.on_prev_page_btn_click)
         self.nextPage_btn.clicked.connect(self.on_next_page_btn_click)
         self.stage_number.valueChanged.connect(self.change_stage_number)
@@ -294,6 +295,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_form.c_p_av.setValue(turbine[i].c_p_gas)
             stage_form.G_in.setValue(turbine[i].G_stage_in)
             stage_form.G_out.setValue(turbine[i].G_stage_out)
+            stage_form.T1_w_stag.setValue(turbine[i].T1_w_stag)
 
             stage_form.triangle_canvas.plot_velocity_triangle('Треугольник скоростей', turbine[i].c1_u,
                                                               turbine[i].c1_a, turbine[i].u1, turbine[i].c2_u,
@@ -512,6 +514,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             turbine.geom[i].p_a_in_rel = stage_data.p_a_in_rel.value()
             turbine.geom[i].p_r_out_l1_ratio = stage_data.p_r_out_l1_ratio.value()
             turbine.geom[i].p_a_out_rel = stage_data.p_a_out_rel.value()
+            turbine.geom[i].g_cool = stage_data.g_cool.value()
         return turbine
 
     def show_error_message(self, message):
@@ -524,6 +527,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
 
     def on_compute_btn_click(self):
         turbine = self.get_turbine()
+        self.turbine = turbine
         try:
             turbine.compute_geometry()
             turbine.compute_stages_gas_dynamics()
@@ -534,15 +538,24 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             self.show_error_message(str(ex))
 
     def save_turbine_file(self, fname):
-        turbine = self.get_turbine()
+        if not self.turbine:
+            turbine = self.get_turbine()
+        else:
+            turbine = self.turbine
         file = open(fname, 'wb')
         pc.dump(turbine, file)
         file.close()
 
-    def set_input_from_turbine_file(self, fname):
+    @classmethod
+    def get_turbine_from_file(cls, fname) -> Turbine:
         file = open(fname, 'rb')
         turbine: Turbine = pc.load(file)
         file.close()
+        return turbine
+
+    def set_input_from_turbine(self, turbine: Turbine):
+
+        self.turbine = turbine
         precise_heat_drop = turbine.precise_heat_drop
 
         self.stage_number.setValue(turbine.stage_number)
@@ -612,12 +625,13 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_data.epsilon.setValue(turbine.geom[i].epsilon)
             stage_data.mu.setValue(turbine.geom[i].mu)
             stage_data.g_lk.setValue(turbine.geom[i].g_lk)
-            stage_data.g_ld.setValue(turbine.geom[i].g_lb)
+            stage_data.g_lb.setValue(turbine.geom[i].g_lb)
             stage_data.g_ld.setValue(turbine.geom[i].g_ld)
             stage_data.p_r_in_l1_ratio.setValue(turbine.geom[i].p_r_in_l1_ratio)
             stage_data.p_r_out_l1_ratio.setValue(turbine.geom[i].p_r_out_l1_ratio)
             stage_data.p_a_in_rel.setValue(turbine.geom[i].p_a_in_rel)
             stage_data.p_a_out_rel.setValue(turbine.geom[i].p_a_out_rel)
+            stage_data.g_cool.setValue(turbine.geom[i].g_cool)
 
 
 class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_MainWindow):
@@ -625,12 +639,21 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
         QtWidgets.QMainWindow.__init__(self)
         self.save_count = 0
         self.setupUi(self)
+        self.file_ext = '.avl'
         self.setCentralWidget(AveLineWidget())
         self.act_exit.triggered.connect(self.close)
         self.act_new.triggered.connect(self.on_new_action)
         self.act_open.triggered.connect(self.on_open_action)
         self.act_save_as.triggered.connect(self.on_save_as_action)
         self.act_save.triggered.connect(self.on_save_action)
+
+    def show_error_message(self, message, process_name='saving'):
+        err_message = QtWidgets.QMessageBox(self)
+        err_message.setIcon(QtWidgets.QMessageBox.Warning)
+        err_message.setWindowTitle('Error')
+        err_message.setText('An error occurred during the %s' % process_name)
+        err_message.setDetailedText('Exception message:\n%s' % message)
+        err_message.show()
 
     def on_new_action(self):
         self.setCentralWidget(AveLineWidget())
@@ -642,33 +665,50 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
                                                'Turbine AveLine files  (*%s)' % 'avl')
 
         if fname:
-            ave_line_widget: AveLineWidget = self.centralWidget()
-            ave_line_widget.set_input_from_turbine_file(fname)
-            self.setWindowTitle(fname)
-            self.save_count = 1
+            try:
+                ave_line_widget: AveLineWidget = self.centralWidget()
+                turbine = ave_line_widget.get_turbine_from_file(fname)
+                ave_line_widget.set_input_from_turbine(turbine)
+                self.setWindowTitle(fname)
+                self.save_count = 1
+            except Exception as ex:
+                logger.error(ex)
+                self.show_error_message(str(ex), 'opening')
 
     def on_save_as_action(self):
         fname, _ = QFileDialog.getSaveFileName(self, 'Сохранить как...', os.getcwd(),
                                                'Turbine AveLine files (*%s)' % 'avl')
         if fname:
-            ave_line_widget: AveLineWidget = self.centralWidget()
-            ave_line_widget.save_turbine_file(fname)
-            self.setWindowTitle(fname)
-            self.save_count += 1
+            try:
+                ave_line_widget: AveLineWidget = self.centralWidget()
+                ave_line_widget.save_turbine_file(fname + self.file_ext)
+                self.setWindowTitle(fname + self.file_ext)
+                self.save_count += 1
+            except Exception as ex:
+                logger.error(ex)
+                self.show_error_message(str(ex), 'saving')
 
     def on_save_action(self):
         if self.save_count > 0:
-            fname = self.windowTitle()
-            ave_line_widget: AveLineWidget = self.centralWidget()
-            ave_line_widget.save_turbine_file(fname)
+            try:
+                fname = self.windowTitle()
+                ave_line_widget: AveLineWidget = self.centralWidget()
+                ave_line_widget.save_turbine_file(fname)
+            except Exception as ex:
+                logger.error(ex)
+                self.show_error_message(str(ex), 'saving')
         else:
             fname, _ = QFileDialog.getSaveFileName(self, 'Сохранить как...', os.getcwd(),
                                                    'Turbine AveLine files (*%s)' % 'avl')
             if fname:
-                ave_line_widget: AveLineWidget = self.centralWidget()
-                ave_line_widget.save_turbine_file(fname)
-                self.setWindowTitle(fname)
-                self.save_count += 1
+                try:
+                    ave_line_widget: AveLineWidget = self.centralWidget()
+                    ave_line_widget.save_turbine_file(fname + self.file_ext)
+                    self.setWindowTitle(fname + self.file_ext)
+                    self.save_count += 1
+                except Exception as ex:
+                    logger.error(ex)
+                    self.show_error_message(str(ex), 'saving')
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)

@@ -3,8 +3,9 @@ from distutils.core import setup
 setup(
     name='turbine',
     version='0.0.1',
-    package_dir={'turbine': 'core', 'turbine.average_streamline': 'core/average_streamline'},
-    packages=['turbine', 'turbine.average_streamline'],
+    package_dir={'turbine': 'core', 'turbine.average_streamline': 'core/average_streamline',
+                 'turbine.profiling': 'core/profiling'},
+    packages=['turbine', 'turbine.average_streamline', 'turbine.profiling'],
     url='',
     license='',
     author='Alexander Zhigalkin',
