@@ -572,7 +572,8 @@ class BladeSection:
         else:
             raise ValueError('Parameter convex can not be equal to %s' % self.convex)
 
-    def plot(self):
+    def plot(self, figsize=(6, 4)):
+        plt.figure(figsize=figsize)
         plt.plot(self.y_av, self.x_av, lw=0.5, ls='--', color='black')
         plt.plot(self.y_s, self.x_s, lw=1, color='red')
         plt.plot(self.y_k, self.x_k, lw=1, color='red')

@@ -1,11 +1,11 @@
 import unittest
-from core.profiling.stage import StageProfiler, ProfilingType
-from core.average_streamline.turbine import Turbine, TurbineType
+from .stage import StageProfiler, ProfilingType
+from ..average_streamline.turbine import Turbine, TurbineType
 from gas_turbine_cycle.gases import KeroseneCombustionProducts
-from core.average_streamline.stage_gas_dynamics import StageGasDynamics
-from core.average_streamline.stage_geom import StageGeomAndHeatDrop
+from ..average_streamline.stage_gas_dynamics import StageGasDynamics
+from ..average_streamline.stage_geom import StageGeomAndHeatDrop
 import numpy as np
-from core.profiling.turbine import TurbineProfiler
+from .turbine import TurbineProfiler
 
 
 class StageProfilerTest(unittest.TestCase):
@@ -61,7 +61,11 @@ class StageProfilerTest(unittest.TestCase):
                                         x0=0.,
                                         y0=0.,
                                         pnt_cnt=35,
-                                        gamma1_k_rel_rk=0.5)
+                                        gamma1_k_rel_rk=0.5,
+                                        gamma1_incr_rk=0.9,
+                                        gamma1_incr_sa=1.03,
+                                        center_point_rk=[0.46, 0.47, 0.48],
+                                        center_point_sa=[0.51, 0.52, 0.53])
 
     def test_blade_number_computing(self):
         self.stage_prof.init_sections()
@@ -147,11 +151,14 @@ class StageProfilerTest(unittest.TestCase):
         self.assertEqual(section.angle2_l, section.angle2 - section.delta2)
         self.assertEqual(section.r1, self.stage_prof.r1_rel_sa * self.stage_prof.b_a_sa)
         self.assertEqual(section.gamma1_k,
-                         self.stage_prof.get_gamma1(section.angle1_l) * self.stage_prof.gamma1_k_rel_sa)
+                         self.stage_prof.get_gamma1(section.angle1_l) * self.stage_prof.gamma1_k_rel_sa *
+                         self.stage_prof.gamma1_incr_sa)
         self.assertEqual(section.gamma1_s,
-                         self.stage_prof.get_gamma1(section.angle1_l) * (1 - self.stage_prof.gamma1_k_rel_sa))
+                         self.stage_prof.get_gamma1(section.angle1_l) * (1 - self.stage_prof.gamma1_k_rel_sa) *
+                         self.stage_prof.gamma1_incr_sa)
         self.assertEqual(section.gamma2_k, self.stage_prof.gamma2_sa * self.stage_prof.gamma2_k_rel_sa)
         self.assertEqual(section.gamma2_s, self.stage_prof.gamma2_sa * (1 - self.stage_prof.gamma2_k_rel_sa))
+        self.assertEqual(section.center_point_pos, self.stage_prof.center_point_sa[0])
 
         section = self.stage_prof.sa_sections[1]
         self.assertEqual(section.b_a, self.stage_prof.b_a_sa)
@@ -163,11 +170,14 @@ class StageProfilerTest(unittest.TestCase):
         self.assertEqual(section.angle2_l, section.angle2 - section.delta2)
         self.assertEqual(section.r1, self.stage_prof.r1_rel_sa * self.stage_prof.b_a_sa)
         self.assertEqual(section.gamma1_k,
-                         self.stage_prof.get_gamma1(section.angle1_l) * self.stage_prof.gamma1_k_rel_sa)
+                         self.stage_prof.get_gamma1(section.angle1_l) * self.stage_prof.gamma1_k_rel_sa *
+                         self.stage_prof.gamma1_incr_sa)
         self.assertEqual(section.gamma1_s,
-                         self.stage_prof.get_gamma1(section.angle1_l) * (1 - self.stage_prof.gamma1_k_rel_sa))
+                         self.stage_prof.get_gamma1(section.angle1_l) * (1 - self.stage_prof.gamma1_k_rel_sa) *
+                         self.stage_prof.gamma1_incr_sa)
         self.assertEqual(section.gamma2_k, self.stage_prof.gamma2_sa * self.stage_prof.gamma2_k_rel_sa)
         self.assertEqual(section.gamma2_s, self.stage_prof.gamma2_sa * (1 - self.stage_prof.gamma2_k_rel_sa))
+        self.assertEqual(section.center_point_pos, self.stage_prof.center_point_sa[1])
 
         section = self.stage_prof.sa_sections[2]
         self.assertEqual(section.b_a, self.stage_prof.b_a_sa)
@@ -179,11 +189,14 @@ class StageProfilerTest(unittest.TestCase):
         self.assertEqual(section.angle2_l, section.angle2 - section.delta2)
         self.assertEqual(section.r1, self.stage_prof.r1_rel_sa * self.stage_prof.b_a_sa)
         self.assertEqual(section.gamma1_k,
-                         self.stage_prof.get_gamma1(section.angle1_l) * self.stage_prof.gamma1_k_rel_sa)
+                         self.stage_prof.get_gamma1(section.angle1_l) * self.stage_prof.gamma1_k_rel_sa *
+                         self.stage_prof.gamma1_incr_sa)
         self.assertEqual(section.gamma1_s,
-                         self.stage_prof.get_gamma1(section.angle1_l) * (1 - self.stage_prof.gamma1_k_rel_sa))
+                         self.stage_prof.get_gamma1(section.angle1_l) * (1 - self.stage_prof.gamma1_k_rel_sa) *
+                         self.stage_prof.gamma1_incr_sa)
         self.assertEqual(section.gamma2_k, self.stage_prof.gamma2_sa * self.stage_prof.gamma2_k_rel_sa)
         self.assertEqual(section.gamma2_s, self.stage_prof.gamma2_sa * (1 - self.stage_prof.gamma2_k_rel_sa))
+        self.assertEqual(section.center_point_pos, self.stage_prof.center_point_sa[2])
 
         section = self.stage_prof.rk_sections[0]
         self.assertEqual(section.b_a, self.stage_prof.b_a_rk)
@@ -195,11 +208,14 @@ class StageProfilerTest(unittest.TestCase):
         self.assertEqual(section.angle2_l, section.angle2 - section.delta2)
         self.assertEqual(section.r1, self.stage_prof.r1_rel_rk * self.stage_prof.b_a_rk)
         self.assertEqual(section.gamma1_k,
-                         self.stage_prof.get_gamma1(section.angle1_l) * self.stage_prof.gamma1_k_rel_rk)
+                         self.stage_prof.get_gamma1(section.angle1_l) * self.stage_prof.gamma1_k_rel_rk *
+                         self.stage_prof.gamma1_incr_rk)
         self.assertEqual(section.gamma1_s,
-                         self.stage_prof.get_gamma1(section.angle1_l) * (1 - self.stage_prof.gamma1_k_rel_rk))
+                         self.stage_prof.get_gamma1(section.angle1_l) * (1 - self.stage_prof.gamma1_k_rel_rk) *
+                         self.stage_prof.gamma1_incr_rk)
         self.assertEqual(section.gamma2_k, self.stage_prof.gamma2_rk * self.stage_prof.gamma2_k_rel_rk)
         self.assertEqual(section.gamma2_s, self.stage_prof.gamma2_rk * (1 - self.stage_prof.gamma2_k_rel_rk))
+        self.assertEqual(section.center_point_pos, self.stage_prof.center_point_rk[0])
 
         section = self.stage_prof.rk_sections[1]
         self.assertEqual(section.b_a, self.stage_prof.b_a_rk)
@@ -211,11 +227,14 @@ class StageProfilerTest(unittest.TestCase):
         self.assertEqual(section.angle2_l, section.angle2 - section.delta2)
         self.assertEqual(section.r1, self.stage_prof.r1_rel_rk * self.stage_prof.b_a_rk)
         self.assertEqual(section.gamma1_k,
-                         self.stage_prof.get_gamma1(section.angle1_l) * self.stage_prof.gamma1_k_rel_rk)
+                         self.stage_prof.get_gamma1(section.angle1_l) * self.stage_prof.gamma1_k_rel_rk *
+                         self.stage_prof.gamma1_incr_rk)
         self.assertEqual(section.gamma1_s,
-                         self.stage_prof.get_gamma1(section.angle1_l) * (1 - self.stage_prof.gamma1_k_rel_rk))
+                         self.stage_prof.get_gamma1(section.angle1_l) * (1 - self.stage_prof.gamma1_k_rel_rk) *
+                         self.stage_prof.gamma1_incr_rk)
         self.assertEqual(section.gamma2_k, self.stage_prof.gamma2_rk * self.stage_prof.gamma2_k_rel_rk)
         self.assertEqual(section.gamma2_s, self.stage_prof.gamma2_rk * (1 - self.stage_prof.gamma2_k_rel_rk))
+        self.assertEqual(section.center_point_pos, self.stage_prof.center_point_rk[1])
 
         section = self.stage_prof.rk_sections[2]
         self.assertEqual(section.b_a, self.stage_prof.b_a_rk)
@@ -227,11 +246,14 @@ class StageProfilerTest(unittest.TestCase):
         self.assertEqual(section.angle2_l, section.angle2 - section.delta2)
         self.assertEqual(section.r1, self.stage_prof.r1_rel_rk * self.stage_prof.b_a_rk)
         self.assertEqual(section.gamma1_k,
-                         self.stage_prof.get_gamma1(section.angle1_l) * self.stage_prof.gamma1_k_rel_rk)
+                         self.stage_prof.get_gamma1(section.angle1_l) * self.stage_prof.gamma1_k_rel_rk *
+                         self.stage_prof.gamma1_incr_rk)
         self.assertEqual(section.gamma1_s,
-                         self.stage_prof.get_gamma1(section.angle1_l) * (1 - self.stage_prof.gamma1_k_rel_rk))
+                         self.stage_prof.get_gamma1(section.angle1_l) * (1 - self.stage_prof.gamma1_k_rel_rk) *
+                         self.stage_prof.gamma1_incr_rk)
         self.assertEqual(section.gamma2_k, self.stage_prof.gamma2_rk * self.stage_prof.gamma2_k_rel_rk)
         self.assertEqual(section.gamma2_s, self.stage_prof.gamma2_rk * (1 - self.stage_prof.gamma2_k_rel_rk))
+        self.assertEqual(section.center_point_pos, self.stage_prof.center_point_rk[2])
 
     def test_plots(self):
         self.stage_prof.init_sections()

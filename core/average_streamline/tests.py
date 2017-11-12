@@ -1,4 +1,4 @@
-from core.average_streamline.turbine import TurbineType, Turbine
+from .turbine import TurbineType, Turbine
 from gas_turbine_cycle.gases import KeroseneCombustionProducts
 import unittest
 import numpy as np
@@ -28,6 +28,10 @@ class TurbineTest(unittest.TestCase):
                                          gamma_av=np.radians(4),
                                          gamma_sum=np.radians(10))
         self.comp_turb_h0_auto.geom[0].g_cool = 0.03
+        self.comp_turb_h0_auto.geom[0].g_lb = 0.002
+        self.comp_turb_h0_auto.geom[0].g_lk = 0.001
+        self.comp_turb_h0_auto.geom[0].g_ld = 0.0015
+        self.comp_turb_h0_auto.geom[0].T_cool = 750
         self.comp_turb_h0_auto.geom[1].g_cool = 0.03
         self.comp_turb_h0_hand = Turbine(TurbineType.Compressor,
                                          T_g_stag=1400,
@@ -155,6 +159,12 @@ class TurbineTest(unittest.TestCase):
         self.assertGreater(self.comp_turb_h0_hand.eta_l, self.comp_turb_h0_hand.eta_t_stag)
         self.assertNotEqual(self.comp_turb_h0_hand.eta_t, None)
         self.assertNotEqual(self.comp_turb_h0_hand.eta_t_stag, None)
+        self.assertAlmostEqual(self.comp_turb_h0_hand[0].alpha_air_in, self.comp_turb_h0_hand[0].alpha_air_out,
+                               places=5)
+        self.assertAlmostEqual(self.comp_turb_h0_hand[1].alpha_air_in, self.comp_turb_h0_hand[1].alpha_air_out,
+                               places=5)
+        self.assertAlmostEqual(self.comp_turb_h0_hand[0].T_st_stag, self.comp_turb_h0_hand[0].T_mix_stag, places=5)
+        self.assertAlmostEqual(self.comp_turb_h0_hand[1].T_st_stag, self.comp_turb_h0_hand[1].T_mix_stag, places=5)
 
     def test_comp_turbine_h0_auto_rho_hand(self):
         """Тестирование расчета компрессорной турбины с ручной настройкой степеней реактивности"""
@@ -191,23 +201,41 @@ class TurbineTest(unittest.TestCase):
         self.comp_turb_h0_auto.compute_stages_gas_dynamics()
         self.comp_turb_h0_auto.compute_integrate_turbine_parameters()
 
-        self.assertEqual(self.comp_turb_h0_auto[0].T_st_stag, self.comp_turb_h0_auto[1].T0_stag)
+        self.assertEqual(self.comp_turb_h0_auto[0].T_mix_stag, self.comp_turb_h0_auto[1].T0_stag)
         self.assertEqual(self.comp_turb_h0_auto[0].p2_stag, self.comp_turb_h0_auto[1].p0_stag)
         self.assertEqual(self.comp_turb_h0_auto[0].G_turbine, self.comp_turb_h0_auto[1].G_turbine)
         self.assertEqual(self.comp_turb_h0_auto[0].G_stage_out, self.comp_turb_h0_auto[1].G_stage_in)
-        self.assertEqual(self.comp_turb_h0_auto[0].alpha_air, self.comp_turb_h0_auto[1].alpha_air)
+        self.assertEqual(self.comp_turb_h0_auto[0].alpha_air_out, self.comp_turb_h0_auto[1].alpha_air_in)
         self.assertEqual(self.comp_turb_h0_auto.geom[0].l1, self.comp_turb_h0_auto[0].l1)
         self.assertEqual(self.comp_turb_h0_auto.geom[0].l2, self.comp_turb_h0_auto[0].l2)
         self.assertEqual(self.comp_turb_h0_auto.geom[0].D1, self.comp_turb_h0_auto[0].D1)
         self.assertEqual(self.comp_turb_h0_auto.geom[0].D2, self.comp_turb_h0_auto[0].D2)
         self.assertEqual(self.comp_turb_h0_auto.geom[0].rho, self.comp_turb_h0_auto[0].rho)
         self.assertEqual(self.comp_turb_h0_auto.geom[0].H0, self.comp_turb_h0_auto[0].H0)
+        self.assertEqual(self.comp_turb_h0_auto.geom[0].T_cool, self.comp_turb_h0_auto[0].T_cool)
+        self.assertEqual(self.comp_turb_h0_auto.geom[0].g_cool, self.comp_turb_h0_auto[0].g_cool)
+        self.assertEqual(self.comp_turb_h0_auto.geom[0].g_lb, self.comp_turb_h0_auto[0].g_lb)
+        self.assertEqual(self.comp_turb_h0_auto.geom[0].g_lk, self.comp_turb_h0_auto[0].g_lk)
+        self.assertEqual(self.comp_turb_h0_auto.geom[0].g_ld, self.comp_turb_h0_auto[0].g_ld)
+        self.assertEqual(self.comp_turb_h0_auto.geom[0].epsilon, self.comp_turb_h0_auto[0].epsilon)
+        self.assertEqual(self.comp_turb_h0_auto.geom[0].delta_r_rk, self.comp_turb_h0_auto[0].delta_r_rk)
+
         self.assertEqual(self.comp_turb_h0_auto.geom[1].l1, self.comp_turb_h0_auto[1].l1)
         self.assertEqual(self.comp_turb_h0_auto.geom[1].l2, self.comp_turb_h0_auto[1].l2)
         self.assertEqual(self.comp_turb_h0_auto.geom[1].D1, self.comp_turb_h0_auto[1].D1)
         self.assertEqual(self.comp_turb_h0_auto.geom[1].D2, self.comp_turb_h0_auto[1].D2)
         self.assertEqual(self.comp_turb_h0_auto.geom[1].rho, self.comp_turb_h0_auto[1].rho)
         self.assertEqual(self.comp_turb_h0_auto.geom[1].H0, self.comp_turb_h0_auto[1].H0)
+        self.assertEqual(self.comp_turb_h0_auto.geom[1].T_cool, self.comp_turb_h0_auto[1].T_cool)
+        self.assertEqual(self.comp_turb_h0_auto.geom[1].g_cool, self.comp_turb_h0_auto[1].g_cool)
+        self.assertEqual(self.comp_turb_h0_auto.geom[1].g_lb, self.comp_turb_h0_auto[1].g_lb)
+        self.assertEqual(self.comp_turb_h0_auto.geom[1].g_lk, self.comp_turb_h0_auto[1].g_lk)
+        self.assertEqual(self.comp_turb_h0_auto.geom[1].g_ld, self.comp_turb_h0_auto[1].g_ld)
+        self.assertEqual(self.comp_turb_h0_auto.geom[1].epsilon, self.comp_turb_h0_auto[1].epsilon)
+        self.assertEqual(self.comp_turb_h0_auto.geom[1].delta_r_rk, self.comp_turb_h0_auto[1].delta_r_rk)
+
+        self.assertLess(self.comp_turb_h0_auto[0].T_mix_stag, self.comp_turb_h0_auto[0].T_st_stag)
+        self.assertLess(self.comp_turb_h0_auto[0].alpha_air_in, self.comp_turb_h0_auto[0].alpha_air_out)
 
 
 

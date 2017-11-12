@@ -1,9 +1,9 @@
 from gas_turbine_cycle.gases import KeroseneCombustionProducts, IdealGas
-from core.average_streamline.stage_geom import InvalidStageSizeValue, StageGeomAndHeatDrop, \
+from .stage_geom import InvalidStageSizeValue, StageGeomAndHeatDrop, \
     TurbineGeomAndHeatDropDistribution, set_logging
 import logging
 import numpy as np
-from core.average_streamline.stage_gas_dynamics import StageGasDynamics, get_first_stage, \
+from .stage_gas_dynamics import StageGasDynamics, get_first_stage, \
     get_intermediate_stage, get_last_pressure_stage, get_last_work_stage, get_only_pressure_stage, get_only_work_stage
 from enum import Enum
 from scipy.interpolate import interp1d

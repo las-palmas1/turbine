@@ -145,6 +145,8 @@ class AveLineWidgetTest(unittest.TestCase):
             self.assertAlmostEqual(stage_data.G_in.value(), turbine[i].G_stage_in, places=2)
             self.assertAlmostEqual(stage_data.G_out.value(), turbine[i].G_stage_out, places=2)
             self.assertAlmostEqual(stage_data.T1_w_stag.value(), turbine[i].T1_w_stag, places=1)
+            self.assertAlmostEqual(stage_data.T_mix_stag.value(), turbine[i].T_mix_stag, places=1)
+            self.assertAlmostEqual(stage_data.alpha_air_out.value(), turbine[i].alpha_air_out, places=1)
 
     def test_setting_input_data_from_turbine(self):
         turbine = Turbine(turbine_type=TurbineType.Compressor,
@@ -226,6 +228,7 @@ class AveLineWidgetTest(unittest.TestCase):
             self.assertAlmostEqual(stage_data.g_ld.value(), geom.g_ld, places=2)
             self.assertAlmostEqual(stage_data.g_lk.value(), geom.g_lk, places=2)
             self.assertAlmostEqual(stage_data.g_cool.value(), geom.g_cool, places=2)
+            self.assertAlmostEqual(stage_data.T_cool.value(), geom.T_cool, places=1)
 
 
 if __name__ == '__main__':

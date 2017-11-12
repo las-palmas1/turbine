@@ -1,8 +1,8 @@
-from core.profiling.stage import StageProfiler, ProfilingType
-from core.average_streamline.turbine import Turbine, TurbineType
+from .stage import StageProfiler, ProfilingType
+from ..average_streamline.turbine import Turbine, TurbineType
 from gas_turbine_cycle.gases import KeroseneCombustionProducts
-from core.average_streamline.stage_gas_dynamics import StageGasDynamics
-from core.average_streamline.stage_geom import StageGeomAndHeatDrop
+from ..average_streamline.stage_gas_dynamics import StageGasDynamics
+from ..average_streamline.stage_geom import StageGeomAndHeatDrop
 import typing
 import numpy as np
 import matplotlib.pyplot as plt

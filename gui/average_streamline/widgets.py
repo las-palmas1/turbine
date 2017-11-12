@@ -296,6 +296,8 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_form.G_in.setValue(turbine[i].G_stage_in)
             stage_form.G_out.setValue(turbine[i].G_stage_out)
             stage_form.T1_w_stag.setValue(turbine[i].T1_w_stag)
+            stage_form.T_mix_stag.setValue(turbine[i].T_mix_stag)
+            stage_form.alpha_air_out.setValue(turbine[i].alpha_air_out)
 
             stage_form.triangle_canvas.plot_velocity_triangle('Треугольник скоростей', turbine[i].c1_u,
                                                               turbine[i].c1_a, turbine[i].u1, turbine[i].c2_u,
@@ -515,6 +517,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             turbine.geom[i].p_r_out_l1_ratio = stage_data.p_r_out_l1_ratio.value()
             turbine.geom[i].p_a_out_rel = stage_data.p_a_out_rel.value()
             turbine.geom[i].g_cool = stage_data.g_cool.value()
+            turbine.geom[i].T_cool = stage_data.T_cool.value()
         return turbine
 
     def show_error_message(self, message):
@@ -632,6 +635,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_data.p_a_in_rel.setValue(turbine.geom[i].p_a_in_rel)
             stage_data.p_a_out_rel.setValue(turbine.geom[i].p_a_out_rel)
             stage_data.g_cool.setValue(turbine.geom[i].g_cool)
+            stage_data.T_cool.setValue(turbine.geom[i].T_cool)
 
 
 class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_MainWindow):

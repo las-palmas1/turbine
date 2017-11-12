@@ -2,13 +2,11 @@ import enum
 import typing
 import numpy as np
 from scipy.interpolate import interp1d
-from gas_turbine_cycle.gases import KeroseneCombustionProducts
 import matplotlib.pyplot as plt
-from core.average_streamline.stage_geom import InvalidStageSizeValue
-from core.average_streamline.turbine import TurbineType, Turbine
+from ..average_streamline.stage_geom import InvalidStageSizeValue
 from scipy.integrate import quad
 from gas_turbine_cycle.tools.gas_dynamics import GasDynamicFunctions
-from core.profiling.section import BladeSection
+from .section import BladeSection
 from mpl_toolkits.mplot3d import Axes3D
 
 
@@ -183,10 +181,19 @@ class StageParametersRadialDistribution:
         else:
             return np.pi + np.arctan(self.c1_a(r) / (self.c1(r) * np.cos(self.alpha1(r)) - self.u(r)))
 
+    def w1_a(self, r):
+        return self.w1(r) * np.sin(self.beta1(r))
+
+    def w1_u(self, r):
+        return self.w1(r) * np.cos(self.beta1(r))
+
     def beta2(self, r):
         if self.c2_a(r) / self.w2(r) > 1:
             raise InvalidStageSizeValue('c2_a must be less than w2')
         return np.arcsin(self.c2_a(r) / self.w2(r))
+
+    def w2_a(self, r):
+        return self.w2(r) * np.sin(self.beta2(r))
 
     def H_l(self, r):
         return 0.5 * ((self.w2(r) / self.psi) ** 2 - self.w1(r) ** 2)
@@ -208,7 +215,7 @@ class StageParametersRadialDistribution:
         return self.T1(r) - (self.w2(r) ** 2 - self.w1(r) ** 2) / (2 * self.c_p)
 
     def H0(self, r):
-        return self.c_p * self.T0_stag * (1 - (self.p0_stag(r) / self.p2(r)) ** ((1 - self.k) / self.k))
+        return self.c_p * self.T0_stag(r) * (1 - (self.p0_stag(r) / self.p2(r)) ** ((1 - self.k) / self.k))
 
     def rho(self, r):
         return self.H_l(r) * self.T1_ad(r) / (self.H0(r) * self.T1(r))
@@ -291,6 +298,10 @@ class StageProfiler(StageParametersRadialDistribution):
                  gamma1_k_rel_rk=0.3,
                  gamma2_k_rel_sa=0.3,
                  gamma2_k_rel_rk=0.3,
+                 gamma1_incr_sa=1.0,
+                 gamma1_incr_rk=1.0,
+                 center_point_sa: typing.List[float]=None,
+                 center_point_rk: typing.List[float]=None,
                  section_num: int=3, pnt_cnt=20,
                  center: bool =True,
                  phi=1.0, psi=1.0):
@@ -365,6 +376,16 @@ class StageProfiler(StageParametersRadialDistribution):
                 Отношение угла gamma2_k к углу gamma2 в СА.
         :param gamma2_k_rel_rk: float, optional. \n
                 Отношение угла gamma2_k к углу gamma2 в РК.
+        :param gamma1_incr_sa: float, optional. \n
+                Коэффициент увеличения угла gamma1 на СА. Найденный по углу лопатки угол gamma1 будет
+                умножаться на этот коэффициент.
+        :param gamma1_incr_rk: float, optional. \n
+                Коэффициент увеличения угла gamma1 на РК. Найденный по углу лопатки угол gamma1 будет
+                умножаться на этот коэффициент.
+        :param center_point_sa: list, optional. \n
+                Позиция, заданная в относительном виде, центрального полюса средней линии профиля СА.
+        :param center_point_rk: list, optional. \n
+                Позиция, заданная в относительном виде, центрального полюса средней линии профиля РК.
         :param section_num: int, optional. \n
                 Число рассчитываемых сечений.
         :param pnt_cnt: int, optional. \n
@@ -398,16 +419,28 @@ class StageProfiler(StageParametersRadialDistribution):
         self.gamma1_k_rel_rk = gamma1_k_rel_rk
         self.gamma2_k_rel_sa = gamma2_k_rel_sa
         self.gamma2_k_rel_rk = gamma2_k_rel_rk
+        self.gamma1_incr_sa = gamma1_incr_sa
+        self.gamma1_incr_rk = gamma1_incr_rk
+
+        if center_point_sa:
+            self.center_point_sa = center_point_sa
+        else:
+            self.center_point_sa = [0.5 for _ in range(section_num)]
+        if center_point_rk:
+            self.center_point_rk = center_point_rk
+        else:
+            self.center_point_rk = [0.5 for _ in range(section_num)]
+
         self.center: bool = center
         self.auto_sections_par = auto_sections_par
         self._sa_sections: typing.List[BladeSection] = [BladeSection() for _ in range(section_num)]
         self._rk_sections: typing.List[BladeSection] = [BladeSection() for _ in range(section_num)]
         self.x0_next = None
+        "Координата x0 для следующей ступени"
         self.z_sa = None
         self.z_rk = None
         self.t_av_sa = None
         self.t_av_rk = None
-        "Координата x0 для следующей ступени"
 
     @property
     def sa_sections(self) -> typing.List[BladeSection]:
@@ -438,7 +471,7 @@ class StageProfiler(StageParametersRadialDistribution):
     def init_sections(self):
         """Инициализация входных параметров всех сечений"""
         radiuses = self._get_radius()
-        for section, radius in zip(self.sa_sections, radiuses):
+        for section, radius, n in zip(self.sa_sections, radiuses, range(self.section_num)):
             if self.auto_sections_par:
                 section.b_a = self.b_a_sa
                 section.angle1 = self.alpha0(radius)
@@ -448,12 +481,13 @@ class StageProfiler(StageParametersRadialDistribution):
                 section.r1 = self.r1_rel_sa * self.b_a_sa
                 section.x0_av = self.x0
                 section.y0_av = self.y0
-                section.gamma1_k = self.get_gamma1(section.angle1_l) * self.gamma1_k_rel_sa
-                section.gamma1_s = self.get_gamma1(section.angle1_l) * (1 - self.gamma1_k_rel_sa)
+                section.gamma1_k = self.get_gamma1(section.angle1_l) * self.gamma1_k_rel_sa * self.gamma1_incr_sa
+                section.gamma1_s = self.get_gamma1(section.angle1_l) * (1 - self.gamma1_k_rel_sa) * self.gamma1_incr_sa
                 section.gamma2_k = self.gamma2_sa * self.gamma2_k_rel_sa
                 section.gamma2_s = self.gamma2_sa * (1 - self.gamma2_k_rel_sa)
                 section.convex = 'left'
                 section.pnt_count = self.pnt_cnt
+                section.center_point_pos = self.center_point_sa[n]
             else:
                 section.b_a = self.b_a_sa
                 section.angle1 = self.alpha0(radius)
@@ -463,7 +497,7 @@ class StageProfiler(StageParametersRadialDistribution):
                 section.x0_av = self.x0
                 section.y0_av = self.y0
 
-        for section, radius in zip(self.rk_sections, radiuses):
+        for section, radius, n in zip(self.rk_sections, radiuses, range(self.section_num)):
             if self.auto_sections_par:
                 section.b_a = self.b_a_rk
                 section.angle1 = self.beta1(radius)
@@ -473,12 +507,13 @@ class StageProfiler(StageParametersRadialDistribution):
                 section.r1 = self.r1_rel_rk * self.b_a_rk
                 section.x0_av = self.x0 + self.b_a_sa + self.delta_a_sa
                 section.y0_av = self.y0
-                section.gamma1_k = self.get_gamma1(section.angle1_l) * self.gamma1_k_rel_rk
-                section.gamma1_s = self.get_gamma1(section.angle1_l) * (1 - self.gamma1_k_rel_rk)
+                section.gamma1_k = self.get_gamma1(section.angle1_l) * self.gamma1_k_rel_rk * self.gamma1_incr_rk
+                section.gamma1_s = self.get_gamma1(section.angle1_l) * (1 - self.gamma1_k_rel_rk) * self.gamma1_incr_rk
                 section.gamma2_k = self.gamma2_rk * self.gamma2_k_rel_rk
                 section.gamma2_s = self.gamma2_rk * (1 - self.gamma2_k_rel_rk)
                 section.convex = 'right'
                 section.pnt_count = self.pnt_cnt
+                section.center_point_pos = self.center_point_rk[n]
             else:
                 section.b_a = self.b_a_rk
                 section.angle1 = self.beta1(radius)
@@ -533,7 +568,7 @@ class StageProfiler(StageParametersRadialDistribution):
         self._compute_step()
         self.x0_next = self.x0 + self.delta_a_sa + self.delta_a_rk + self.b_a_sa + self.b_a_rk
 
-    def plot_profile_2d(self, section_number=0, width_rel=4):
+    def plot_profile_2d(self, section_number=0, width_rel=4, figsize=(8, 5)):
         sa_section = self.sa_sections[section_number]
         t_sa = sa_section.t
         rk_section = self.rk_sections[section_number]
@@ -542,7 +577,7 @@ class StageProfiler(StageParametersRadialDistribution):
         radius_rel = (radius - 0.5 * self.D1_in) / (0.5 * self.D1_out - 0.5 * self.D1_in)
         i = 0
         y_max = width_rel * t_sa
-        plt.figure(figsize=(8, 5))
+        plt.figure(figsize=figsize)
         while i * t_sa < y_max:
             plt.plot(sa_section.y_in_edge + i * t_sa, sa_section.x_in_edge, lw=1, color='red')
             plt.plot(sa_section.y_out_edge + i * t_sa, sa_section.x_out_edge, lw=1, color='red')
