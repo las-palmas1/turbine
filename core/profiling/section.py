@@ -2,6 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
+import typing
+from scipy.optimize import fsolve, brentq
 
 
 class BladeSection:
@@ -96,6 +98,19 @@ class BladeSection:
 
         # длина хорды
         self.chord_length: float = None
+
+        # длины дуг
+        self.length_k: float = None
+        self.length_s: float = None
+        self.length_in_edge: float = None
+        # длины дуг, полученных разделением входной кромки точкой начала отсчета
+        self.length_in_edge_k: float = None
+        self.length_in_edge_s: float = None
+        self.length_out_edge: float = None
+
+        # положения точки начала отчета для расчета охлаждения
+        self.x0: float = None
+        self.y0: float = None
 
     @property
     def t(self):
@@ -385,8 +400,11 @@ class BladeSection:
         y_k_12, y_k_01 = np.split(y_k, [list(y_k).index(y_k.max())])
 
         # разделение массивов координат входной кромки
-        x_in_edge_23, x_in_edge_12 = np.split(x_in_edge, [list(y_in_edge).index(y_in_edge.min())])
-        y_in_edge_23, y_in_edge_12 = np.split(y_in_edge, [list(y_in_edge).index(y_in_edge.min())])
+        x_in_edge_23_30, x_in_edge_12 = np.split(x_in_edge, [list(y_in_edge).index(y_in_edge.min())])
+        y_in_edge_23_30, y_in_edge_12 = np.split(y_in_edge, [list(y_in_edge).index(y_in_edge.min())])
+
+        x_in_edge_30, x_in_edge_23 = np.split(x_in_edge_23_30, [list(y_in_edge_23_30).index(y_in_edge_23_30.max())])
+        y_in_edge_30, y_in_edge_23 = np.split(y_in_edge_23_30, [list(y_in_edge_23_30).index(y_in_edge_23_30.max())])
 
         # разделение массивов координат спинки
         x_s_23, x_s_30 = np.split(x_s, [list(y_s).index(y_s.max())])
@@ -403,8 +421,8 @@ class BladeSection:
         x_23 = np.array(list(x_in_edge_23) + list(x_s_23))
         y_23 = np.array(list(y_in_edge_23) + list(y_s_23))
 
-        x_30 = np.array(list(x_s_30) + list(x_out_edge_30))
-        y_30 = np.array(list(y_s_30) + list(y_out_edge_30))
+        x_30 = np.array(list(x_s_30) + list(x_out_edge_30) + list(x_in_edge_30))
+        y_30 = np.array(list(y_s_30) + list(y_out_edge_30) + list(y_in_edge_30))
 
         if len(x_01) < 2:
             x_01 = np.zeros(3)
@@ -429,16 +447,18 @@ class BladeSection:
         x_30_int = interp1d(y_30, x_30)
 
         # вычисление площади
-        square = -(quad(lambda y: x_01_int(y), y_01.min(), y_01.max())[0] -
-                   quad(lambda y: x_12_int(y), y_12.min(), y_12.max())[0] +
-                   quad(lambda y: x_23_int(y), y_23.min(), y_23.max())[0] -
-                   quad(lambda y: x_30_int(y), y_30.min(), y_30.max())[0])
+        square01 = quad(lambda y: x_01_int(y), y_01.min(), y_01.max())[0]
+        square12 = quad(lambda y: x_12_int(y), y_12.min(), y_12.max())[0]
+        square23 = quad(lambda y: x_23_int(y), y_23.min(), y_23.max())[0]
+        square30 = quad(lambda y: x_30_int(y), y_30.min(), y_30.max())[0]
+        square = -square01 + square12 - square23 + square30
 
         # статический момент относительно оси y
-        s_y = -0.5 * (quad(lambda y: x_01_int(y)**2, y_01.min(), y_01.max())[0] -
-                      quad(lambda y: x_12_int(y)**2, y_12.min(), y_12.max())[0] +
-                      quad(lambda y: x_23_int(y)**2, y_23.min(), y_23.max())[0] -
-                      quad(lambda y: x_30_int(y)**2, y_30.min(), y_30.max())[0])
+        s_y_01 = 0.5 * quad(lambda y: x_01_int(y)**2, y_01.min(), y_01.max())[0]
+        s_y_12 = 0.5 * quad(lambda y: x_12_int(y)**2, y_12.min(), y_12.max())[0]
+        s_y_23 = 0.5 * quad(lambda y: x_23_int(y)**2, y_23.min(), y_23.max())[0]
+        s_y_30 = 0.5 * quad(lambda y: x_30_int(y)**2, y_30.min(), y_30.max())[0]
+        s_y = -s_y_01 + s_y_12 - s_y_23 + s_y_30
 
         x_c = s_y / square
 
@@ -488,9 +508,73 @@ class BladeSection:
         self.x02 += dx
         self.y02 += dy
 
+        self.x0 += dx
+        self.y0 += dy
+
     def _get_chord_length(self):
         """Возвращает приближенное значение хорды профиля."""
         res = np.sqrt((self.x01 - self.x02)**2 + (self.y01 - self.y02)**2) + self.r1 + self.s2
+        return res
+
+    @classmethod
+    def _get_zero_point(cls, angle1, x01, y01, r1):
+        """Возвращает точку, соответствующую началу криволинейной системы координат, используемой в расчете
+        местных температур при расчете охлаждения."""
+
+        k = np.tan(angle1)
+        b = x01 - y01 * np.tan(angle1)
+
+        a1 = k**2 + 1
+        b1 = 2 * (k*b - x01*k - y01)
+        c1 = b**2 + x01**2 - 2*b*x01 + y01**2 - r1**2
+        if k > 0:
+            y0 = (-b1 - np.sqrt(b1**2 - 4*a1*c1)) / (2*a1)
+        else:
+            y0 = (-b1 + np.sqrt(b1 ** 2 - 4 * a1 * c1)) / (2 * a1)
+        x0 = k * y0 + b
+        return x0, y0
+
+    @classmethod
+    def _get_arc_length(cls, x: np.ndarray, y: np.ndarray):
+        """Возвращает длину дуги, заданной массивами координат точек."""
+        arc_length = np.sqrt((x[1: x.shape[0]] - x[0: x.shape[0]-1])**2 +
+                             (y[1: y.shape[0]] - y[0: y.shape[0]-1])**2).sum()
+        return arc_length
+
+    @classmethod
+    def _get_circle_arc_length(cls, phi1, phi2, rad):
+        """Возвращает длину дуги окружности."""
+        length = rad * abs(phi2 - phi1)
+        return length
+
+    @classmethod
+    def get_length(cls, x, x_arr, y_arr, y_int: typing.Callable[[float], float]):
+        length = 0
+        for i in range(len(x_arr) - 1):
+            if x_arr[i + 1] < x:
+                length += np.sqrt((x_arr[i + 1] - x_arr[i]) ** 2 + (y_arr[i + 1] - y_arr[i]) ** 2)
+            else:
+                length += np.sqrt((x - x_arr[i]) ** 2 + (y_int(x) - y_arr[i]) ** 2)
+                break
+        return length
+
+    @classmethod
+    def get_heat_transfer_regions_bound_points(cls, x_arr: np.ndarray, y_arr: np.ndarray,
+                                               lengths: typing.List[float]):
+        """Возвращает координаты границ участков заданной длины на спинке или корыте. Длины участков задаются в виде
+        массива абсолютных значений."""
+
+        assert x_arr is not None and y_arr is not None, "x_arr and y_arr hasn't computed yet."
+
+        y_int = interp1d(x_arr, y_arr, bounds_error=False, fill_value='extrapolate')
+
+        res = []
+        for length in lengths:
+            x_res = brentq(lambda x: cls.get_length(x, x_arr, y_arr, lambda x1: y_int(x1).__float__()) - length,
+                           x_arr[0], x_arr[x_arr.shape[0] - 1])
+            y_res = y_int(x_res).__float__()
+            res.append(x_res)
+            res.append(y_res)
         return res
 
     def compute_profile(self):
@@ -539,6 +623,12 @@ class BladeSection:
         phi = np.linspace(phi1, phi2, int(self.pnt_count / 2))
         self.x_in_edge = self.x01 + self.r1 * np.cos(phi)
         self.y_in_edge = self.y01 + self.r1 * np.sin(phi)
+        self.length_in_edge = self._get_circle_arc_length(phi1, phi2, self.r1)
+
+        self.x0, self.y0 = self._get_zero_point(self.angle1, self.x01, self.y01, self.r1)
+        phi0 = np.arctan((self.y0 - self.y01) / (self.x0 - self.x01)) + np.pi
+        self.length_in_edge_s = self._get_circle_arc_length(phi1, phi0, self.r1)
+        self.length_in_edge_k = self.length_in_edge - self.length_in_edge_s
 
         # координаты выходной кромки
         phi1 = np.arctan((self.y2_k - self.y02) / (self.x2_k - self.x02)) + np.pi
@@ -546,6 +636,7 @@ class BladeSection:
         phi = np.linspace(phi1, phi2, int(self.pnt_count / 2))
         self.x_out_edge = self.x02 + self.s2 * np.cos(phi)
         self.y_out_edge = self.y02 + self.s2 * np.sin(phi)
+        self.length_out_edge = self._get_circle_arc_length(phi1, phi2, self.s2)
 
         self.y_c, self.square_y = self._get_y_c(self.x_k, self.y_k, self.x_s, self.y_s, self.x_in_edge,
                                                 self.y_in_edge, self.x_out_edge, self.y_out_edge)
@@ -553,6 +644,9 @@ class BladeSection:
                                                 self.y_in_edge, self.x_out_edge, self.y_out_edge)
 
         self.chord_length = self._get_chord_length()
+
+        self.length_k = self._get_arc_length(self.x_k, self.y_k)
+        self.length_s = self._get_arc_length(self.x_s, self.y_s)
 
         if self.convex == 'left':
             self.x1_av, self.y1_av, self.x2_av, self.y2_av = self.x1_av, -self.y1_av, self.x2_av, -self.y2_av
@@ -564,6 +658,7 @@ class BladeSection:
                                                                                -self.y1_s, self.x2_s, -self.y2_s
             self.x_k, self.y_k = self.x_k, -self.y_k
             self.x_s, self.y_s = self.x_s, -self.y_s
+            self.y0 = -self.y0
             self.y_in_edge = -self.y_in_edge
             self.y_out_edge = -self.y_out_edge
             self.y_c = -self.y_c
@@ -590,9 +685,9 @@ class BladeSection:
         plt.show()
 
 if __name__ == '__main__':
-    bs = BladeSection(angle1=np.radians([25])[0],
+    bs = BladeSection(angle1=np.radians([30])[0],
                       angle2=np.radians([30])[0],
-                      delta1=np.radians([1])[0],
+                      delta1=np.radians([5])[0],
                       delta2=np.radians([2])[0],
                       b_a=0.03,
                       r1=0.002,
@@ -601,6 +696,11 @@ if __name__ == '__main__':
                       s2=0.0003)
     bs.compute_profile()
     print('y_c = %s' % bs.y_c)
+    print('b = %s' % bs.chord_length)
+    print('l_k = %s' % bs.length_k)
+    print('l_s = %s' % bs.length_s)
+    print('l_in_edge = %s' % bs.length_in_edge)
+    print('l_in_edge_s = %s' % bs.length_in_edge_s)
     bs.plot()
-    bs.move_to(10, 10)
-    bs.plot()
+    # bs.move_to(10, 10)
+    # bs.plot()

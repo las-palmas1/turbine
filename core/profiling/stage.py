@@ -290,18 +290,20 @@ class StageProfiler(StageParametersRadialDistribution):
                  t_rel_av_sa=0.8, t_rel_av_rk=0.7,
                  x0=0., y0=0.,
                  auto_sections_par: bool = True,
-                 r1_rel_sa=0.04,
-                 r1_rel_rk=0.04,
+                 r1_rel_sa: typing.Callable[[float], float] = lambda r_rel: 0.04,
+                 r1_rel_rk: typing.Callable[[float], float] = lambda r_rel: 0.04,
+                 s2_sa=0.001,
+                 s2_rk=0.001,
                  gamma2_sa=np.radians([3])[0],
                  gamma2_rk=np.radians([3])[0],
-                 gamma1_k_rel_sa=0.3,
-                 gamma1_k_rel_rk=0.3,
-                 gamma2_k_rel_sa=0.3,
-                 gamma2_k_rel_rk=0.3,
-                 gamma1_incr_sa=1.0,
-                 gamma1_incr_rk=1.0,
-                 center_point_sa: typing.List[float]=None,
-                 center_point_rk: typing.List[float]=None,
+                 gamma1_k_rel_sa: typing.Callable[[float], float] = lambda r_rel: 0.3,
+                 gamma1_k_rel_rk: typing.Callable[[float], float] = lambda r_rel: 0.3,
+                 gamma2_k_rel_sa: typing.Callable[[float], float] = lambda r_rel: 0.3,
+                 gamma2_k_rel_rk: typing.Callable[[float], float] = lambda r_rel: 0.3,
+                 gamma1_sa: typing.Callable[[float], float] = None,
+                 gamma1_rk: typing.Callable[[float], float] = None,
+                 center_point_sa: typing.Callable[[float], float] = lambda r_rel: 0.5,
+                 center_point_rk: typing.Callable[[float], float] = lambda r_rel: 0.5,
                  section_num: int=3, pnt_cnt=20,
                  center: bool =True,
                  phi=1.0, psi=1.0):
@@ -360,28 +362,33 @@ class StageProfiler(StageParametersRadialDistribution):
                 углы между касательными на входе и выходе) будут определяться автоматически по интегральным
                 показателям для ступени. Если равен False, то параметры каждого сечения можно задавать вручную или
                 оставить равными по умолчанию.
-        :param r1_rel_sa: float, optional. \n
-                Относительный радиус входной кромки СА (по отношению к осевой ширине)
-        :param r1_rel_rk: float, optional. \n
-                Относительный радиус входной кромки РК.
+        :param r1_rel_sa: callable, optional. \n
+                Зависимость относительного радиуса входной кромки СА (по отношению к осевой ширине) от
+                относительного радиуса сечения.
+        :param r1_rel_rk: callable, optional. \n
+                Зависимость относительного радиуса входной кромки РК от относительного радиуса сечения.
+        :param s2_sa: float, optional. \n
+                Радиус скругления выходной кромки СА.
+        :param s2_rk: float, optional. \n
+                Радиус скругления выходной кромки РК.
         :param gamma2_sa: float, optional. \n
                 Угол между касательными к профилю на выходе из СА.
         :param gamma2_rk: float, optional. \n
                 Угол между касательными к профилю на выходе из РК.
-        :param gamma1_k_rel_sa: float, optional. \n
-                Отношение угла gamma1_k к углу gamma1 в СА.
-        :param gamma1_k_rel_rk: float, optional. \n
-                Отношение угла gamma1_k к углу gamma1 в РК.
-        :param gamma2_k_rel_sa: float, optional. \n
-                Отношение угла gamma2_k к углу gamma2 в СА.
-        :param gamma2_k_rel_rk: float, optional. \n
-                Отношение угла gamma2_k к углу gamma2 в РК.
-        :param gamma1_incr_sa: float, optional. \n
-                Коэффициент увеличения угла gamma1 на СА. Найденный по углу лопатки угол gamma1 будет
-                умножаться на этот коэффициент.
-        :param gamma1_incr_rk: float, optional. \n
-                Коэффициент увеличения угла gamma1 на РК. Найденный по углу лопатки угол gamma1 будет
-                умножаться на этот коэффициент.
+        :param gamma1_k_rel_sa: callable, optional. \n
+                Зависимость отношения угла gamma1_k к углу gamma1 в СА от относительного радиуса сечения.
+        :param gamma1_k_rel_rk: callable, optional. \n
+                Зависимость отношения угла gamma1_k к углу gamma1 в РК от относительного радиуса сечения.
+        :param gamma2_k_rel_sa: callable, optional. \n
+                Зависимость отношения угла gamma2_k к углу gamma2 в СА от относительного радиуса сечения.
+        :param gamma2_k_rel_rk: callable, optional. \n
+                Зависимость отношения угла gamma2_k к углу gamma2 в РК.
+        :param gamma1_sa: callable, optional. \n
+                Зависимость угла gamma1 на СА от относительного радиуса сечения. По умолчанию равень None,
+                в таком случае он будет определятся в зависимости от угла лопатки на входе.
+        :param gamma1_rk: callable, optional. \n
+                Зависимость угла gamma1 на РК от относительного радиуса сечения. По умолчанию равень None,
+                в таком случае он будет определятся в зависимости от угла лопатки на входе.
         :param center_point_sa: list, optional. \n
                 Позиция, заданная в относительном виде, центрального полюса средней линии профиля СА.
         :param center_point_rk: list, optional. \n
@@ -415,21 +422,17 @@ class StageProfiler(StageParametersRadialDistribution):
         self.r1_rel_rk = r1_rel_rk
         self.gamma2_sa = gamma2_sa
         self.gamma2_rk = gamma2_rk
+        self.s2_sa = s2_sa
+        self.s2_rk = s2_rk
         self.gamma1_k_rel_sa = gamma1_k_rel_sa
         self.gamma1_k_rel_rk = gamma1_k_rel_rk
         self.gamma2_k_rel_sa = gamma2_k_rel_sa
         self.gamma2_k_rel_rk = gamma2_k_rel_rk
-        self.gamma1_incr_sa = gamma1_incr_sa
-        self.gamma1_incr_rk = gamma1_incr_rk
+        self.gamma1_sa = gamma1_sa
+        self.gamma1_rk = gamma1_rk
 
-        if center_point_sa:
-            self.center_point_sa = center_point_sa
-        else:
-            self.center_point_sa = [0.5 for _ in range(section_num)]
-        if center_point_rk:
-            self.center_point_rk = center_point_rk
-        else:
-            self.center_point_rk = [0.5 for _ in range(section_num)]
+        self.center_point_sa = center_point_sa
+        self.center_point_rk = center_point_rk
 
         self.center: bool = center
         self.auto_sections_par = auto_sections_par
@@ -452,7 +455,7 @@ class StageProfiler(StageParametersRadialDistribution):
 
     def _get_radius(self):
         res = np.linspace(0.5 * self.D1_in, 0.5 * self.D1_out, self.section_num)
-        return res
+        return np.array(res)
 
     def get_delta(self, M):
         """Возвращает значение угла отставания в зависимости от величина числа Маха на входе в профиль."""
@@ -472,22 +475,28 @@ class StageProfiler(StageParametersRadialDistribution):
         """Инициализация входных параметров всех сечений"""
         radiuses = self._get_radius()
         for section, radius, n in zip(self.sa_sections, radiuses, range(self.section_num)):
+            radius_rel = (radius - 0.5 * self.D1_in) / (0.5 * (self.D1_out - self.D1_in))
             if self.auto_sections_par:
                 section.b_a = self.b_a_sa
                 section.angle1 = self.alpha0(radius)
                 section.delta1 = self.get_delta(self.M_c0(radius))
                 section.angle2 = self.alpha1(radius)
                 section.delta2 = self.get_delta(self.M_c1(radius))
-                section.r1 = self.r1_rel_sa * self.b_a_sa
+                section.r1 = self.r1_rel_sa(radius_rel) * self.b_a_sa
                 section.x0_av = self.x0
                 section.y0_av = self.y0
-                section.gamma1_k = self.get_gamma1(section.angle1_l) * self.gamma1_k_rel_sa * self.gamma1_incr_sa
-                section.gamma1_s = self.get_gamma1(section.angle1_l) * (1 - self.gamma1_k_rel_sa) * self.gamma1_incr_sa
-                section.gamma2_k = self.gamma2_sa * self.gamma2_k_rel_sa
-                section.gamma2_s = self.gamma2_sa * (1 - self.gamma2_k_rel_sa)
+                section.s2 = self.s2_sa
+                if self.gamma1_sa is not None:
+                    section.gamma1_k = self.gamma1_sa(radius_rel) * self.gamma1_k_rel_sa(radius_rel)
+                    section.gamma1_s = self.gamma1_sa(radius_rel) * (1 - self.gamma1_k_rel_sa(radius_rel))
+                else:
+                    section.gamma1_k = self.get_gamma1(section.angle1_l) * self.gamma1_k_rel_sa(radius_rel)
+                    section.gamma1_s = self.get_gamma1(section.angle1_l) * (1 - self.gamma1_k_rel_sa(radius_rel))
+                section.gamma2_k = self.gamma2_sa * self.gamma2_k_rel_sa(radius_rel)
+                section.gamma2_s = self.gamma2_sa * (1 - self.gamma2_k_rel_sa(radius_rel))
                 section.convex = 'left'
                 section.pnt_count = self.pnt_cnt
-                section.center_point_pos = self.center_point_sa[n]
+                section.center_point_pos = self.center_point_sa(radius_rel)
             else:
                 section.b_a = self.b_a_sa
                 section.angle1 = self.alpha0(radius)
@@ -498,22 +507,28 @@ class StageProfiler(StageParametersRadialDistribution):
                 section.y0_av = self.y0
 
         for section, radius, n in zip(self.rk_sections, radiuses, range(self.section_num)):
+            radius_rel = (radius - 0.5 * self.D1_in) / (0.5 * (self.D1_out - self.D1_in))
             if self.auto_sections_par:
                 section.b_a = self.b_a_rk
                 section.angle1 = self.beta1(radius)
                 section.delta1 = self.get_delta(self.M_w1(radius))
                 section.angle2 = self.beta2(radius)
                 section.delta2 = self.get_delta(self.M_w2(radius))
-                section.r1 = self.r1_rel_rk * self.b_a_rk
+                section.r1 = self.r1_rel_rk(radius_rel) * self.b_a_rk
                 section.x0_av = self.x0 + self.b_a_sa + self.delta_a_sa
                 section.y0_av = self.y0
-                section.gamma1_k = self.get_gamma1(section.angle1_l) * self.gamma1_k_rel_rk * self.gamma1_incr_rk
-                section.gamma1_s = self.get_gamma1(section.angle1_l) * (1 - self.gamma1_k_rel_rk) * self.gamma1_incr_rk
-                section.gamma2_k = self.gamma2_rk * self.gamma2_k_rel_rk
-                section.gamma2_s = self.gamma2_rk * (1 - self.gamma2_k_rel_rk)
+                section.s2 = self.s2_rk
+                if self.gamma1_rk is not None:
+                    section.gamma1_k = self.gamma1_rk(radius_rel) * self.gamma1_k_rel_rk(radius_rel)
+                    section.gamma1_s = self.gamma1_rk(radius_rel) * (1 - self.gamma1_k_rel_rk(radius_rel))
+                else:
+                    section.gamma1_k = self.get_gamma1(section.angle1_l) * self.gamma1_k_rel_rk(radius_rel)
+                    section.gamma1_s = self.get_gamma1(section.angle1_l) * (1 - self.gamma1_k_rel_rk(radius_rel))
+                section.gamma2_k = self.gamma2_rk * self.gamma2_k_rel_rk(radius_rel)
+                section.gamma2_s = self.gamma2_rk * (1 - self.gamma2_k_rel_rk(radius_rel))
                 section.convex = 'right'
                 section.pnt_count = self.pnt_cnt
-                section.center_point_pos = self.center_point_rk[n]
+                section.center_point_pos = self.center_point_rk(radius_rel)
             else:
                 section.b_a = self.b_a_rk
                 section.angle1 = self.beta1(radius)
@@ -619,6 +634,36 @@ class StageProfiler(StageParametersRadialDistribution):
             axes.plot(xs=rk_section.x_k, ys=rk_section.y_k, zs=radius, color='blue', lw=0.7)
         if show:
             plt.show()
+
+    @classmethod
+    def _plot_section(cls, section: BladeSection, label: str):
+        y_s = list(section.y_s)
+        y_s.reverse()
+        x_s = list(section.x_s)
+        x_s.reverse()
+        y = list(section.y_in_edge) + list(section.y_k) + list(section.y_out_edge) + y_s
+        x = list(section.x_in_edge) + list(section.x_k) + list(section.x_out_edge) + x_s
+        plt.plot(y, x, lw=1, label=label)
+        plt.plot(section.y_c, section.x_c, linestyle='', marker='o', ms=8, mfc='black', color='black')
+
+    def plot_sa_sections(self, figsize=(6, 4)):
+        plt.figure(figsize=figsize)
+        radiuses = (self._get_radius() - 0.5 * self.D1_in) / (0.5 * (self.D1_out - self.D1_in))
+        for section, rad in zip(self.sa_sections, radiuses):
+            self._plot_section(section, label=r'$\bar{r} = %.3f$' % rad)
+        plt.grid()
+        plt.legend(fontsize=10)
+        plt.show()
+
+    def plot_rk_sections(self, figsize=(6, 4)):
+        plt.figure(figsize=figsize)
+        radiuses = (self._get_radius() - 0.5 * self.D1_in) / (0.5 * (self.D1_out - self.D1_in))
+        for section, rad in zip(self.rk_sections, radiuses):
+            self._plot_section(section, label=r'$\bar{r} = %.3f$' % rad)
+        plt.grid()
+        plt.legend(fontsize=10)
+        plt.show()
+
 
 if __name__ == '__main__':
     pass
