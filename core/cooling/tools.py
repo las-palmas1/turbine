@@ -1,10 +1,10 @@
 from ..profiling.section import BladeSection
 import numpy as np
-from gas_turbine_cycle.gases import Air, IdealGas
-from gas_turbine_cycle.tools.gas_dynamics import GasDynamicFunctions as gd
+from gas_turbine_cycle.gases import Air, IdealGas, KeroseneCombustionProducts
 import typing
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
+from scipy.interpolate import interp1d
 
 
 class GasBladeHeatExchange:
@@ -171,7 +171,6 @@ class LocalParamCalculator:
                  wall_thickness=None,
                  T_cool_fluid0=None,
                  T_wall_av=None,
-                 channel_width=None,
                  alpha_cool: typing.Callable[[float, float], float]=None,
                  T_out_stag: typing.Callable[[float], float]=None,
                  alpha_out: typing.Callable[[float], float]=None,
@@ -190,8 +189,6 @@ class LocalParamCalculator:
             Температура охраждающего тела на входе в лопатку.
         :param T_wall_av: float. \n
             Средняя температура стенки лопатки.
-        :param channel_width: float. \n
-            Ширина канала.
         :param alpha_cool: callable. \n
             Зависимость коэффициента теплоотдачи от охлаждающего тела к стенке лопатки от координаты вдоль
             обвода профиля и температуры охлаждающего тела.
@@ -212,7 +209,6 @@ class LocalParamCalculator:
         self.height = height
         self.wall_thickness = wall_thickness
         self.T_cool_fluid0 = T_cool_fluid0
-        self.channel_width = channel_width
         self.alpha_cool = alpha_cool
         self.T_wall_av = T_wall_av
         self.T_out_stag = T_out_stag
@@ -225,12 +221,12 @@ class LocalParamCalculator:
         self.T_cool_fluid_s_arr = None
         self.T_cool_fluid_k_arr = None
         self.T_cool_fluid_arr = None
+        self._T_cool_int = None
         self.alpha_cool_fluid_arr = None
         self.alpha_cool_fluid_k_arr = None
-        self.alpha_gas_arr = None
+        self.alpha_out_arr = None
         self.alpha_gas_k_arr = None
         self.T_wall_arr = None
-        self.T_wall_k_arr = None
         self.x_s_arr = None
         self.x_k_arr = None
         self.x_arr = None
@@ -243,14 +239,11 @@ class LocalParamCalculator:
     @classmethod
     def _solve_equation(cls, x_arr: np.ndarray, der: typing.Callable[[float, float], float], val0, eq_type='s'):
         val_arr = [val0]
-        print()
         for i in range(1, len(x_arr)):
             if eq_type == 'k':
                 val = val_arr[i - 1] + (x_arr[i] - x_arr[i - 1]) * der(val_arr[i - 1], x_arr[i - 1])
             elif eq_type == 's':
                 val = val_arr[i - 1] - (x_arr[i - 1] - x_arr[i]) * der(val_arr[i - 1], x_arr[i - 1])
-            print('i = %s' % i, 'T = %.3f' % val, 'x = %.5f' % x_arr[i], 'der_T = %.3f' % der(val_arr[i - 1],
-                                                                                              x_arr[i - 1]))
             val_arr.append(val)
         return np.array(val_arr)
 
@@ -287,6 +280,7 @@ class LocalParamCalculator:
         T_cool_fluid_s_list = list(self.T_cool_fluid_s_arr[1: self.T_cool_fluid_s_arr.shape[0]])
         T_cool_fluid_s_list.reverse()
         self.T_cool_fluid_arr = np.array(T_cool_fluid_s_list + list(self.T_cool_fluid_k_arr))
+        self._T_cool_int = interp1d(self.x_arr, self.T_cool_fluid_arr)
 
         self.T_wall_arr = []
 
@@ -299,43 +293,87 @@ class LocalParamCalculator:
             alpha_cool = self.alpha_cool(x, T_cool_fluid)
             self.alpha_cool_fluid_arr.append(alpha_cool)
 
-        self.alpha_gas_arr = []
+        self.alpha_out_arr = []
         for x in self.x_arr:
             alpha_gas = self.alpha_out(x)
-            self.alpha_gas_arr.append(alpha_gas)
+            self.alpha_out_arr.append(alpha_gas)
+
+    def get_T_cool(self, x):
+        return self._T_cool_int(x).__float__()
 
     def plot_T_wall(self, figsize=(8, 6)):
         plt.figure(figsize=figsize)
-        plt.plot(self.x_arr * 1e3, self.T_wall_arr, lw=1, linestyle='--', color='red')
+        plt.plot(self.x_arr * 1e3, self.T_wall_arr, lw=1.5, color='red')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
         T_max = max(self.T_wall_arr)
-        plt.text(0.6 * min(self.x_arr) * 1e3, T_max - 30, r'$корыто$', fontsize=16)
-        plt.text(0.4 * max(self.x_arr) * 1e3, T_max - 30, r'$спинка$', fontsize=16)
+        plt.text(0.6 * min(self.x_arr) * 1e3, T_max - 30, r'$спинка$', fontsize=16)
+        plt.text(0.4 * max(self.x_arr) * 1e3, T_max - 30, r'$корыто$', fontsize=16)
         plt.xlabel(r'$x,\ мм$', fontsize=12)
         plt.ylabel(r'$T_{ст},\ К$', fontsize=12)
         plt.grid()
         plt.show()
 
+    def plot_T_cool(self, figsize=(8, 6)):
+        plt.figure(figsize=figsize)
+        plt.plot(self.x_arr * 1e3, self.T_cool_fluid_arr, lw=1.5, color='red')
+        plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
+        T_max = max(self.T_cool_fluid_arr)
+        plt.text(0.6 * min(self.x_arr) * 1e3, T_max - 30, r'$спинка$', fontsize=16)
+        plt.text(0.4 * max(self.x_arr) * 1e3, T_max - 30, r'$корыто$', fontsize=16)
+        plt.xlabel(r'$x,\ мм$', fontsize=12)
+        plt.ylabel(r'$T_{в},\ К$', fontsize=12)
+        plt.grid()
+        plt.show()
+
+    def plot_T_out(self, figsize=(8, 6)):
+        plt.figure(figsize=figsize)
+        T_arr = [self.T_out_stag(x) for x in self.x_arr]
+        plt.plot(self.x_arr * 1e3, T_arr, lw=1.5, color='red')
+        plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
+        T_max = max(T_arr)
+        plt.text(0.6 * min(self.x_arr) * 1e3, T_max - 30, r'$спинка$', fontsize=16)
+        plt.text(0.4 * max(self.x_arr) * 1e3, T_max - 30, r'$корыто$', fontsize=16)
+        plt.xlabel(r'$x,\ мм$', fontsize=12)
+        plt.ylabel(r'$T_{обт.среды}^*,\ К$', fontsize=12)
+        plt.grid()
+        plt.show()
+
+    def plot_all(self, figsize=(8, 6)):
+        plt.figure(figsize=figsize)
+        T_arr = [self.T_out_stag(x) for x in self.x_arr]
+        plt.plot(self.x_arr * 1e3, T_arr, lw=1.5, color='red', label=r'$T_{обт.среды}^*$')
+        plt.plot(self.x_arr * 1e3, self.T_cool_fluid_arr, lw=1.5, color='blue', label='$T_{в}$')
+        plt.plot(self.x_arr * 1e3, self.T_wall_arr, lw=1.5, color='green', label=r'$T_{ст}$')
+        plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
+        T_max = max(max(T_arr), max(self.T_cool_fluid_arr), max(self.T_wall_arr))
+        plt.text(0.6 * min(self.x_arr) * 1e3, T_max - 30, r'$спинка$', fontsize=16)
+        plt.text(0.4 * max(self.x_arr) * 1e3, T_max - 30, r'$корыто$', fontsize=16)
+        plt.xlabel(r'$x,\ мм$', fontsize=12)
+        plt.ylabel(r'$T,\ К$', fontsize=12)
+        plt.legend(fontsize=9)
+        plt.grid()
+        plt.show()
+
 
 class FilmCalculator:
-    def __init__(self, x_hole: typing.List[float],
-                 hole_num: typing.List[int],
-                 d_hole: typing.List[float],
-                 phi_hole: typing.List[float],
-                 mu_hole: typing.List[float],
-                 T_gas_stag,
-                 p_gas_stag,
-                 v_gas: typing.Callable[[float], float],
-                 c_p_gas_av,
-                 work_fluid: IdealGas,
-                 alpha_gas: typing.Callable[[float], float],
-                 T_cool: typing.Callable[[float], float],
-                 G_cool: typing.Callable[[float], float],
-                 p_cool_stag0,
-                 c_p_cool_av,
-                 cool_fluid: IdealGas,
-                 channel_width,
-                 height
+    def __init__(self,
+                 x_hole: typing.List[float]=None,
+                 hole_num: typing.List[int]=None,
+                 d_hole: typing.List[float]=None,
+                 phi_hole: typing.List[float]=None,
+                 mu_hole: typing.List[float]=None,
+                 T_gas_stag=None,
+                 p_gas_stag=None,
+                 v_gas: typing.Callable[[float], float]=None,
+                 c_p_gas_av=None,
+                 work_fluid: IdealGas=KeroseneCombustionProducts(),
+                 alpha_gas: typing.Callable[[float], float]=None,
+                 T_cool: typing.Callable[[float], float]=None,
+                 G_cool0=None,
+                 p_cool_stag0=None,
+                 c_p_cool_av=None,
+                 cool_fluid: IdealGas=Air(),
+                 height=None
                  ):
         """
         :param x_hole: Координаты рядов отверстий.
@@ -350,11 +388,10 @@ class FilmCalculator:
         :param work_fluid: Рабочее тело турбины.
         :param alpha_gas: Распределение коэффициента теплоотдачи со стророны газа.
         :param T_cool: Распределение температуры торможения охлаждающего воздуха вдоль профиля.
-        :param G_cool: Распределение расхода охлаждающего воздуха вдоль профиля.
+        :param G_cool0: Расход охлаждающего воздуха на входе в канал.
         :param p_cool_stag0: Полное давление охлаждающего воздуха на входе в канал.
         :param c_p_cool_av: Средняя теплоемкость охлаждающего воздуха.
         :param cool_fluid: Охлаждающее тело.
-        :param channel_width: Ширина канала охлаждения.
         :param height: Высота участка лопатки
         """
         self.x_hole = np.array(x_hole)
@@ -369,12 +406,10 @@ class FilmCalculator:
         self.work_fluid = work_fluid
         self.alpha_gas = alpha_gas
         self.T_cool = T_cool
-        self.G_cool = G_cool
         self.p_cool_stag0 = p_cool_stag0
-        self.G_cool0 = G_cool(0)
+        self.G_cool0 = G_cool0
         self.c_p_cool_av = c_p_cool_av
         self.cool_fluid = cool_fluid
-        self.channel_width = channel_width
         self.height = height
         self.k_gas_av = self.work_fluid.k_func(self.c_p_gas_av)
         self.k_cool_av = self.cool_fluid.k_func(self.c_p_cool_av)
@@ -463,7 +498,6 @@ class FilmCalculator:
             self.rho_cool_hole_out[i] = self.p_gas_hole[i] / (self.cool_fluid.R *
                                                               (self.T_cool_hole[i] -
                                                                self.v_cool_hole_out[i]**2 / (2 * self.c_p_cool_av)))
-            self.G_cool_hole[i] = self.G_cool(x)
 
             self.m[i] = (self.rho_cool_hole_out[i] * self.v_cool_hole_out[i] /
                          (self.rho_gas_hole[i] * self.v_gas_hole[i]))
@@ -526,7 +560,7 @@ class FilmCalculator:
                     return self.get_alpha_item(i + 1, x)
 
             for i in range(0, len(x_hole_k) - 1):
-                if x_hole_k[i] <= x_hole_k[i + 1]:
+                if x_hole_k[i] <= x < x_hole_k[i + 1]:
                     return self.get_alpha_item(i + len(x_hole_s), x)
 
     def get_G_cool(self, x):
@@ -621,6 +655,7 @@ class FilmCalculator:
         for x in self.x_hole:
             plt.plot([x, x], [G_min, G_max], color='black', lw=0.8, linestyle='--')
         plt.grid()
+        plt.ylim(G_min, G_max)
         plt.xlabel(r'$x,\ м$', fontsize=12)
         plt.ylabel(r'$G_в,\ кг/с$', fontsize=12)
         plt.show()
