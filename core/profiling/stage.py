@@ -173,7 +173,7 @@ class StageParametersRadialDistribution:
         return np.sqrt(self.c1(r) ** 2 + self.u(r) ** 2 - 2 * self.u(r) * self.c1(r) * np.cos(self.alpha1(r)))
 
     def T1_w_stag(self, r):
-        return self.T1(r) + self.w1(r) / (2 * self.c_p)
+        return self.T1(r) + self.w1(r) ** 2 / (2 * self.c_p)
 
     def beta1(self, r):
         if self.c1(r) * np.cos(self.alpha1(r)) - self.u(r) >= 0:
@@ -231,6 +231,22 @@ class StageParametersRadialDistribution:
 
     def M_w2(self, r):
         return self.w2(r) / np.sqrt(self.k * self.R * self.T2(r))
+
+    def lam_c0(self, r):
+        a_cr = np.sqrt(2 * self.k / (self.k + 1) * self.R * self.T0_stag(r))
+        return self.c0(r) / a_cr
+
+    def lam_c1(self, r):
+        a_cr = np.sqrt(2 * self.k / (self.k + 1) * self.R * self.T0_stag(r))
+        return self.c1(r) / a_cr
+
+    def lam_w1(self, r):
+        a_cr = np.sqrt(2 * self.k / (self.k + 1) * self.R * self.T1_w_stag(r))
+        return self.w1(r) / a_cr
+
+    def lam_w2(self, r):
+        a_cr = np.sqrt(2 * self.k / (self.k + 1) * self.R * self.T1_w_stag(r))
+        return self.w2(r) / a_cr
 
     def plot_parameter_distribution(self, par_names: typing.List[str], colors=None, figsize=(9, 7), filename=None):
         r_in = 0.5 * self.D1_in

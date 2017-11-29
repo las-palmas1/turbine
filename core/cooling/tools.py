@@ -222,6 +222,7 @@ class LocalParamCalculator:
         self.T_cool_fluid_k_arr = None
         self.T_cool_fluid_arr = None
         self._T_cool_int = None
+        self._T_wall_int = None
         self.alpha_cool_fluid_arr = None
         self.alpha_cool_fluid_k_arr = None
         self.alpha_out_arr = None
@@ -298,6 +299,11 @@ class LocalParamCalculator:
             alpha_gas = self.alpha_out(x)
             self.alpha_out_arr.append(alpha_gas)
 
+        self._T_wall_int = interp1d(self.x_arr, self.T_wall_arr)
+
+    def get_T_wall(self, x):
+        return self._T_wall_int(x).__float__()
+
     def get_T_cool(self, x):
         return self._T_cool_int(x).__float__()
 
@@ -358,7 +364,7 @@ class LocalParamCalculator:
 class FilmCalculator:
     def __init__(self,
                  x_hole: typing.List[float]=None,
-                 hole_num: typing.List[int]=None,
+                 hole_num: typing.List[float]=None,
                  d_hole: typing.List[float]=None,
                  phi_hole: typing.List[float]=None,
                  mu_hole: typing.List[float]=None,

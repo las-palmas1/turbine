@@ -1,11 +1,12 @@
 from .convective_defl import SectorCooler, BladeSection, GasBladeHeatExchange
 from .tools import DeflectorAverageParamCalculator, FilmCalculator
-from .film_defl import FilmSectorCooler
+from .film_defl import FilmSectorCooler, FilmBladeCooler
 from gas_turbine_cycle.gases import Air, KeroseneCombustionProducts, NaturalGasCombustionProducts
 import unittest
 import numpy as np
 from scipy.interpolate import interp1d
-from scipy.misc import derivative
+from ..average_streamline.turbine import TurbineType, Turbine
+from ..profiling.turbine import TurbineProfiler, ProfilingType
 
 
 class BladeSectorTest(unittest.TestCase):
@@ -172,7 +173,7 @@ class BladeSectorTest(unittest.TestCase):
             else:
                 T_der2 = T_cool_der(local_param.x_arr[i - 1], local_param.T_cool_fluid_arr[i - 1])
 
-            # self.assertAlmostEqual(abs(T_der1 - T_der2) / T_der1, 0, places=4)
+            self.assertAlmostEqual(abs(T_der1 - T_der2) / T_der1, 0, places=4)
 
         self.conv_cooler.local_param.plot_T_wall()
         self.conv_cooler.local_param.plot_all()
@@ -207,10 +208,117 @@ class BladeSectorTest(unittest.TestCase):
         self.film_cooler.T_wall_av = ave_param.T_wall_av
         self.film_cooler.channel_width = ave_param.channel_width
 
+        self.film_cooler.set_calculators()
         self.film_cooler.compute()
+        self.assertNotEqual(self.film_cooler.alpha_film_av, None)
+        self.assertNotEqual(self.film_cooler.T_film_av, None)
+        self.assertNotEqual(self.film_cooler.G_cool_av, None)
+
+        print('alpha_film_av = %.3f' % self.film_cooler.alpha_film_av)
+        print('T_film_av = %.3f' % self.film_cooler.T_film_av)
+        print('G_cool_av = %.4f' % self.film_cooler.G_cool_av)
+        print('T_wall_out_av = %.3f' % self.film_cooler.T_wall_out_av)
 
         self.film_cooler.local_param.plot_all()
         self.film_cooler.film.plot_T_film(self.film_cooler.local_param.x_arr)
+
+
+class DeflectorBladeFilmCoolingTest(unittest.TestCase):
+    def setUp(self):
+        self.turbine = Turbine(TurbineType.Compressor,
+                               T_g_stag=1450,
+                               p_g_stag=400e3,
+                               G_turbine=25,
+                               work_fluid=KeroseneCombustionProducts(),
+                               alpha_air=2.5,
+                               l1_D1_ratio=0.25,
+                               n=15e3,
+                               T_t_stag_cycle=1050,
+                               stage_number=2,
+                               eta_t_stag_cycle=0.91,
+                               k_n=6.8,
+                               eta_m=0.99,
+                               auto_compute_heat_drop=False,
+                               precise_heat_drop=False,
+                               auto_set_rho=False,
+                               rho_list=[0.4, 0.20],
+                               H0_list=[235e3, 200e3],
+                               alpha11=np.radians([17])[0],
+                               gamma_av=np.radians([4])[0],
+                               gamma_sum=np.radians([10])[0])
+        self.turbine.compute_geometry()
+        self.turbine.compute_stages_gas_dynamics()
+        self.turbine.compute_integrate_turbine_parameters()
+
+        self.turbine_profiler = TurbineProfiler(turbine=self.turbine,
+                                                p_in_stag=lambda r: self.turbine[0].p0_stag,
+                                                T_in_stag=lambda r: self.turbine[0].T0_stag,
+                                                c_in=lambda r: 90,
+                                                alpha_in=lambda r: np.radians([90])[0],
+                                                center=True)
+        self.turbine_profiler[0].profiling_type = ProfilingType.ConstantAngle
+        self.turbine_profiler[0].gamma1_k_rel_rk = lambda r_rel: 0.5
+        self.turbine_profiler[1].profiling_type = ProfilingType.ConstantAngle
+        self.turbine_profiler[1].auto_sections_par = False
+        self.turbine_profiler[1].rk_sections[0].gamma1_s = np.radians([15])[0]
+        self.turbine_profiler[1].rk_sections[0].gamma1_k = np.radians([7])[0]
+        self.turbine_profiler.compute_stage_profiles()
+
+        stage_prof = self.turbine_profiler[0]
+        lam_blade_arr = np.array([17, 19, 22, 24, 27, 29])
+        T_wall_arr = np.array([200, 600, 700, 800, 900, 1200]) + 273
+        lam_blade_int = interp1d(T_wall_arr, lam_blade_arr, bounds_error=False, fill_value='extrapolate')
+        x_hole_rel = [-0.8, -0.5, -0.15, 0.1, 0.35, 0.6]
+
+        self.film_blade = FilmBladeCooler(sections=stage_prof.sa_sections,
+                                          channel_width=0.001,
+                                          wall_thickness=0.001,
+                                          D_in=stage_prof.D1_in,
+                                          D_out=stage_prof.D1_out,
+                                          T_wall_out_av_init=1123,
+                                          lam_blade=lambda T: lam_blade_int(T).__float__(),
+                                          x_hole_rel=x_hole_rel,
+                                          hole_num=[20 for _ in x_hole_rel],
+                                          d_hole=[0.5e-3 for _ in x_hole_rel],
+                                          phi_hole=[0.9 for _ in x_hole_rel],
+                                          mu_hole=[0.86 for _ in x_hole_rel],
+                                          T_gas_stag=stage_prof.T0_stag,
+                                          p_gas_stag=stage_prof.p0_stag,
+                                          G_gas=self.turbine.G_turbine,
+                                          c_p_gas_av=stage_prof.c_p,
+                                          lam_gas_in=stage_prof.lam_c0,
+                                          lam_gas_out=stage_prof.lam_c1,
+                                          work_fluid=type(self.turbine.work_fluid)(),
+                                          T_cool0=650,
+                                          p_cool_stag0=self.turbine.p_g_stag + 20e3,
+                                          G_cool0=0.2,
+                                          cool_fluid=Air())
+
+    def test_partition(self):
+        self.assertEqual(sum(self.film_blade.G_gas_arr), self.film_blade.G_gas)
+        self.assertEqual(self.film_blade.G_gas_arr[0] * 2, self.film_blade.G_gas_arr[1])
+        self.assertEqual(self.film_blade.G_gas_arr[2] * 2, self.film_blade.G_gas_arr[1])
+        self.assertEqual(sum(self.film_blade.G_cool0_arr), self.film_blade.G_cool0)
+        self.assertEqual(self.film_blade.G_cool0_arr[0] * 2, self.film_blade.G_cool0_arr[1])
+        self.assertEqual(self.film_blade.G_cool0_arr[2] * 2, self.film_blade.G_cool0_arr[1])
+
+        self.assertEqual(sum(self.film_blade.sector_height_arr), 0.5 * (self.film_blade.D_out - self.film_blade.D_in))
+        self.assertEqual(self.film_blade.sector_height_arr[0] * 2, self.film_blade.sector_height_arr[1])
+        self.assertEqual(self.film_blade.sector_height_arr[2] * 2, self.film_blade.sector_height_arr[1])
+
+        self.film_blade.plot_lam_gas_out()
+
+    def test_calculation(self):
+        self.film_blade.compute()
+
+        print('alpha_film_av = %.3f' % self.film_blade.alpha_film_av)
+        print('T_film_av = %.3f' % self.film_blade.T_film_av)
+        print('G_cool_av = %.4f' % self.film_blade.G_cool_av)
+        print('T_wall_out_av = %.3f' % self.film_blade.T_wall_out_av)
+
+        self.film_blade.sectors[0].local_param.plot_all()
+        self.film_blade.sectors[1].local_param.plot_all()
+        self.film_blade.sectors[2].local_param.plot_all()
 
 
 
