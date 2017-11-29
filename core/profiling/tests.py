@@ -13,9 +13,9 @@ from .turbine import TurbineProfiler
 
 class SectionTest(unittest.TestCase):
     def setUp(self):
-        self.bs1 = BladeSection(angle1=np.radians([30])[0],
+        self.bs1 = BladeSection(angle1=np.radians([90])[0],
                                 angle2=np.radians([30])[0],
-                                delta1=np.radians([5])[0],
+                                delta1=np.radians([0])[0],
                                 delta2=np.radians([2])[0],
                                 b_a=0.03,
                                 r1=0.002,
@@ -56,7 +56,7 @@ class SectionTest(unittest.TestCase):
 
     def test_plots(self):
         self.bs1.plot()
-        self.bs1.plot()
+        self.bs2.plot()
 
     def test_partition(self):
         plt.figure(figsize=(6, 4))
@@ -81,8 +81,8 @@ class SectionTest(unittest.TestCase):
                                                                               self.bs1.length_s -
                                                                               self.bs1.chord_length / 3])
         y_s_int = interp1d(self.bs1.x_s, self.bs1.y_s)
-        self.assertEqual(self.bs1.get_length(x12, self.bs1.x_s, self.bs1.y_s, lambda x: y_s_int(x).__float__()),
-                         self.bs1.length_s * 0.45)
+        self.assertAlmostEqual(self.bs1.get_length(x12, self.bs1.x_s, self.bs1.y_s, lambda x: y_s_int(x).__float__()),
+                               self.bs1.length_s * 0.45, places=6)
         plt.plot([y12], [x12], linestyle='', marker='o', ms=4, mfc='black', color='green')
         plt.plot([y23], [x23], linestyle='', marker='o', ms=4, mfc='black', color='green')
         plt.grid()
@@ -361,9 +361,36 @@ class TurbineProfilerTest(unittest.TestCase):
         self.turbine.compute_stages_gas_dynamics()
         self.turbine.compute_integrate_turbine_parameters()
 
+        def get_theta_gas(r_in, r_out, r_max_rel, theta_max):
+            r_max = r_max_rel * (r_out - r_in) + r_in
+            a = 3 * (r_out - r_in - theta_max * (r_out - r_in)) / ((r_out - r_max) ** 3 - (r_in - r_max) ** 3)
+            return lambda r: a * (r - r_max) ** 2 + theta_max
+
+        def get_T_gas(theta_gas, T_c_stag, T_gas_stag_av):
+            return lambda r: T_c_stag + theta_gas(r) * (T_gas_stag_av - T_c_stag)
+
+        # Внутренний радиус
+        r_in = 0.5 * (self.turbine.geom[0].D1 - self.turbine.geom[0].l1)
+        # Периферийный радиус
+        r_out = 0.5 * (self.turbine.geom[0].D1 + self.turbine.geom[0].l1)
+        # Относительное положение мксимума
+        r_max_rel = 0.5
+        # Максимальная неравномерность
+        theta_max = 1.1
+        # Температура после компрессора
+        T_c_stag = 685
+        # Средняя температура газа
+        T_gas_stag_av = self.turbine[0].T0_stag
+
+        # Функция неравномерности
+        theta_gas = get_theta_gas(r_in, r_out, r_max_rel, theta_max)
+
+        # Функция температуры газа от радиуса
+        T_g_stag = get_T_gas(theta_gas, T_c_stag, T_gas_stag_av)
+
         self.turbine_profiler = TurbineProfiler(turbine=self.turbine,
                                                 p_in_stag=lambda r: self.turbine[0].p0_stag,
-                                                T_in_stag=lambda r: self.turbine[0].T0_stag,
+                                                T_in_stag=T_g_stag,
                                                 c_in=lambda r: 90,
                                                 alpha_in=lambda r: np.radians([90])[0],
                                                 center=True)

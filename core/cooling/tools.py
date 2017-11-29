@@ -309,7 +309,7 @@ class LocalParamCalculator:
 
     def plot_T_wall(self, figsize=(8, 6)):
         plt.figure(figsize=figsize)
-        plt.plot(self.x_arr * 1e3, self.T_wall_arr, lw=1.5, color='red')
+        plt.plot(self.x_arr * 1e3, self.T_wall_arr, lw=2, color='red')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
         T_max = max(self.T_wall_arr)
         plt.text(0.6 * min(self.x_arr) * 1e3, T_max - 30, r'$спинка$', fontsize=16)
@@ -321,7 +321,7 @@ class LocalParamCalculator:
 
     def plot_T_cool(self, figsize=(8, 6)):
         plt.figure(figsize=figsize)
-        plt.plot(self.x_arr * 1e3, self.T_cool_fluid_arr, lw=1.5, color='red')
+        plt.plot(self.x_arr * 1e3, self.T_cool_fluid_arr, lw=2, color='red')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
         T_max = max(self.T_cool_fluid_arr)
         plt.text(0.6 * min(self.x_arr) * 1e3, T_max - 30, r'$спинка$', fontsize=16)
@@ -334,7 +334,7 @@ class LocalParamCalculator:
     def plot_T_out(self, figsize=(8, 6)):
         plt.figure(figsize=figsize)
         T_arr = [self.T_out_stag(x) for x in self.x_arr]
-        plt.plot(self.x_arr * 1e3, T_arr, lw=1.5, color='red')
+        plt.plot(self.x_arr * 1e3, T_arr, lw=2, color='red')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
         T_max = max(T_arr)
         plt.text(0.6 * min(self.x_arr) * 1e3, T_max - 30, r'$спинка$', fontsize=16)
@@ -347,9 +347,9 @@ class LocalParamCalculator:
     def plot_all(self, figsize=(8, 6)):
         plt.figure(figsize=figsize)
         T_arr = [self.T_out_stag(x) for x in self.x_arr]
-        plt.plot(self.x_arr * 1e3, T_arr, lw=1.5, color='red', label=r'$T_{обт.среды}^*$')
-        plt.plot(self.x_arr * 1e3, self.T_cool_fluid_arr, lw=1.5, color='blue', label='$T_{в}$')
-        plt.plot(self.x_arr * 1e3, self.T_wall_arr, lw=1.5, color='green', label=r'$T_{ст}$')
+        plt.plot(self.x_arr * 1e3, T_arr, lw=2, color='red', label=r'$T_{обт.среды}^*$')
+        plt.plot(self.x_arr * 1e3, self.T_cool_fluid_arr, lw=2, color='blue', label='$T_{в}$')
+        plt.plot(self.x_arr * 1e3, self.T_wall_arr, lw=2, color='green', label=r'$T_{ст}$')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
         T_max = max(max(T_arr), max(self.T_cool_fluid_arr), max(self.T_wall_arr))
         plt.text(0.6 * min(self.x_arr) * 1e3, T_max - 30, r'$спинка$', fontsize=16)
@@ -619,7 +619,7 @@ class FilmCalculator:
         T_arr = [self.get_T_film(x) for x in x_arr]
 
         T_min, T_max = self._get_lim(T_arr, places, delta)
-        plt.plot(x_arr, T_arr, lw=1.5)
+        plt.plot(x_arr, T_arr, lw=2)
         for x in self.x_hole:
             plt.plot([x, x], [T_min, T_max], color='black', lw=0.8, linestyle='--')
         plt.grid()
@@ -631,7 +631,7 @@ class FilmCalculator:
     def plot_film_eff(self, hole_num, x_arr, create_fig=False, show=False, figsize=(9, 7)):
         if create_fig:
             plt.figure(figsize=figsize)
-        plt.plot(x_arr, [self.film_eff_list[hole_num](x) for x in x_arr], lw=1, label='Отверстие %s' % (hole_num + 1))
+        plt.plot(x_arr, [self.film_eff_list[hole_num](x) for x in x_arr], lw=1.3, label='Отверстие %s' % (hole_num + 1))
         plt.legend(fontsize=8)
         plt.xlabel(r'$x,\ м$', fontsize=12)
         plt.ylabel(r'$\theta_{пл}$', fontsize=12)
@@ -642,7 +642,7 @@ class FilmCalculator:
     def plot_alpha_film(self, x_arr, ylim, figsize=(7, 5)):
         plt.figure(figsize=figsize)
         alpha_arr = [self.get_alpha_film(x) for x in x_arr]
-        plt.plot(x_arr, alpha_arr, lw=1.5)
+        plt.plot(x_arr, alpha_arr, lw=2)
         alpha_min, alpha_max = ylim
         for x in self.x_hole:
             plt.plot([x, x], [alpha_min, alpha_max], color='black', lw=0.8, linestyle='--')
@@ -655,7 +655,7 @@ class FilmCalculator:
     def plot_G_cool(self, x_arr, places=4, delta=1e-4, figsize=(7, 5)):
         plt.figure(figsize=figsize)
         G_arr = [self.get_G_cool(x) for x in x_arr]
-        plt.plot(x_arr, G_arr, lw=1.5)
+        plt.plot(x_arr, G_arr, lw=2)
 
         G_min, G_max = self._get_lim(G_arr, places, delta)
         for x in self.x_hole:

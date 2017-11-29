@@ -3,8 +3,8 @@ import sys
 import pickle as pc
 import numpy as np
 from gas_turbine_cycle.gases import KeroseneCombustionProducts, NaturalGasCombustionProducts
-from core.average_streamline.stage_geom import TurbineGeomAndHeatDropDistribution, StageGeomAndHeatDrop
-from core.average_streamline.turbine import TurbineType, Turbine
+from turbine.average_streamline.stage_geom import TurbineGeomAndHeatDropDistribution, StageGeomAndHeatDrop
+from turbine.average_streamline.turbine import TurbineType, Turbine
 from gui.average_streamline.main_form import Ui_Form
 import gui.average_streamline.stage_data_form as stage_data_form
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas

@@ -148,8 +148,7 @@ class StageParametersRadialDistribution:
         def int_func(r):
             return self.c2_u(r) ** 2 / r
         return np.sqrt(self.c2_a_av ** 2 + self.c2_u_av ** 2 - self.c2_u(r) ** 2 -
-                       2 * quad(int_func, 0.5 * self.D1_av, r)[0] +
-                       2 * self.c_p * (self.T2_stag(r) - self.T2_stag(0.5 * self.D1_av)))
+                       2 * quad(int_func, 0.5 * self.D1_av, r)[0])
 
     def c2(self, r):
         return np.sqrt(self.c2_a(r) ** 2 + self.c2_u(r) ** 2)
@@ -198,8 +197,14 @@ class StageParametersRadialDistribution:
     def H_l(self, r):
         return 0.5 * ((self.w2(r) / self.psi) ** 2 - self.w1(r) ** 2)
 
+    def p1_w_stag(self, r):
+        return self.p1(r) / GasDynamicFunctions.pi_lam(self.lam_w1(r), self.k)
+
     def p2(self, r):
         return self.p1(r) * (1 - self.H_l(r) / (self.c_p * self.T1(r))) ** (self.k / (self.k - 1))
+
+    def p2_w_stag(self, r):
+        return self.p2(r) / GasDynamicFunctions.pi_lam(self.lam_w2(r), self.k)
 
     def p2_balance_equation(self, r):
         """p2, определенное из уравнения радиального равновесия"""
@@ -424,7 +429,7 @@ class StageProfiler(StageParametersRadialDistribution):
                                                    c_p, k, D1_in, D1_av, D1_out, n, c1_av,
                                                    alpha1_av, L_u_av, c2_a_av, c2_u_av, phi, psi)
         assert section_num % 2 == 1, 'The section number must be odd.'
-        self.section_num = section_num
+        self._section_num = section_num
         self.b_a_sa = b_a_sa
         self.t_rel_av_sa = t_rel_av_sa
         self.t_rel_av_rk = t_rel_av_rk
@@ -460,6 +465,16 @@ class StageProfiler(StageParametersRadialDistribution):
         self.z_rk = None
         self.t_av_sa = None
         self.t_av_rk = None
+
+    @property
+    def section_num(self):
+        return self._section_num
+
+    @section_num.setter
+    def section_num(self, value: int):
+        self._section_num = value
+        self._sa_sections: typing.List[BladeSection] = [BladeSection() for _ in range(self.section_num)]
+        self._rk_sections: typing.List[BladeSection] = [BladeSection() for _ in range(self.section_num)]
 
     @property
     def sa_sections(self) -> typing.List[BladeSection]:
@@ -662,20 +677,22 @@ class StageProfiler(StageParametersRadialDistribution):
         plt.plot(y, x, lw=1, label=label)
         plt.plot(section.y_c, section.x_c, linestyle='', marker='o', ms=8, mfc='black', color='black')
 
-    def plot_sa_sections(self, figsize=(6, 4)):
+    def plot_sa_sections(self, r_arr=(0, 0.5, 1.0), figsize=(6, 4)):
         plt.figure(figsize=figsize)
         radiuses = (self._get_radius() - 0.5 * self.D1_in) / (0.5 * (self.D1_out - self.D1_in))
         for section, rad in zip(self.sa_sections, radiuses):
-            self._plot_section(section, label=r'$\bar{r} = %.3f$' % rad)
+            if rad in r_arr:
+                self._plot_section(section, label=r'$\bar{r} = %.3f$' % rad)
         plt.grid()
         plt.legend(fontsize=10)
         plt.show()
 
-    def plot_rk_sections(self, figsize=(6, 4)):
+    def plot_rk_sections(self, r_arr=(0, 0.5, 1.0), figsize=(6, 4)):
         plt.figure(figsize=figsize)
         radiuses = (self._get_radius() - 0.5 * self.D1_in) / (0.5 * (self.D1_out - self.D1_in))
         for section, rad in zip(self.rk_sections, radiuses):
-            self._plot_section(section, label=r'$\bar{r} = %.3f$' % rad)
+            if rad in r_arr:
+                self._plot_section(section, label=r'$\bar{r} = %.3f$' % rad)
         plt.grid()
         plt.legend(fontsize=10)
         plt.show()

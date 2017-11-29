@@ -1,11 +1,12 @@
 from .tools import GasBladeHeatExchange, LocalParamCalculator, FilmCalculator, DeflectorAverageParamCalculator
 from ..profiling.section import BladeSection
+from ..profiling.stage import StageProfiler
 from gas_turbine_cycle.gases import IdealGas, Air
 import numpy as np
 import typing
 import matplotlib.pyplot as plt
 
-log_level = 'DEBUG'
+log_level = 'INFO'
 
 
 class Logger:
@@ -276,6 +277,14 @@ class FilmSectorCooler(GasBladeHeatExchange):
 
         while self.res >= self.accuracy:
             if not alpha_cool and not T_out_stag and not alpha_out and not G_cool:
+                self.logger.debug(self.get_regions_bound(self.section))
+                self.logger.debug('l_ie = ' + str(self.section.length_in_edge))
+                self.logger.debug('l_ie_s = ' + str(self.section.length_in_edge_s))
+                self.logger.debug('l_k = ' + str(self.section.length_k))
+                self.logger.debug('y0 = ' + str(self.section.y0))
+                self.logger.debug('y01 = ' + str(self.section.y01))
+                self.logger.debug('x0 = ' + str(self.section.x0))
+                self.logger.debug('x01 = ' + str(self.section.x01))
                 (alpha_cool, T_out_stag,
                  alpha_out, G_cool) = self.make_iteration(
 
@@ -302,6 +311,18 @@ class FilmSectorCooler(GasBladeHeatExchange):
         self.G_cool_av = self._get_average_value(self.film.get_G_cool, self.local_param.x_arr)
         self.T_wall_out_av = self._get_average_value(self.local_param.get_T_wall, self.local_param.x_arr)
         self.T_cool_av = self._get_average_value(self.local_param.get_T_cool, self.local_param.x_arr)
+
+    def plot_v_gas(self, figsize=(6, 4)):
+        plt.figure(figsize=figsize)
+
+        x_arr = self.local_param.x_arr
+        v_arr = [self.get_v_gas(x) for x in x_arr]
+
+        plt.plot(x_arr * 1e3, v_arr, lw=2, color='red')
+        plt.xlabel(r'$x,\ мм$', fontsize=12)
+        plt.ylabel(r'$v_г,\ м/с$', fontsize=12)
+        plt.grid()
+        plt.show()
 
 
 class FilmBladeCooler(GasBladeHeatExchange):
@@ -583,7 +604,7 @@ class FilmBladeCooler(GasBladeHeatExchange):
                                    0.5 * (self.D_sec_arr[i + 1] - self.D_sec_arr[i]) / 2)
             param_arr_to_plot.append(param_arr[i])
             param_arr_to_plot.append(param_arr[i])
-        plt.plot(param_arr_to_plot, r_bound_arr, lw=1, color='blue', label='Разбиение')
+        plt.plot(param_arr_to_plot, r_bound_arr, lw=2, color='blue', label='Разбиение')
 
     def plot_lam_gas_in(self, figsize=(6, 4)):
         plt.figure(figsize=figsize)
@@ -594,8 +615,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
         self._plot_partition(self.lam_gas_in_arr)
         plt.ylim(min(r_arr), max(r_arr))
         plt.grid()
-        plt.ylabel(r'$r$', fontsize=10)
-        plt.xlabel(r'$\lambda_{вх}$', fontsize=10)
+        plt.ylabel(r'$r$', fontsize=12)
+        plt.xlabel(r'$\lambda_{вх}$', fontsize=12)
         plt.legend(fontsize=10)
         plt.show()
 
@@ -604,12 +625,12 @@ class FilmBladeCooler(GasBladeHeatExchange):
         r_arr = 0.5 * np.array(np.linspace(self.D_in, self.D_out, 100))
         lam_in_arr = [self.lam_gas_out(r) for r in r_arr]
 
-        plt.plot(lam_in_arr, r_arr, lw=1, color='red', label='Исходный профиль')
+        plt.plot(lam_in_arr, r_arr, lw=2, color='red', label='Исходный профиль')
         self._plot_partition(self.lam_gas_out_arr)
         plt.ylim(min(r_arr), max(r_arr))
         plt.grid()
-        plt.ylabel(r'$r$', fontsize=10)
-        plt.xlabel(r'$\lambda_{вых}$', fontsize=10)
+        plt.ylabel(r'$r$', fontsize=12)
+        plt.xlabel(r'$\lambda_{вых}$', fontsize=12)
         plt.legend(fontsize=10)
         plt.show()
 
@@ -618,12 +639,12 @@ class FilmBladeCooler(GasBladeHeatExchange):
         r_arr = 0.5 * np.array(np.linspace(self.D_in, self.D_out, 100))
         lam_in_arr = [self.p_gas_stag(r) for r in r_arr]
 
-        plt.plot(lam_in_arr, r_arr, lw=1, color='red', label='Исходный профиль')
+        plt.plot(lam_in_arr, r_arr, lw=2, color='red', label='Исходный профиль')
         self._plot_partition(self.p_gas_stag_arr)
         plt.ylim(min(r_arr), max(r_arr))
         plt.grid()
-        plt.ylabel(r'$r$', fontsize=10)
-        plt.xlabel(r'$p_{г}^*$', fontsize=10)
+        plt.ylabel(r'$r$', fontsize=12)
+        plt.xlabel(r'$p_{г}^*$', fontsize=12)
         plt.legend(fontsize=10)
         plt.show()
 
@@ -632,13 +653,145 @@ class FilmBladeCooler(GasBladeHeatExchange):
         r_arr = 0.5 * np.array(np.linspace(self.D_in, self.D_out, 100))
         lam_in_arr = [self.T_gas_stag(r) for r in r_arr]
 
-        plt.plot(lam_in_arr, r_arr, lw=1, color='red', label='Исходный профиль')
+        plt.plot(lam_in_arr, r_arr, lw=2, color='red', label='Исходный профиль')
         self._plot_partition(self.T_gas_stag_arr)
         plt.ylim(min(r_arr), max(r_arr))
         plt.grid()
-        plt.ylabel(r'$r$', fontsize=10)
-        plt.xlabel(r'$T_{г}^*$', fontsize=10)
+        plt.ylabel(r'$r$', fontsize=12)
+        plt.xlabel(r'$T_{г}^*$', fontsize=12)
+        plt.legend(fontsize=10)
+        plt.show()
+
+    def plot_T_wall(self, figsize=(7, 5)):
+        plt.figure(figsize=figsize)
+
+        for i, sector in enumerate(self.sectors):
+            plt.plot(sector.local_param.x_arr * 1e3, sector.local_param.T_wall_arr, lw=2, label='Sector %s' % i)
+
+        plt.xlabel(r'$x,\ мм$', fontsize=12)
+        plt.ylabel(r'$T_{ст},\ К$', fontsize=12)
+        plt.grid()
+        plt.legend(fontsize=10)
+        plt.show()
+
+    def plot_T_film(self, figsize=(7, 5)):
+        plt.figure(figsize=figsize)
+
+        for i, sector in enumerate(self.sectors):
+            plt.plot(sector.local_param.x_arr * 1e3, [sector.film.get_T_film(x) for x in sector.local_param.x_arr],
+                     lw=2, label='Sector %s' % i)
+
+        plt.xlabel(r'$x,\ мм$', fontsize=12)
+        plt.ylabel(r'$T_{пл}^*,\ К$', fontsize=12)
+        plt.grid()
+        plt.legend(fontsize=10)
+        plt.show()
+
+    def plot_T_cool(self, figsize=(7, 5)):
+        plt.figure(figsize=figsize)
+
+        for i, sector in enumerate(self.sectors):
+            plt.plot(sector.local_param.x_arr * 1e3, sector.local_param.T_cool_fluid_arr,
+                     lw=2, label='Sector %s' % i)
+
+        plt.xlabel(r'$x,\ мм$', fontsize=12)
+        plt.ylabel(r'$T_{в}^*,\ К$', fontsize=12)
+        plt.grid()
         plt.legend(fontsize=10)
         plt.show()
 
 
+def get_sa_cooler(
+        stage_profiler: StageProfiler,
+        channel_width,
+        wall_thickness,
+        T_wall_out_av_init,
+        lam_blade: typing.Callable[[float], float],
+        x_hole_rel: typing.List[float],
+        hole_num: typing.List[int],
+        d_hole: typing.List[float],
+        phi_hole: typing.List[float],
+        mu_hole: typing.List[float],
+        G_gas,
+        work_fluid: IdealGas,
+        T_cool0,
+        p_cool_stag0,
+        G_cool0,
+        cool_fluid: IdealGas,
+        node_num=500,
+        accuracy=0.01
+) -> FilmBladeCooler:
+    cooler = FilmBladeCooler(sections=stage_profiler.sa_sections,
+                             channel_width=channel_width,
+                             wall_thickness=wall_thickness,
+                             D_in=stage_profiler.D1_in,
+                             D_out=stage_profiler.D1_out,
+                             T_wall_out_av_init=T_wall_out_av_init,
+                             lam_blade=lam_blade,
+                             x_hole_rel=x_hole_rel,
+                             hole_num=hole_num,
+                             d_hole=d_hole,
+                             phi_hole=phi_hole,
+                             mu_hole=mu_hole,
+                             T_gas_stag=stage_profiler.T0_stag,
+                             p_gas_stag=stage_profiler.p0_stag,
+                             G_gas=G_gas,
+                             c_p_gas_av=stage_profiler.c_p,
+                             lam_gas_in=stage_profiler.lam_c0,
+                             lam_gas_out=stage_profiler.lam_c1,
+                             work_fluid=work_fluid,
+                             T_cool0=T_cool0,
+                             p_cool_stag0=p_cool_stag0,
+                             G_cool0=G_cool0,
+                             cool_fluid=cool_fluid,
+                             node_num=node_num,
+                             accuracy=accuracy)
+    return cooler
+
+
+def get_rk_cooler(
+        stage_profiler: StageProfiler,
+        channel_width,
+        wall_thickness,
+        T_wall_out_av_init,
+        lam_blade: typing.Callable[[float], float],
+        x_hole_rel: typing.List[float],
+        hole_num: typing.List[int],
+        d_hole: typing.List[float],
+        phi_hole: typing.List[float],
+        mu_hole: typing.List[float],
+        G_gas,
+        work_fluid: IdealGas,
+        T_cool0,
+        p_cool_stag0,
+        G_cool0,
+        cool_fluid: IdealGas,
+        node_num=500,
+        accuracy=0.01
+) -> FilmBladeCooler:
+    cooler = FilmBladeCooler(sections=stage_profiler.rk_sections,
+                             channel_width=channel_width,
+                             wall_thickness=wall_thickness,
+                             D_in=stage_profiler.D1_in,
+                             D_out=stage_profiler.D1_out,
+                             T_wall_out_av_init=T_wall_out_av_init,
+                             lam_blade=lam_blade,
+                             x_hole_rel=x_hole_rel,
+                             hole_num=hole_num,
+                             d_hole=d_hole,
+                             phi_hole=phi_hole,
+                             mu_hole=mu_hole,
+                             T_gas_stag=stage_profiler.T1_w_stag,
+                             p_gas_stag=stage_profiler.p1_w_stag,
+                             G_gas=G_gas,
+                             c_p_gas_av=stage_profiler.c_p,
+                             lam_gas_in=stage_profiler.lam_w1,
+                             lam_gas_out=stage_profiler.lam_w2,
+                             work_fluid=work_fluid,
+                             T_cool0=T_cool0,
+                             p_cool_stag0=p_cool_stag0,
+                             G_cool0=G_cool0,
+                             cool_fluid=cool_fluid,
+                             node_num=node_num,
+                             accuracy=accuracy)
+    return cooler

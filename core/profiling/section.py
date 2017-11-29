@@ -84,7 +84,7 @@ class BladeSection:
         self.x_out_edge: np.ndarray = None
         self.y_out_edge: np.ndarray = None
 
-        # координаты окружностей скруглений на кромках
+        # координаты центров окружностей скруглений на кромках
         self.x01: float = None
         self.y01: float = None
         self.x02: float = None
@@ -521,17 +521,21 @@ class BladeSection:
         """Возвращает точку, соответствующую началу криволинейной системы координат, используемой в расчете
         местных температур при расчете охлаждения."""
 
-        k = np.tan(angle1)
-        b = x01 - y01 * np.tan(angle1)
+        if angle1 != np.pi / 2:
+            k = np.tan(angle1)
+            b = x01 - y01 * np.tan(angle1)
 
-        a1 = k**2 + 1
-        b1 = 2 * (k*b - x01*k - y01)
-        c1 = b**2 + x01**2 - 2*b*x01 + y01**2 - r1**2
-        if k > 0:
-            y0 = (-b1 - np.sqrt(b1**2 - 4*a1*c1)) / (2*a1)
+            a1 = k**2 + 1
+            b1 = 2 * (k*b - x01*k - y01)
+            c1 = b**2 + x01**2 - 2*b*x01 + y01**2 - r1**2
+            if k >= 0:
+                y0 = (-b1 - np.sqrt(b1**2 - 4*a1*c1)) / (2*a1)
+            else:
+                y0 = (-b1 + np.sqrt(b1 ** 2 - 4 * a1 * c1)) / (2 * a1)
+            x0 = k * y0 + b
         else:
-            y0 = (-b1 + np.sqrt(b1 ** 2 - 4 * a1 * c1)) / (2 * a1)
-        x0 = k * y0 + b
+            x0 = x01 - r1
+            y0 = y01
         return x0, y0
 
     @classmethod
@@ -681,6 +685,7 @@ class BladeSection:
         plt.plot([self.y0_s, self.y1_s, self.y2_s], [self.x0_s, self.x1_s, self.x2_s], lw=0.5, ls=':',
                  color='blue', marker='o', ms=2)
         plt.plot([self.y_c], [self.x_c], linestyle='', marker='o', ms=8, mfc='black', color='red')
+        plt.plot([self.y0], [self.x0], linestyle='', marker='o', ms=8, mfc='green', color='red')
         plt.grid()
         plt.show()
 

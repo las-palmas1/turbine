@@ -316,9 +316,15 @@ class DeflectorBladeFilmCoolingTest(unittest.TestCase):
         print('G_cool_av = %.4f' % self.film_blade.G_cool_av)
         print('T_wall_out_av = %.3f' % self.film_blade.T_wall_out_av)
 
+        self.assertLess(abs(self.film_blade.av_param.T_cool_fluid_av - self.film_blade.T_cool_av) /
+                        self.film_blade.T_cool_av * 100, 1)
+
         self.film_blade.sectors[0].local_param.plot_all()
         self.film_blade.sectors[1].local_param.plot_all()
         self.film_blade.sectors[2].local_param.plot_all()
+
+        self.film_blade.sectors[0].plot_v_gas()
+        self.film_blade.plot_T_wall()
 
 
 
