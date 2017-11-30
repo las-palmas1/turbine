@@ -319,8 +319,8 @@ class FilmSectorCooler(GasBladeHeatExchange):
         v_arr = [self.get_v_gas(x) for x in x_arr]
 
         plt.plot(x_arr * 1e3, v_arr, lw=2, color='red')
-        plt.xlabel(r'$x,\ мм$', fontsize=12)
-        plt.ylabel(r'$v_г,\ м/с$', fontsize=12)
+        plt.xlabel(r'$x,\ мм$', fontsize=14)
+        plt.ylabel(r'$v_г,\ м/с$', fontsize=14)
         plt.grid()
         plt.show()
 
@@ -611,12 +611,12 @@ class FilmBladeCooler(GasBladeHeatExchange):
         r_arr = 0.5 * np.array(np.linspace(self.D_in, self.D_out, 100))
         lam_in_arr = [self.lam_gas_in(r) for r in r_arr]
 
-        plt.plot(lam_in_arr, r_arr, lw=1, color='red', label='Исходный профиль')
+        plt.plot(lam_in_arr, r_arr, lw=2, color='red', label='Исходный профиль')
         self._plot_partition(self.lam_gas_in_arr)
         plt.ylim(min(r_arr), max(r_arr))
         plt.grid()
-        plt.ylabel(r'$r$', fontsize=12)
-        plt.xlabel(r'$\lambda_{вх}$', fontsize=12)
+        plt.ylabel(r'$r$', fontsize=14)
+        plt.xlabel(r'$\lambda_{вх}$', fontsize=14)
         plt.legend(fontsize=10)
         plt.show()
 
@@ -629,8 +629,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
         self._plot_partition(self.lam_gas_out_arr)
         plt.ylim(min(r_arr), max(r_arr))
         plt.grid()
-        plt.ylabel(r'$r$', fontsize=12)
-        plt.xlabel(r'$\lambda_{вых}$', fontsize=12)
+        plt.ylabel(r'$r$', fontsize=14)
+        plt.xlabel(r'$\lambda_{вых}$', fontsize=14)
         plt.legend(fontsize=10)
         plt.show()
 
@@ -643,8 +643,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
         self._plot_partition(self.p_gas_stag_arr)
         plt.ylim(min(r_arr), max(r_arr))
         plt.grid()
-        plt.ylabel(r'$r$', fontsize=12)
-        plt.xlabel(r'$p_{г}^*$', fontsize=12)
+        plt.ylabel(r'$r$', fontsize=14)
+        plt.xlabel(r'$p_{г}^*$', fontsize=14)
         plt.legend(fontsize=10)
         plt.show()
 
@@ -657,8 +657,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
         self._plot_partition(self.T_gas_stag_arr)
         plt.ylim(min(r_arr), max(r_arr))
         plt.grid()
-        plt.ylabel(r'$r$', fontsize=12)
-        plt.xlabel(r'$T_{г}^*$', fontsize=12)
+        plt.ylabel(r'$r$', fontsize=14)
+        plt.xlabel(r'$T_{г}^*$', fontsize=14)
         plt.legend(fontsize=10)
         plt.show()
 
@@ -668,8 +668,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
         for i, sector in enumerate(self.sectors):
             plt.plot(sector.local_param.x_arr * 1e3, sector.local_param.T_wall_arr, lw=2, label='Sector %s' % i)
 
-        plt.xlabel(r'$x,\ мм$', fontsize=12)
-        plt.ylabel(r'$T_{ст},\ К$', fontsize=12)
+        plt.xlabel(r'$x,\ мм$', fontsize=14)
+        plt.ylabel(r'$T_{ст},\ К$', fontsize=14)
         plt.grid()
         plt.legend(fontsize=10)
         plt.show()
@@ -681,8 +681,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
             plt.plot(sector.local_param.x_arr * 1e3, [sector.film.get_T_film(x) for x in sector.local_param.x_arr],
                      lw=2, label='Sector %s' % i)
 
-        plt.xlabel(r'$x,\ мм$', fontsize=12)
-        plt.ylabel(r'$T_{пл}^*,\ К$', fontsize=12)
+        plt.xlabel(r'$x,\ мм$', fontsize=14)
+        plt.ylabel(r'$T_{пл}^*,\ К$', fontsize=14)
         plt.grid()
         plt.legend(fontsize=10)
         plt.show()
@@ -694,8 +694,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
             plt.plot(sector.local_param.x_arr * 1e3, sector.local_param.T_cool_fluid_arr,
                      lw=2, label='Sector %s' % i)
 
-        plt.xlabel(r'$x,\ мм$', fontsize=12)
-        plt.ylabel(r'$T_{в}^*,\ К$', fontsize=12)
+        plt.xlabel(r'$x,\ мм$', fontsize=14)
+        plt.ylabel(r'$T_{в}^*,\ К$', fontsize=14)
         plt.grid()
         plt.legend(fontsize=10)
         plt.show()

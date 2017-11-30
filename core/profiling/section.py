@@ -685,7 +685,6 @@ class BladeSection:
         plt.plot([self.y0_s, self.y1_s, self.y2_s], [self.x0_s, self.x1_s, self.x2_s], lw=0.5, ls=':',
                  color='blue', marker='o', ms=2)
         plt.plot([self.y_c], [self.x_c], linestyle='', marker='o', ms=8, mfc='black', color='red')
-        plt.plot([self.y0], [self.x0], linestyle='', marker='o', ms=8, mfc='green', color='red')
         plt.grid()
         plt.show()
 
