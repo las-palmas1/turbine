@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtTest import QTest
 from PyQt5.QtCore import Qt
 from gui.average_streamline.widgets import AveLineWidget, StageDataWidget
-from core.average_streamline.turbine import Turbine, TurbineType
+from turbine.average_streamline.turbine import Turbine, TurbineType
 import sys
 from gas_turbine_cycle.gases import NaturalGasCombustionProducts
 import numpy as np
@@ -94,6 +94,8 @@ class AveLineWidgetTest(unittest.TestCase):
             self.assertAlmostEqual(stage_data.l0.value(), turbine.geom[i].l0, places=3)
             self.assertAlmostEqual(stage_data.l1.value(), turbine.geom[i].l1, places=3)
             self.assertAlmostEqual(stage_data.l2.value(), turbine.geom[i].l2, places=3)
+            self.assertAlmostEqual(stage_data.delta_a_sa.value(), turbine.geom[i].delta_a_sa, places=3)
+            self.assertAlmostEqual(stage_data.delta_a_rk.value(), turbine.geom[i].delta_a_rk, places=3)
 
             self.assertAlmostEqual(stage_data.delta_r.value(), turbine.geom[i].delta_r_rk * 1e3, places=2)
             self.assertAlmostEqual(stage_data.p_in.value(), turbine.geom[i].p_r_in * 1e3, places=2)

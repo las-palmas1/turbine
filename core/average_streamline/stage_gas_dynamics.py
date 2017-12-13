@@ -7,16 +7,15 @@ import matplotlib.pyplot as plt
 
 
 class StageGasDynamics:
-    def __init__(self, T0_stag, p0_stag, G_stage_in, G_turbine, alpha_air, work_fluid: IdealGas,
+    def __init__(self, T0_stag, p0_stag, G_stage_in, G_turbine, G_fuel, work_fluid: IdealGas,
                  rho, phi, psi, l1, l2, D1, D2, delta_r_rk, n, epsilon,
                  g_lk, g_ld, g_lb, g_cool, T_cool=700, cool_fluid: IdealGas=Air(), **kwargs):
         """
-
         :param T0_stag:
         :param p0_stag:
         :param G_stage_in: расход газа на входе в ступень
         :param G_turbine: расход газа через СА первой ступени
-        :param alpha_air: коэффициент избытка воздуха на входе в ступень
+        :param G_fuel: расход топлива по тракту до турбины
         :param work_fluid:
         :param rho:
         :param phi:
@@ -43,7 +42,7 @@ class StageGasDynamics:
         self.G_stage_in = G_stage_in
         self.G_turbine = G_turbine
         self.work_fluid = work_fluid
-        self.alpha_air_in = alpha_air
+        self.G_fuel = G_fuel
         self.phi = phi
         self.psi = psi
         self.l1 = l1
@@ -83,12 +82,13 @@ class StageGasDynamics:
     def _get_mixture_temp(cls, work_fluid: IdealGas, cool_fluid: IdealGas, temp_work_fluid, temp_cool,
                           G_work_fluid, G_cool, alpha_out):
         """Возвращает значение температуры смеси рабочего и охлаждающего тела, а также истинные теплоемкости газа и
-        воздуха при теипературах смешения."""
+        воздуха при температурах смешения."""
         mixture = type(work_fluid)()
         mixture.alpha = alpha_out
 
+        mix_tem = None
         mixture.T = temp_work_fluid
-        mix_tem = temp_work_fluid
+        mix_tem_new = temp_work_fluid
         temp_mix_res = 1.
 
         work_fluid.T = temp_work_fluid
@@ -97,12 +97,13 @@ class StageGasDynamics:
         c_p_cool_true = cool_fluid.c_p
 
         while temp_mix_res >= 0.001:
-            mix_tem = (c_p_gas_true * temp_work_fluid * G_work_fluid + c_p_cool_true * temp_cool * G_cool) / \
+            mix_tem = mix_tem_new
+            mixture.T = mix_tem_new
+            mix_tem_new = (c_p_gas_true * temp_work_fluid * G_work_fluid + c_p_cool_true * temp_cool * G_cool) / \
                       (mixture.c_p * (G_cool + G_work_fluid))
-            temp_mix_res = abs(mix_tem - mixture.T) / mixture.T
-            mixture.T = mix_tem
+            temp_mix_res = abs(mix_tem_new - mix_tem) / mix_tem
 
-        return mix_tem, mixture, c_p_gas_true, c_p_cool_true
+        return mix_tem_new, mixture, c_p_gas_true, c_p_cool_true, mix_tem, temp_mix_res
 
     def str(self):
         str_arr = str(self).split()
@@ -111,20 +112,22 @@ class StageGasDynamics:
     def compute(self):
         if 'H0' in self._kwargs:
             logging.info('%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ СТУПЕНИ ПО ЗАДАННОМУ ТЕПЛОПЕРЕПАДУ %s\n' %
-                        (25 * '#', 25 * '#'))
+                         (25 * '#', 25 * '#'))
             self._specified_heat_drop_calculation()
         elif 'p2' in self._kwargs:
             logging.info('%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ СТУПЕНИ ПО ДАВЛЕНИЮ НА ВЫХОДЕ %s\n' %
-                        (25 * '#', 25 * '#'))
+                         (25 * '#', 25 * '#'))
             self._specified_outlet_pressure_calculation()
         elif 'L_t' in self._kwargs and 'eta_t0' in self._kwargs:
             logging.info('%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ СТУПЕНИ ПО РАБОТЕ %s\n' %
-                        (25 * '#', 25 * '#'))
+                         (25 * '#', 25 * '#'))
             self._specified_work_calculation()
 
     def _specified_heat_drop_calculation(self):
         """Вычисляет параметры ступени по заданному теплоперепаду с уточнением k"""
         self.work_fluid.__init__()
+        self.g_fuel_in = self.G_fuel / (self.G_stage_in - self.G_fuel)
+        self.alpha_air_in = 1 / (self.work_fluid.l0 * self.g_fuel_in)
         self.work_fluid.T1 = self.T0_stag
         self.work_fluid.alpha = self.alpha_air_in
         self.dk_rel = 1.
@@ -134,13 +137,15 @@ class StageGasDynamics:
             self._iter_number_k_gas += 1
             logging.info('ИТЕРАЦИЯ %s' % self._iter_number_k_gas)
             logging.debug('%s _specified_heat_drop_calculation _iter_number_k_gas = %s' %
-                         (self.str(), self._iter_number_k_gas))
+                          (self.str(), self._iter_number_k_gas))
             self._compute_stage_parameters()
             logging.info('Residual = %.4f' % self.dk_rel)
 
     def _specified_outlet_pressure_calculation(self):
         """Вычисляет параметры ступени по заданному выходному давлению"""
         self.work_fluid.__init__()
+        self.g_fuel_in = self.G_fuel / (self.G_stage_in - self.G_fuel)
+        self.alpha_air_in = 1 / (self.work_fluid.l0 * self.g_fuel_in)
         self.work_fluid.T1 = self.T0_stag
         self.work_fluid.alpha = self.alpha_air_in
         self.dk_rel = 1.
@@ -161,19 +166,20 @@ class StageGasDynamics:
     def _specified_work_calculation(self):
         """Вычисляет параметры ступени по заданной работе"""
         self.d_eta_t_rel = 1
-        eta_t = self._eta_t0
+        self.eta_t_old = self._eta_t0
+        self.eta_t = self._eta_t0
         self._iter_number_eta_t = 0
         logging.info('%s Расчет параметров ступени с уточнение КПД по статическим параметрам %s\n' %
-                    (15 * '-', 15 * '-'))
+                     (15 * '-', 15 * '-'))
         while self.d_eta_t_rel >= 0.001:
             self._iter_number_eta_t += 1
+            self.eta_t_old = self.eta_t
             logging.info('%s ИТЕРАЦИЯ %s %s\n' % ('-' * 10, self._iter_number_eta_t, '-' * 10))
             logging.debug('%s _specified_work_calculation _iter_number_eta_t = %s' %
                          (self.str(), self._iter_number_eta_t))
-            self.H0 = self.L_t / eta_t
+            self.H0 = self.L_t / self.eta_t_old
             self._specified_heat_drop_calculation()
-            self.d_eta_t_rel = abs(self.eta_t - eta_t) / eta_t
-            eta_t = self.eta_t
+            self.d_eta_t_rel = abs(self.eta_t - self.eta_t_old) / self.eta_t_old
             logging.info('')
             logging.info('Residual(eta_t) = %.4f\n' % self.d_eta_t_rel)
 
@@ -270,23 +276,22 @@ class StageGasDynamics:
             logging.debug('%s _compute_stage_parameters dk_rel = %s' % (self.str(), self.dk_rel))
         self.p2_stag = self.p2 * (self.T_st_stag / self.T_st) ** (self.k_gas / (self.k_gas - 1))
         self.H0_stag = self.c_p_gas * self.T0_stag * (1 - (self.p2_stag / self.p0_stag) ** ((self.k_gas - 1) / self.k_gas))
-        self.eta_t_stag = self.L_t / self.H0_stag
-        self._G_gas_out = self.G_stage_in - self.G_turbine * self.g_lk
+        self.eta_t_stag = self.L_t_rel / self.H0_stag
+        self.G_stage_out_prime = self.G_stage_in - self.G_turbine * self.g_lk
+        "Расход на выходе из ступени без учета охлаждения"
         self.G_stage_out = self.G_stage_in - self.G_turbine * self.g_lk + self.G_turbine * self.g_cool
-        self.g_fuel_in = 1 / (self.work_fluid.l0 * self.work_fluid.alpha)
-        self.G_fuel = self.g_fuel_in * self.G_stage_in / (1 + self.g_fuel_in)
-        self.g_fuel_out = self.G_fuel / (self.G_stage_in - self.G_fuel + self.g_cool * self.G_turbine)
+        self.g_fuel_out = self.G_fuel / (self.G_stage_out_prime - self.G_fuel + self.g_cool * self.G_turbine)
         self.alpha_air_out = 1 / (self.work_fluid.l0 * self.g_fuel_out)
         self.G_cool = self.g_cool * self.G_turbine
 
-        self.T_mix_stag, self.mixture, \
-        self.c_p_gas_true_out, self.c_p_cool_true = self._get_mixture_temp(self.work_fluid,
-                                                                           self.cool_fluid,
-                                                                           self.T_st_stag,
-                                                                           self.T_cool,
-                                                                           self._G_gas_out,
-                                                                           self.G_cool,
-                                                                           self.alpha_air_out)
+        self.T_mix_stag_new, self.mixture, self.c_p_gas_true_out, \
+        self.c_p_cool_true, self.T_mix_stag, self.T_mix_stag_res = self._get_mixture_temp(self.work_fluid,
+                                                                                          self.cool_fluid,
+                                                                                          self.T_st_stag,
+                                                                                          self.T_cool,
+                                                                                          self.G_stage_out_prime,
+                                                                                          self.G_cool,
+                                                                                          self.alpha_air_out)
 
     def plot_velocity_triangle(self, title='', figsize=(8, 8)):
         x_in = np.array([0, -self.c1_u, -self.c1_u + self.u1, 0])
@@ -304,10 +309,9 @@ class StageGasDynamics:
         plt.show()
 
 
-def get_first_stage(stage_geom: StageGeomAndHeatDrop, T0_stag, p0_stag, G_turbine,
-                    alpha_air) -> StageGasDynamics:
+def get_first_stage(stage_geom: StageGeomAndHeatDrop, T0_stag, p0_stag, G_turbine, G_fuel) -> StageGasDynamics:
     """Расчет первой ступени( если она не единственная)"""
-    result = StageGasDynamics(T0_stag, p0_stag, G_turbine, G_turbine, alpha_air, KeroseneCombustionProducts(),
+    result = StageGasDynamics(T0_stag, p0_stag, G_turbine, G_turbine, G_fuel, KeroseneCombustionProducts(),
                               stage_geom.rho, stage_geom.phi, stage_geom.psi, stage_geom.l1,
                               stage_geom.l2, stage_geom.D1, stage_geom.D2, stage_geom.delta_r_rk,
                               stage_geom.n, stage_geom.epsilon, stage_geom.g_lk, stage_geom.g_ld,
@@ -317,7 +321,7 @@ def get_first_stage(stage_geom: StageGeomAndHeatDrop, T0_stag, p0_stag, G_turbin
 
 
 def get_intermediate_stage(stage_geom: StageGeomAndHeatDrop, prev_stage: StageGasDynamics,
-                           prev_stage_geom: StageGeomAndHeatDrop, precise_heat_drop=True) -> \
+                           prev_stage_geom: StageGeomAndHeatDrop, G_fuel, precise_heat_drop=True) -> \
         StageGasDynamics:
     """Расчет промежуточной ступени"""
     if precise_heat_drop:
@@ -327,8 +331,8 @@ def get_intermediate_stage(stage_geom: StageGeomAndHeatDrop, prev_stage: StageGa
         H0 = stage_geom.H0
     p0_stag = prev_stage.p2 * (1 + (stage_geom.mu * prev_stage.c2)**2 / (2 * prev_stage.c_p_gas * prev_stage.T_st)) ** \
                               (prev_stage.k_gas / (prev_stage.k_gas - 1))
-    result = StageGasDynamics(prev_stage.T_mix_stag, p0_stag, prev_stage.G_stage_out, prev_stage.G_turbine,
-                              prev_stage.alpha_air_out, KeroseneCombustionProducts(), stage_geom.rho, stage_geom.phi,
+    result = StageGasDynamics(prev_stage.T_mix_stag, p0_stag, prev_stage.G_stage_out, prev_stage.G_turbine, G_fuel,
+                              KeroseneCombustionProducts(), stage_geom.rho, stage_geom.phi,
                               stage_geom.psi, stage_geom.l1, stage_geom.l2, stage_geom.D1, stage_geom.D2,
                               stage_geom.delta_r_rk, stage_geom.n, stage_geom.epsilon, stage_geom.g_lk,
                               stage_geom.g_ld, stage_geom.g_lb, stage_geom.g_cool, stage_geom.T_cool, H0=H0)
@@ -337,12 +341,12 @@ def get_intermediate_stage(stage_geom: StageGeomAndHeatDrop, prev_stage: StageGa
 
 
 def get_last_pressure_stage(turbine_geom: TurbineGeomAndHeatDropDistribution, stage_geom: StageGeomAndHeatDrop,
-                            prev_stage: StageGasDynamics, prev_stage_geom: StageGeomAndHeatDrop,) -> StageGasDynamics:
+                            prev_stage: StageGasDynamics, prev_stage_geom: StageGeomAndHeatDrop, G_fuel) -> StageGasDynamics:
     """Расчет последней ступени по выходному давлению (для силовой турбины)"""
     p0_stag = prev_stage.p2 * (1 + (prev_stage_geom.mu * prev_stage.c2)**2 / (2 * prev_stage.c_p_gas * prev_stage.T_st)) ** \
                               (prev_stage.k_gas / (prev_stage.k_gas - 1))
-    result = StageGasDynamics(prev_stage.T_mix_stag, p0_stag, prev_stage.G_stage_out, prev_stage.G_turbine,
-                              prev_stage.alpha_air_out, KeroseneCombustionProducts(), stage_geom.rho, stage_geom.phi,
+    result = StageGasDynamics(prev_stage.T_mix_stag, p0_stag, prev_stage.G_stage_out, prev_stage.G_turbine, G_fuel,
+                              KeroseneCombustionProducts(), stage_geom.rho, stage_geom.phi,
                               stage_geom.psi, stage_geom.l1, stage_geom.l2, stage_geom.D1, stage_geom.D2,
                               stage_geom.delta_r_rk, stage_geom.n, stage_geom.epsilon, stage_geom.g_lk,
                               stage_geom.g_ld, stage_geom.g_lb, stage_geom.g_cool, stage_geom.T_cool,
@@ -351,10 +355,10 @@ def get_last_pressure_stage(turbine_geom: TurbineGeomAndHeatDropDistribution, st
     return result
 
 
-def get_only_pressure_stage(turbine_geom: TurbineGeomAndHeatDropDistribution, T0_stag, p0_stag, G_turbine,
-                            alpha_air) -> StageGasDynamics:
+def get_only_pressure_stage(turbine_geom: TurbineGeomAndHeatDropDistribution, T0_stag,
+                            p0_stag, G_turbine, G_fuel) -> StageGasDynamics:
     """Расчет первой ступени по давлению на выходе, в случае когда она единственная в турбине"""
-    result = StageGasDynamics(T0_stag, p0_stag, G_turbine, G_turbine, alpha_air, KeroseneCombustionProducts(),
+    result = StageGasDynamics(T0_stag, p0_stag, G_turbine, G_turbine, G_fuel, KeroseneCombustionProducts(),
                               turbine_geom[0].rho, turbine_geom[0].phi, turbine_geom[0].psi, turbine_geom[0].l1,
                               turbine_geom[0].l2, turbine_geom[0].D1, turbine_geom[0].D2, turbine_geom[0].delta_r_rk,
                               turbine_geom[0].n, turbine_geom[0].epsilon, turbine_geom[0].g_lk, turbine_geom[0].g_ld,
@@ -364,15 +368,15 @@ def get_only_pressure_stage(turbine_geom: TurbineGeomAndHeatDropDistribution, T0
 
 
 def get_last_work_stage(stage_geom: StageGeomAndHeatDrop, prev_stage: StageGasDynamics,
-                        prev_stage_geom: StageGeomAndHeatDrop, L_stage_rel, eta_t0) -> StageGasDynamics:
+                        prev_stage_geom: StageGeomAndHeatDrop, L_stage_rel, eta_t0, G_fuel) -> StageGasDynamics:
     """Расчет последней ступени по работе турбины (для компрессорной турбины)"""
     L_stage = L_stage_rel / (prev_stage.G_stage_out / prev_stage.G_turbine -
                              (stage_geom.g_lb + stage_geom.g_ld + stage_geom.g_lk) + stage_geom.g_cool)
     p0_stag = prev_stage.p2 * (1 + (prev_stage_geom.mu * prev_stage.c2) ** 2 / (2 * prev_stage.c_p_gas *
                                                                            prev_stage.T_st)) ** \
                               (prev_stage.k_gas / (prev_stage.k_gas - 1))
-    result = StageGasDynamics(prev_stage.T_mix_stag, p0_stag, prev_stage.G_stage_out, prev_stage.G_turbine,
-                              prev_stage.alpha_air_out, KeroseneCombustionProducts(), stage_geom.rho, stage_geom.phi,
+    result = StageGasDynamics(prev_stage.T_mix_stag, p0_stag, prev_stage.G_stage_out, prev_stage.G_turbine, G_fuel,
+                              KeroseneCombustionProducts(), stage_geom.rho, stage_geom.phi,
                               stage_geom.psi, stage_geom.l1, stage_geom.l2, stage_geom.D1, stage_geom.D2,
                               stage_geom.delta_r_rk, stage_geom.n, stage_geom.epsilon, stage_geom.g_lk,
                               stage_geom.g_ld, stage_geom.g_lb, stage_geom.g_cool, stage_geom.T_cool,
@@ -381,10 +385,10 @@ def get_last_work_stage(stage_geom: StageGeomAndHeatDrop, prev_stage: StageGasDy
     return result
 
 
-def get_only_work_stage(stage_geom: StageGeomAndHeatDrop, L_stage_rel, eta_t0, T0_stag, p0_stag, G_turbine,
-                        alpha_air) -> StageGasDynamics:
+def get_only_work_stage(stage_geom: StageGeomAndHeatDrop, L_stage_rel, eta_t0,
+                        T0_stag, p0_stag, G_turbine, G_fuel) -> StageGasDynamics:
     L_stage = L_stage_rel / (1 - (stage_geom.g_lb + stage_geom.g_ld + stage_geom.g_lk) + stage_geom.g_cool)
-    result = StageGasDynamics(T0_stag, p0_stag, G_turbine, G_turbine, alpha_air, KeroseneCombustionProducts(),
+    result = StageGasDynamics(T0_stag, p0_stag, G_turbine, G_turbine, G_fuel, KeroseneCombustionProducts(),
                               stage_geom.rho, stage_geom.phi, stage_geom.psi, stage_geom.l1, stage_geom.l2,
                               stage_geom.D1, stage_geom.D2, stage_geom.delta_r_rk, stage_geom.n, stage_geom.epsilon,
                               stage_geom.g_lk, stage_geom.g_ld, stage_geom.g_lb, stage_geom.g_cool, stage_geom.T_cool,
@@ -394,22 +398,4 @@ def get_only_work_stage(stage_geom: StageGeomAndHeatDrop, L_stage_rel, eta_t0, T
 
 
 if __name__ == '__main__':
-    deg = np.pi / 180
-    stage_gd = StageGasDynamics(1400, 1100e3, 30, 30, 2.5, KeroseneCombustionProducts(), 0.8, 0.96, 0.96, 0.08, 0.10,
-                                0.34, 0.37, 0.001, 15e3, 1, 0, 0, 0, 0, L_t=250e3, eta_t0=0.85)  # H0=300e3)
-    stage_gd.compute()
-    print(stage_gd.alpha1 / deg)
-    print(stage_gd.alpha2 / deg)
-    print(stage_gd.beta1 / deg)
-    print(stage_gd.beta2 / deg)
-    print(stage_gd.H_l)
-    print(stage_gd.H_s)
-    print(stage_gd.c1_a)
-    print(stage_gd.c2_a)
-    print(stage_gd.T2)
-    print(stage_gd.T_st)
-    print(stage_gd.T_st_stag)
-    print(stage_gd.eta_t)
-    stage_gd.plot_velocity_triangle()
-    # stage_gd.L_t = 190e3
-    # print(stage_gd.eta_t)
+    pass

@@ -17,8 +17,9 @@ class TurbineType(Enum):
 
 
 class Turbine:
-    def __init__(self, turbine_type: TurbineType, stage_number, T_g_stag, p_g_stag, G_turbine, work_fluid: IdealGas,
-                 alpha_air, l1_D1_ratio, n, T_t_stag_cycle, eta_t_stag_cycle,
+    def __init__(self, turbine_type: TurbineType, stage_number, T_g_stag, p_g_stag, G_turbine, G_fuel,
+                 work_fluid: IdealGas, l1_D1_ratio, n,
+                 T_t_stag_cycle, eta_t_stag_cycle,
                  alpha11, k_n=6.8, eta_m=0.99,
                  auto_set_rho: bool=True,
                  auto_compute_heat_drop: bool=True,
@@ -35,10 +36,10 @@ class Turbine:
             Давление торможения после КС.
         :param G_turbine: float \n
             Расход газа через СА первой ступени.
+        :param G_fuel: float \n
+            Суммарный расход топлива по тракту перед турбиной.
         :param work_fluid: IdealGas \n
             Рабочее тело.
-        :param alpha_air: float \n
-            Коэффициент избытка воздуха.
         :param l1_D1_ratio: float \n
             Отношение длины лопатки РК первой ступени к среднему диаметру.
         :param n: float \n
@@ -80,8 +81,8 @@ class Turbine:
         self._T_g_stag = T_g_stag
         self._p_g_stag = p_g_stag
         self._G_turbine = G_turbine
+        self._G_fuel = G_fuel
         self._kwargs = kwargs
-        self._alpha_air = alpha_air
         self._stage_number = stage_number
         self._k_n = k_n
         self._work_fluid: IdealGas = work_fluid
@@ -190,10 +191,10 @@ class Turbine:
 
     def _init_turbine_geom(self):
         try:
-            if self._gamma_out and self._gamma_in:
+            if self._gamma_out is not None and self._gamma_in is not None:
                 self._geom = TurbineGeomAndHeatDropDistribution(self.stage_number, self.eta_t_stag_cycle,
                                                                 self.n, KeroseneCombustionProducts(),
-                                                                self.T_g_stag, self.p_g_stag, self.alpha_air,
+                                                                self.T_g_stag, self.p_g_stag, self.G_fuel,
                                                                 self.G_turbine, self.l1_D1_ratio,
                                                                 self.alpha11, self.k_n,
                                                                 self.T_t_stag_cycle,
@@ -201,10 +202,10 @@ class Turbine:
                                                                 c21=self.c21_init,
                                                                 gamma_in=self.gamma_in,
                                                                 gamma_out=self.gamma_out)
-            elif self._gamma_av and self._gamma_sum:
+            elif self._gamma_av is not None and self._gamma_sum is not None:
                 self._geom = TurbineGeomAndHeatDropDistribution(self.stage_number, self.eta_t_stag_cycle,
                                                                 self.n, KeroseneCombustionProducts(),
-                                                                self.T_g_stag, self.p_g_stag, self.alpha_air,
+                                                                self.T_g_stag, self.p_g_stag, self.G_fuel,
                                                                 self.G_turbine, self.l1_D1_ratio,
                                                                 self.alpha11, self.k_n,
                                                                 self.T_t_stag_cycle,
@@ -247,22 +248,24 @@ class Turbine:
                 if num == 0 and self.stage_number > 1:
                     # расчет первой ступени при числе ступеней, больше одной
                     stage_gas_dyn = get_first_stage(item, self.T_g_stag, self.p_g_stag, self.G_turbine,
-                                                    self.alpha_air)
+                                                    self.G_fuel)
                     self._gas_dynamics.append(stage_gas_dyn)
                 elif num == 0 and self.stage_number == 1:
                     # расчет первой ступени при числе ступеней, равному единице
                     stage_gas_dyn = get_only_pressure_stage(self.geom, self.T_g_stag, self.p_g_stag, self.G_turbine,
-                                                            self.alpha_air)
+                                                            self.G_fuel)
                     self._gas_dynamics.append(stage_gas_dyn)
                 elif num < self.stage_number - 1:
                     # расчет промежуточных ступеней
                     stage_gas_dyn = get_intermediate_stage(item, self._gas_dynamics[num - 1], self.geom[num - 1],
+                                                           self.G_fuel,
                                                            precise_heat_drop=self.precise_heat_drop)
                     self._gas_dynamics.append(stage_gas_dyn)
                 elif num == self.stage_number - 1:
                     # расчет последней ступени
                     stage_gas_dyn = get_last_pressure_stage(self.geom, item,
-                                                            self._gas_dynamics[num - 1], self.geom[num - 1])
+                                                            self._gas_dynamics[num - 1], self.geom[num - 1],
+                                                            self.G_fuel)
                     self._gas_dynamics.append(stage_gas_dyn)
         elif self.turbine_type == TurbineType.Compressor:
             L_last_stage_rel = self.L_t_cycle
@@ -271,18 +274,18 @@ class Turbine:
                 logging.debug('%s compute_gas_dynamics num = %s' % (self.str(), num))
                 if num == 0 and self.stage_number > 1:
                     # расчет первой ступени при числе ступеней, больше одной
-                    stage_gas_dyn = get_first_stage(item, self.T_g_stag, self.p_g_stag, self.G_turbine,
-                                                    self.alpha_air)
+                    stage_gas_dyn = get_first_stage(item, self.T_g_stag, self.p_g_stag, self.G_turbine, self.G_fuel)
                     self._gas_dynamics.append(stage_gas_dyn)
                     L_last_stage_rel -= stage_gas_dyn.L_t_rel
                 elif num == 0 and self.stage_number == 1:
                     # расчет первой ступени при числе ступеней, равному единице
                     stage_gas_dyn = get_only_work_stage(item, L_last_stage_rel, 0.9, self.T_g_stag, self.p_g_stag,
-                                                        self.G_turbine, self.alpha_air)
+                                                        self.G_turbine, self.G_fuel)
                     self._gas_dynamics.append(stage_gas_dyn)
                 elif num < self.stage_number - 1:
                     # расчет промежуточных ступеней
                     stage_gas_dyn = get_intermediate_stage(item, self._gas_dynamics[num - 1], self.geom[num - 1],
+                                                           self.G_fuel,
                                                            precise_heat_drop=self.precise_heat_drop)
                     self._gas_dynamics.append(stage_gas_dyn)
                     L_last_stage_rel -= stage_gas_dyn.L_t_rel
@@ -291,7 +294,7 @@ class Turbine:
                     if L_last_stage_rel < 0:
                         raise InvalidStageSizeValue('L_last_stage_rel must not be negative')
                     stage_gas_dyn = get_last_work_stage(item, self._gas_dynamics[num - 1], self.geom[num - 1],
-                                                        L_last_stage_rel, 0.9)
+                                                        L_last_stage_rel, 0.9, self.G_fuel)
                     self._gas_dynamics.append(stage_gas_dyn)
         for n, i in enumerate(self):
             self.geom[n].H0 = i.H0
@@ -591,19 +594,6 @@ class Turbine:
         self._init_turbine_geom()
 
     @property
-    def alpha_air(self):
-        """
-        Коэффициент избытка воздуха
-        """
-        assert self._alpha_air is not None, 'alpha_air must not be None'
-        return self._alpha_air
-
-    @alpha_air.setter
-    def alpha_air(self, value):
-        self._alpha_air = value
-        self._init_turbine_geom()
-
-    @property
     def G_turbine(self):
         """
         Расход газа через СА первой ступени.
@@ -614,6 +604,19 @@ class Turbine:
     @G_turbine.setter
     def G_turbine(self, value):
         self._G_turbine = value
+        self._init_turbine_geom()
+
+    @property
+    def G_fuel(self):
+        """
+        Суммарный расход топлива по тракту до турбины.
+        """
+        assert self._G_fuel is not None, 'G_fuel must not be None'
+        return self._G_fuel
+
+    @G_fuel.setter
+    def G_fuel(self, value):
+        self._G_fuel = value
         self._init_turbine_geom()
 
     @property

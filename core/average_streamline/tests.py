@@ -10,6 +10,7 @@ class TurbineTest(unittest.TestCase):
                                          T_g_stag=1400,
                                          p_g_stag=5.5e5,
                                          G_turbine=25,
+                                         G_fuel=1,
                                          work_fluid=KeroseneCombustionProducts(),
                                          alpha_air=2.87,
                                          l1_D1_ratio=0.25,
@@ -24,9 +25,9 @@ class TurbineTest(unittest.TestCase):
                                          precise_heat_drop=False,
                                          H01_init=150e3,
                                          c21_init=250,
-                                         alpha11=np.radians(17),
-                                         gamma_av=np.radians(4),
-                                         gamma_sum=np.radians(10))
+                                         alpha11=np.radians([17])[0],
+                                         gamma_av=np.radians([4])[0],
+                                         gamma_sum=np.radians([10])[0])
         self.comp_turb_h0_auto.geom[0].g_cool = 0.03
         self.comp_turb_h0_auto.geom[0].g_lb = 0.002
         self.comp_turb_h0_auto.geom[0].g_lk = 0.001
@@ -37,6 +38,7 @@ class TurbineTest(unittest.TestCase):
                                          T_g_stag=1400,
                                          p_g_stag=5.5e5,
                                          G_turbine=25,
+                                         G_fuel=1,
                                          work_fluid=KeroseneCombustionProducts(),
                                          alpha_air=2.87,
                                          l1_D1_ratio=0.25,
@@ -50,13 +52,14 @@ class TurbineTest(unittest.TestCase):
                                          auto_set_rho=True,
                                          precise_heat_drop=False,
                                          H0_list=[160e3, 140e3],
-                                         alpha11=np.radians(17),
-                                         gamma_av=np.radians(4),
-                                         gamma_sum=np.radians(10))
+                                         alpha11=np.radians([17])[0],
+                                         gamma_av=np.radians([4])[0],
+                                         gamma_sum=np.radians([10])[0])
         self.comp_turb_rho_hand = Turbine(TurbineType.Compressor,
                                           T_g_stag=1400,
                                           p_g_stag=5.5e5,
                                           G_turbine=25,
+                                          G_fuel=1,
                                           work_fluid=KeroseneCombustionProducts(),
                                           alpha_air=2.87,
                                           l1_D1_ratio=0.25,
@@ -72,13 +75,14 @@ class TurbineTest(unittest.TestCase):
                                           rho_list=[0.45, 0.4],
                                           H01_init=150e3,
                                           c21_init=250,
-                                          alpha11=np.radians(17),
-                                          gamma_av=np.radians(4),
-                                          gamma_sum=np.radians(10))
+                                          alpha11=np.radians([17])[0],
+                                          gamma_av=np.radians([4])[0],
+                                          gamma_sum=np.radians([10])[0])
         self.power_turb_h0_auto = Turbine(TurbineType.Power,
                                           T_g_stag=1400,
                                           p_g_stag=5.5e5,
                                           G_turbine=25,
+                                          G_fuel=1,
                                           work_fluid=KeroseneCombustionProducts(),
                                           alpha_air=2.87,
                                           l1_D1_ratio=0.25,
@@ -93,9 +97,9 @@ class TurbineTest(unittest.TestCase):
                                           precise_heat_drop=False,
                                           H01_init=150e3,
                                           c21_init=250,
-                                          alpha11=np.radians(17),
-                                          gamma_av=np.radians(4),
-                                          gamma_sum=np.radians(10))
+                                          alpha11=np.radians([17])[0],
+                                          gamma_in=np.radians([0])[0],
+                                          gamma_out=np.radians([10])[0])
 
     def test_comp_turbine_h0_auto_rho_auto(self):
         """Тестирование расчета компрессорной турбины с автонастройкой теплоперепадов и степени реактивности, а также
@@ -206,6 +210,7 @@ class TurbineTest(unittest.TestCase):
         self.assertEqual(self.comp_turb_h0_auto[0].G_turbine, self.comp_turb_h0_auto[1].G_turbine)
         self.assertEqual(self.comp_turb_h0_auto[0].G_stage_out, self.comp_turb_h0_auto[1].G_stage_in)
         self.assertEqual(self.comp_turb_h0_auto[0].alpha_air_out, self.comp_turb_h0_auto[1].alpha_air_in)
+        self.assertEqual(self.comp_turb_h0_auto[0].G_fuel, self.comp_turb_h0_auto[1].G_fuel)
         self.assertEqual(self.comp_turb_h0_auto.geom[0].l1, self.comp_turb_h0_auto[0].l1)
         self.assertEqual(self.comp_turb_h0_auto.geom[0].l2, self.comp_turb_h0_auto[0].l2)
         self.assertEqual(self.comp_turb_h0_auto.geom[0].D1, self.comp_turb_h0_auto[0].D1)

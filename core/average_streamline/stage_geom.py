@@ -217,7 +217,7 @@ class TurbineGeomAndHeatDropDistribution:
     на первой ступени.
     """
     def __init__(self, stage_number, eta_t_stag, n, work_fluid: IdealGas, T_g_stag,
-                 p_g_stag, alpha_air, G_turbine, l1_D1_ratio, alpha11, k_n, T_t_stag,
+                 p_g_stag, G_fuel, G_turbine, l1_D1_ratio, alpha11, k_n, T_t_stag,
                  auto_compute_heat_drop: bool=True, **kwargs):
         """
         :param stage_number:
@@ -226,7 +226,7 @@ class TurbineGeomAndHeatDropDistribution:
         :param work_fluid:
         :param T_g_stag:
         :param p_g_stag:
-        :param alpha_air: коэффициент избытка воздуха
+        :param G_fuel: Суммарный расход топлива перед турбиной.
         :param G_turbine:
         :param l1_D1_ratio:
         :param alpha11: угол потока после СА первой ступени
@@ -241,7 +241,7 @@ class TurbineGeomAndHeatDropDistribution:
         self.work_fluid = work_fluid
         self.T_g_stag = T_g_stag
         self.p_g_stag = p_g_stag
-        self.alpha_air = alpha_air
+        self.G_fuel = G_fuel
         self.G_turbine = G_turbine
         self.l1_D1_ratio = l1_D1_ratio
         self.alpha11 = alpha11
@@ -338,6 +338,8 @@ class TurbineGeomAndHeatDropDistribution:
             self._iter_number_d1_l1 += 1
             logging.debug('%s _compute_t_11 iter_number = %s' % (self.str(), self._iter_number_d1_l1))
             self.work_fluid.T1 = self.T_g_stag
+            self.g_fuel = self.G_fuel / (self.G_turbine - self.G_fuel)
+            self.alpha_air = 1 / (self.work_fluid.l0 * self.g_fuel)
             self.work_fluid.alpha = self.alpha_air
             self.H_s1 = self.H01 * (1 - self.rho1)
             self.c11 = self._stages[0].phi * np.sqrt(2 * self.H_s1)

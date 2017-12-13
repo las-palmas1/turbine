@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'main_widget.ui'
+# Form implementation generated from reading ui file 'D:\Asus\Documents\Python Scripts\turbine\gui\average_streamline\main_widget.ui'
 #
 # Created by: PyQt5 UI code generator 5.6
 #
@@ -82,13 +82,13 @@ class Ui_Form(object):
         self.alpha11.setProperty("value", 17.0)
         self.alpha11.setObjectName("alpha11")
         self.gridLayout_2.addWidget(self.alpha11, 8, 1, 1, 1)
-        self.alpha_air = QtWidgets.QDoubleSpinBox(self.frame)
-        self.alpha_air.setDecimals(3)
-        self.alpha_air.setMaximum(1000.0)
-        self.alpha_air.setSingleStep(0.5)
-        self.alpha_air.setProperty("value", 2.5)
-        self.alpha_air.setObjectName("alpha_air")
-        self.gridLayout_2.addWidget(self.alpha_air, 9, 1, 1, 1)
+        self.G_fuel = QtWidgets.QDoubleSpinBox(self.frame)
+        self.G_fuel.setDecimals(3)
+        self.G_fuel.setMaximum(1000.0)
+        self.G_fuel.setSingleStep(0.1)
+        self.G_fuel.setProperty("value", 0.5)
+        self.G_fuel.setObjectName("G_fuel")
+        self.gridLayout_2.addWidget(self.G_fuel, 9, 1, 1, 1)
         self.label_15 = QtWidgets.QLabel(self.frame)
         self.label_15.setObjectName("label_15")
         self.gridLayout_2.addWidget(self.label_15, 16, 0, 1, 1)
@@ -427,7 +427,7 @@ class Ui_Form(object):
         self.label_16.setText(_translate("Form", "Частота вращения, об/мин"))
         self.label_gamma1.setText(_translate("Form", "Угол раскрытия проточной части, град"))
         self.label_gamma2.setText(_translate("Form", "Угол наклона средней линии, град"))
-        self.label_6.setText(_translate("Form", "Коэффициент избытка воздуха"))
+        self.label_6.setText(_translate("Form", "Расход топлива, кг/с"))
         self.label_15.setText(_translate("Form", "Расход рабочего тела на входе в турбину, кг/с"))
         self.label_10.setText(_translate("Form", "Температура торможения после турбины, К"))
         self.label_20.setText(_translate("Form", "Механический КПД"))

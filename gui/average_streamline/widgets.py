@@ -249,6 +249,8 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_form.delta_r.setValue(turbine.geom[i].delta_r_rk * 1e3)
             stage_form.p_in.setValue(turbine.geom[i].p_r_in * 1e3)
             stage_form.p_out.setValue(turbine.geom[i].p_r_out * 1e3)
+            stage_form.delta_a_sa.setValue(turbine.geom[i].delta_a_sa)
+            stage_form.delta_a_rk.setValue(turbine.geom[i].delta_a_rk)
 
             stage_form.c1.setValue(turbine[i].c1)
             stage_form.u1.setValue(turbine[i].u1)
@@ -336,7 +338,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   p_g_stag=self.p_g_stag.value() * 1e6,
                                   G_turbine=self.G_t.value(),
                                   work_fluid=work_fluid,
-                                  alpha_air=self.alpha_air.value(),
+                                  G_fuel=self.G_fuel.value(),
                                   l1_D1_ratio=self.l1_D1_ratio.value(),
                                   n=self.n.value(),
                                   eta_m=self.eta_m.value(),
@@ -357,7 +359,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   p_g_stag=self.p_g_stag.value() * 1e6,
                                   G_turbine=self.G_t.value(),
                                   work_fluid=work_fluid,
-                                  alpha_air=self.alpha_air.value(),
+                                  G_fuel=self.G_fuel.value(),
                                   l1_D1_ratio=self.l1_D1_ratio.value(),
                                   n=self.n.value(),
                                   eta_m=self.eta_m.value(),
@@ -379,7 +381,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   p_g_stag=self.p_g_stag.value() * 1e6,
                                   G_turbine=self.G_t.value(),
                                   work_fluid=work_fluid,
-                                  alpha_air=self.alpha_air.value(),
+                                  G_fuel=self.G_fuel.value(),
                                   l1_D1_ratio=self.l1_D1_ratio.value(),
                                   n=self.n.value(),
                                   eta_m=self.eta_m.value(),
@@ -399,7 +401,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   p_g_stag=self.p_g_stag.value() * 1e6,
                                   G_turbine=self.G_t.value(),
                                   work_fluid=work_fluid,
-                                  alpha_air=self.alpha_air.value(),
+                                  G_fuel=self.G_fuel.value(),
                                   l1_D1_ratio=self.l1_D1_ratio.value(),
                                   n=self.n.value(),
                                   eta_m=self.eta_m.value(),
@@ -421,7 +423,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   p_g_stag=self.p_g_stag.value() * 1e6,
                                   G_turbine=self.G_t.value(),
                                   work_fluid=work_fluid,
-                                  alpha_air=self.alpha_air.value(),
+                                  G_fuel=self.G_fuel.value(),
                                   l1_D1_ratio=self.l1_D1_ratio.value(),
                                   n=self.n.value(),
                                   eta_m=self.eta_m.value(),
@@ -442,7 +444,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   p_g_stag=self.p_g_stag.value() * 1e6,
                                   G_turbine=self.G_t.value(),
                                   work_fluid=work_fluid,
-                                  alpha_air=self.alpha_air.value(),
+                                  G_fuel=self.G_fuel.value(),
                                   l1_D1_ratio=self.l1_D1_ratio.value(),
                                   n=self.n.value(),
                                   eta_m=self.eta_m.value(),
@@ -464,7 +466,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   p_g_stag=self.p_g_stag.value() * 1e6,
                                   G_turbine=self.G_t.value(),
                                   work_fluid=work_fluid,
-                                  alpha_air=self.alpha_air.value(),
+                                  G_fuel=self.G_fuel.value(),
                                   l1_D1_ratio=self.l1_D1_ratio.value(),
                                   n=self.n.value(),
                                   eta_m=self.eta_m.value(),
@@ -484,7 +486,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                   p_g_stag=self.p_g_stag.value() * 1e6,
                                   G_turbine=self.G_t.value(),
                                   work_fluid=work_fluid,
-                                  alpha_air=self.alpha_air.value(),
+                                  G_fuel=self.G_fuel.value(),
                                   l1_D1_ratio=self.l1_D1_ratio.value(),
                                   n=self.n.value(),
                                   eta_m=self.eta_m.value(),
@@ -529,9 +531,9 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         err_message.show()
 
     def on_compute_btn_click(self):
-        turbine = self.get_turbine()
-        self.turbine = turbine
         try:
+            turbine = self.get_turbine()
+            self.turbine = turbine
             turbine.compute_geometry()
             turbine.compute_stages_gas_dynamics()
             turbine.compute_integrate_turbine_parameters()
@@ -605,7 +607,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             self.checkBox_precise_h0.setChecked(False)
 
         self.alpha11.setValue(np.degrees(turbine.alpha11))
-        self.alpha_air.setValue(turbine.alpha_air)
+        self.G_fuel.setValue(turbine.G_fuel)
         self.T_g_stag.setValue(turbine.T_g_stag)
         self.p_g_stag.setValue(turbine.p_g_stag / 1e6)
         self.T_t_stag_cycle.setValue(turbine.T_t_stag_cycle)
@@ -685,8 +687,8 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
         if fname:
             try:
                 ave_line_widget: AveLineWidget = self.centralWidget()
-                ave_line_widget.save_turbine_file(fname + self.file_ext)
-                self.setWindowTitle(fname + self.file_ext)
+                ave_line_widget.save_turbine_file(os.path.splitext(fname)[0] + self.file_ext)
+                self.setWindowTitle(os.path.splitext(fname)[0] + self.file_ext)
                 self.save_count += 1
             except Exception as ex:
                 logger.error(ex)

@@ -230,7 +230,7 @@ class DeflectorBladeFilmCoolingTest(unittest.TestCase):
                                p_g_stag=400e3,
                                G_turbine=25,
                                work_fluid=KeroseneCombustionProducts(),
-                               alpha_air=2.5,
+                               G_fuel=2.5,
                                l1_D1_ratio=0.25,
                                n=15e3,
                                T_t_stag_cycle=1050,
