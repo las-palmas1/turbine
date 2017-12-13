@@ -247,7 +247,8 @@ class TurbineGeomAndHeatDropDistribution:
         self.alpha11 = alpha11
         self.k_n = k_n
         self.T_t_stag = T_t_stag
-        self.p_t_stag, self.H_t_stag = self._get_p_t_stag_and_H_t(self.work_fluid, p_g_stag, T_g_stag, T_t_stag, eta_t_stag)
+        self.p_t_stag, self.H_t_stag = self._get_p_t_stag_and_H_t(self.work_fluid, p_g_stag, T_g_stag,
+                                                                  T_t_stag, eta_t_stag, G_turbine, G_fuel)
         self.auto_compute_heat_drop = auto_compute_heat_drop
         self._kwargs = kwargs
         if ('gamma_av' in kwargs) and ('gamma_sum' in kwargs):
@@ -270,10 +271,13 @@ class TurbineGeomAndHeatDropDistribution:
             item.n = self.n
 
     @classmethod
-    def _get_p_t_stag_and_H_t(cls, work_fluid: IdealGas, p_g_stag, T_g_stag, T_t_stag, eta_t_stag):
+    def _get_p_t_stag_and_H_t(cls, work_fluid: IdealGas, p_g_stag, T_g_stag, T_t_stag, eta_t_stag, G_turbine, G_fuel):
         work_fluid.__init__()
+        g_fuel = G_fuel / (G_turbine - G_fuel)
+        alpha_air = 1 / (work_fluid.l0 * g_fuel)
         work_fluid.T1 = T_t_stag
         work_fluid.T2 = T_g_stag
+        work_fluid.alpha = alpha_air
         L_t = work_fluid.c_p_av_int * (T_g_stag - T_t_stag)
         H_t = L_t / eta_t_stag
         pi_t = (1 - L_t / (work_fluid.c_p_av_int * T_g_stag * eta_t_stag)) ** \

@@ -242,7 +242,7 @@
 	 	        H_л
 	        }{ c_{p г}} =
 	        << stgd.T1 | round(2) >> - \frac{
-	 	        << (stgd.H_l / 10**6) \ round(4) >> \cdot 10^6
+	 	        << (stgd.H_l / 10**6) | round(4) >> \cdot 10^6
 	        }{
                 << stgd.c_p_gas | round(2) >>
             }
@@ -343,13 +343,13 @@
             L_u = c_{1u} u_1 + c_{2u} u_2 =
                     << stgd.c1_u | round(2) >> \cdot << stgd.u1 | round(2) >> +
                     << stgd.c2_u | round(2) >> \cdot << stgd.u2 | round(2) >> =
-            << (stgd.L_u / 10**6) \ round(4) >> \cdot 10^6 \/\ Дж/кг
+            << (stgd.L_u / 10**6) | round(4) >> \cdot 10^6 \/\ Дж/кг
         \]
 
         \item Определим КПД на окружности колеса:
 	    \[
             \eta_u = \frac{L_u}{H_0} =
-                \frac{ << (stgd.L_u / 10**6) \ round(4) >> \cdot 10^6 }{ << (stgd.H0 / 10**6) \ round(4) >> \cdot 10^6 }
+                \frac{ << (stgd.L_u / 10**6) | round(4) >> \cdot 10^6 }{ << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 }
             = << stgd.eta_u | round(4) >>
         \]
 
@@ -376,14 +376,14 @@
         \item Относительные потери в СА:
         \[
             \zeta_с = \frac{ h_с }{ H_0 } =
-                \frac{ << (stgd.h_s / 10**3) | round(4) >> \cdot 10^3 }{ << (stgd.H0 / 10**6) \ round(4) >> \cdot 10^6 } =
+                \frac{ << (stgd.h_s / 10**3) | round(4) >> \cdot 10^3 }{ << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 } =
             << stgd.zeta_s | round(4) >>
         \]
 
         \item Относительные потери в СА с учетом их использования в рабочих лопатках:
         \[
             \zeta_с^\prime = \frac{ h_с^\prime }{ H_0 } =
-                \frac{ << (stgd.h_s_touch / 10**3) | round(4) >> \cdot 10^3 }{ << (stgd.H0 / 10**6) \ round(4) >> \cdot 10^6 } =
+                \frac{ << (stgd.h_s_touch / 10**3) | round(4) >> \cdot 10^3 }{ << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 } =
             << stgd.zeta_s_touch | round(4) >>
         \]
 
@@ -403,7 +403,7 @@
         \item Относительные потери в рабочих лопатках:
         \[
             \zeta_л = \frac{ h_л }{ H_0 } =
-                \frac{ << (stgd.h_l / 10**3) | round(4) >> \cdot 10^3 }{ << (stgd.H0 / 10**6) \ round(4) >> \cdot 10^6 } =
+                \frac{ << (stgd.h_l / 10**3) | round(4) >> \cdot 10^3 }{ << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 } =
             << stgd.zeta_l | round(4) >>
         \]
 
@@ -416,7 +416,7 @@
         \item Относительные потери с выходной скоростью:
         \[
             \zeta_{вых} = \frac{ h_{вых} }{ H_0 } =
-                \frac{ << (stgd.h_v / 10**3) | round(4) >> \cdot 10^3 }{ << (stgd.H0 / 10**6) \ round(4) >> \cdot 10^6 } =
+                \frac{ << (stgd.h_v / 10**3) | round(4) >> \cdot 10^3 }{ << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 } =
             << stgd.zeta_v | round(4) >>
         \]
 
@@ -458,13 +458,13 @@
         \item Относительные удельные потери в радиальном зазоре:
         \[
             \zeta_з = \frac{ h_з }{ H_0 } =
-                \frac{ << (stgd.h_z / 10**3) | round(4) >> \cdot 10^3 }{ << (stgd.H0 / 10**6) \ round(4) >> \cdot 10^6 } =
+                \frac{ << (stgd.h_z / 10**3) | round(4) >> \cdot 10^3 }{ << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 } =
             << stgd.zeta_z | round(4) >>
         \]
 
         \item Удельная работа ступени с учетом потери в радиальном зазоре:
         \[
-            \L_{uз} = L_u - h_з = << (stgd.L_u / 10**6) | round(4) >> \cdot 10^6 -
+            L_{uз} = L_u - h_з = << (stgd.L_u / 10**6) | round(4) >> \cdot 10^6 -
                 << (stgd.h_z / 10**3) | round(4) >> \cdot 10^3 =
             << (stgd.L_uz / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
         \]
@@ -486,14 +486,14 @@
         \[
             l_{ср} = 0.5 \cdot (l_1 + l_2) =
                 0.5 \cdot (<< stgd.l1 | round(4) >> + << stgd.l2 | round(4) >>) =
-            << stgd.l_av \ round(4) >>\ м
+            << stgd.l_av | round(4) >>\ м
         \]
 
         \item Средняя окружная скоротсь:
         \[
             u_{ср} = 0.5 \cdot (u_1 + u_2) =
                 0.5 \cdot (<< stgd.u1 | round(2) >> + << stgd.u2 | round(2) >>) =
-            << stgd.u_av \ round(2) >>\ м/с
+            << stgd.u_av | round(2) >>\ м/с
         \]
 
         \item Затраты мощности на трение и вентиляцию:
@@ -506,12 +506,12 @@
             \right) ^ 3 \cdot
             \rho =\\
             = \left[
-                1.07 \cdot << stgd.D_av \ round(4) >>^2 +
+                1.07 \cdot << stgd.D_av | round(4) >>^2 +
                 61 \cdot (1 - << stgd.epsilon | round(3) >>) \cdot
-                << stgd.D_av \ round(4) >> \cdot << stgd.l_av \ round(4) >>
+                << stgd.D_av | round(4) >> \cdot << stgd.l_av | round(4) >>
             \right] \cdot
             \left(
-                \frac{ << stgd.u_av \ round(2) >> }{ 100 }
+                \frac{ << stgd.u_av | round(2) >> }{ 100 }
             \right) ^ 3 \cdot
             << stgd.rho | round(4) >>
             = << (stgd.N_tv / 10**3) | round(4) >> \cdot 10^3 \ Вт \\
@@ -531,7 +531,7 @@
         \item Относительные потери на трение и вентиляцию:
         \[
             \zeta_{т.в} = \frac{ h_{т.в} }{ H_0 } =
-                \frac{ << (stgd.h_tv / 10**3) | round(4) >> \cdot 10^3 }{ << (stgd.H0 / 10**6) \ round(4) >> \cdot 10^6 } =
+                \frac{ << (stgd.h_tv / 10**3) | round(4) >> \cdot 10^3 }{ << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 } =
             << stgd.zeta_tv | round(4) >>
         \]
 
@@ -629,7 +629,7 @@
                     \left| << stgd.k_gas | round(4) >> - << stgd.work_fluid.k_av_int | round(4) >> \right|
                 }{
                     << stgd.k_gas | round(4) >>
-                }  \cdot \% =
+                } \cdot 100 \% =
             << (stgd.dk_rel * 100) | round(4) >> \%
         \]
 
@@ -764,9 +764,8 @@
     \end{enumerate}
 
 
+    </ macro heat_drop_stage(stgd) />
     \begin{enumerate}
-
-        </ macro heat_drop_stage(stgd) />
 
         \item Относительный расход топлива на входе в ступень:
         \[
@@ -794,13 +793,13 @@
 
         << stage_core(stgd, 'heat_drop') >>
 
-        </ endmacro />
     \end{enumerate}
+    </ endmacro />
 
+
+    </ macro pressure_stage(stgd) />
 
     \begin{enumerate}
-
-        </ macro pressure_stage(stgd) />
 
         \item Относительный расход топлива на входе в ступень:
         \[
@@ -847,13 +846,13 @@
 
         << stage_core(stgd, 'pressure') >>
 
-        </ endmacro />
     \end{enumerate}
+    </ endmacro />
 
+
+    </ macro work_stage(stgd) />
 
     \begin{enumerate}
-
-        </ macro work_stage(stgd) />
 
         \item Относительный расход топлива на входе в ступень:
         \[
@@ -903,7 +902,194 @@
             << (stgd.d_eta_t_rel * 100) | round(3) >> \%
         \]
 
-        </ endmacro />
     \end{enumerate}
+     </ endmacro />
+
+
+    </ macro stage_init_data(stgd, sttype) />
+    \begin{enumerate}
+
+        \item Температура торможения на входе в ступень: $T_0^* = << stgd.T0_stag | round(2) >>\ К $.
+        \item Давление торможения на входе в ступень: $p_0^* = << (stgd.p0_stag / 10**6) | round(4) >> \cdot 10^6 \ Па$.
+        \item Расход газа на входе в ступень: $G_{вх} = << stgd.G_stage_in | round(2) >>\ кг/с$.
+        \item Расход газа на входе в СА первой ступени: $ G_т = << stgd.G_turbine | round(2) >>\ кг/с $.
+        \item Расход топлива на входе в турбину: $ G_{топл} = << stgd.G_fuel | round(3) >>\ кг/с $.
+        \item Степень реактивности: $ \rho = << stgd.rho | round(3) >> $.
+        \item Коэффициент скорости в СА: $ \phi = << stgd.phi | round(3) >> $.
+        \item Коэффициент скорости в РК: $ \psi = << stgd.psi | round(3) >> $.
+        \item Длина лопатки на входе в РК: $ l_1 = << stgd.l1 | round(4) >>\ м $.
+        \item Длина лопатки на выходе из РК: $ l_2 = << stgd.l2 | round(4) >>\ м $.
+        \item Средний диаметр на входе в РК: $ D_1 = << stgd.D1 | round(4) >>\ м $.
+        \item Средний диаметр на выходе в РК: $ D_2 = << stgd.D2 | round(4) >>\ м $.
+        \item Радиальный зазор: $ \delta_r = << stgd.delta_r_rk | round(5) >>\ м $.
+        \item Частота вращения ротора: $ n = << stgd.n | round(1) >>\ об/мин $
+        \item Степень парциальности: $ \varepsilon = << stgd.epsilon | round(2) >> $.
+        \item Расход охлаждающего воздуха, отнесенный к расходу на входе в турбину: $ g_{охл} = << stgd.g_cool | round(4) >> $.
+        \item Температура торможения охлаждающего воздуха: $ T_{охл} = << stgd.T_cool | round(2) >>\ К $.
+
+        </ if sttype=='heat_drop' />
+        \item Статический теплоперепад на ступени: $ H_0 = << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг $.
+
+        </ elif sttype=='pressure' />
+        \item Статическое давление на выходе: $ p_2 = << (stgd.p2 / 10**6) | round(4) >> \cdot 10^6 \ Па $.
+
+        </ elif sttype=='work' />
+        \item Удельная работы турбины: $ L_т = << (stgd.L_t / 10**6) | round(4)  >> \cdot 10^6 \ Дж/кг $.
+
+        </ endif />
+
+    \end{enumerate}
+    </ endmacro />
+
+
+    </ macro integrate_turbine_param(turb, L_t_sum_exp) />
+    \begin{enumerate}
+
+        \item Суммарная работа всех ступеней:
+        \[
+            L_{т\Sigma} = << L_t_sum_exp >> = << (turb.L_t_sum / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
+        \]
+
+        \item Средняя теплоемкость газа в интервале температур от 273 К до $T_г^*$:
+        \[
+            c_{pг\ ср} (T_г^*, \alpha_{вх}) =
+            << turb.work_fluid.c_p_av_func(turb.T_g_stag, alpha=turb.first.alpha_air_in) | round(2) >> \ Дж/(кг \cdot К)
+        \]
+
+        \item Средняя теплоемкость газа в интервале температур от 273 К до $T_т$:
+        \[
+            c_{pг\ ср} (T_т, \alpha_{вх}) =
+            << turb.work_fluid.c_p_av_func(turb.last.T_st, alpha=turb.first.alpha_air_in) | round(2) >> \ Дж/(кг \cdot К)
+        \]
+
+        \item Средняя теплоемкость газа в интервале температур от $T_0^*$ до $T_т$:
+        \begin{gather*}
+            c_{pг} = \frac{
+		         c_{pг\ ср} (T_г^*, \alpha_{вх}) (T_г^* - T_0) - c_{pг\ ср} (T_{т}, \alpha_{вх})(T_т - T_0)
+		    }{
+		        T_г^* - T_т} =\\
+            =\frac{
+                << turb.work_fluid.c_p_av_func(turb.T_g_stag, alpha=turb.first.alpha_air_in) | round(2) >> \cdot
+                (<< turb.T_g_stag | round(2) >> - 273) -
+		        << turb.work_fluid.c_p_av_func(turb.last.T_st, alpha=turb.first.alpha_air_in) | round(2) >> \cdot
+                (<< turb.last.T_st | round(2) >> - 273)
+		    }{
+		        << turb.T_g_stag | round(2) >> - << turb.last.T_st | round(2) >>} =
+		    << turb.c_p_gas | round(2) >> \ Дж / (кг \cdot К)\\
+        \end{gather*}
+
+        \item Средний показателя адиабаты:
+        \[
+            k_г = \frac{c_{pг}}{c_{pг} - R_г} =
+                \frac{
+                    << turb.c_p_gas | round(2) >>
+                }{
+                    << turb.c_p_gas | round(2) >> - << turb.work_fluid.R | round(2) >>
+                }
+            = << turb.k_gas | round(4) >>
+        \]
+
+        \item Статический теплоперепад на турбине:
+        \[
+            H_т = c_{pг} T_г^* \left[
+                        1 - \left(
+                                \frac{p_г^*}{p_т} ^
+                                \frac{1 - k_г}{k_г}
+                    \right)
+                \right] =
+            << turb.c_p_gas | round(2) >> \cdot << turb.T_g_stag | round(2) >>
+                \left[
+                    1 - \left(
+                            \frac{
+                                << (turb.p_g_stag / 10**6) | round(4) >> \cdot 10^6
+                            }{
+                                << (turb.last.p2 / 10**6) | round(4) >> \cdot 10^6 } ^
+                            \frac{ 1 - << turb.k_gas | round(4) >> }{ << turb.k_gas | round(4) >> }
+                    \right)
+            \right] =
+            << (turb.H_t / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
+        \]
+
+        \item Средняя теплоемкость газа в интервале температур от 273 К до $T_т^*$:
+        \[
+            c_{pг\ ср} (T_т^*, \alpha_{вх}) =
+            << turb.work_fluid.c_p_av_func(turb.last.T_mix_stag, alpha=turb.first.alpha_air_in) | round(2) >> \ Дж/(кг \cdot К)
+        \]
+
+        \item Средняя теплоемкость газа в интервале температур от $T_0^*$ до $T_т^*$:
+        \begin{gather*}
+            c_{pг}^* = \frac{
+		         c_{pг\ ср} (T_г^*, \alpha_{вх}) (T_г^* - T_0) - c_{pг\ ср} (T_т^*, \alpha_{вх})(T_т^* - T_0)
+		    }{
+		        T_г^* - T_т^*} =\\
+            =\frac{
+                << turb.work_fluid.c_p_av_func(turb.T_g_stag, alpha=turb.first.alpha_air_in) | round(2) >> \cdot
+                (<< turb.T_g_stag | round(2) >> - 273) -
+		        << turb.work_fluid.c_p_av_func(turb.last.T_mix_stag, alpha=turb.first.alpha_air_in) | round(2) >> \cdot
+                (<< turb.last.T_mix_stag | round(2) >> - 273)
+		    }{
+		        << turb.T_g_stag | round(2) >> - << turb.last.T_mix_stag | round(2) >>} =
+		    << turb.c_p_gas_stag | round(2) >> \ Дж / (кг \cdot К)\\
+        \end{gather*}
+
+        \item Средний показателя адиабаты по параметрам торможения:
+        \[
+            k_г^* = \frac{ c_{pг}^* }{ c_{pг}^* - R_г } =
+                \frac{
+                    << turb.c_p_gas_stag | round(2) >>
+                }{
+                    << turb.c_p_gas_stag | round(2) >> - << turb.work_fluid.R | round(2) >>
+                }
+            = << turb.k_gas_stag | round(4) >>
+        \]
+
+        \item Теплоерепад на турбине оп параметрам торможения:
+        \[
+             H_т^* = c_{pг}^* T_г^* \left[
+                        1 - \left(
+                                \frac{p_г^*}{p_т} ^
+                                \frac{1 - k_г^*}{k_г^*}
+                    \right)
+                \right] =
+            << turb.c_p_gas_stag | round(2) >> \cdot << turb.T_g_stag | round(2) >>
+                \left[
+                    1 - \left(
+                            \frac{
+                                << (turb.p_g_stag / 10**6) | round(4) >> \cdot 10^6
+                            }{
+                                << (turb.last.p2 / 10**6) | round(4) >> \cdot 10^6 } ^
+                            \frac{ 1 - << turb.k_gas_stag | round(4) >> }{ << turb.k_gas_stag | round(4) >> }
+                    \right)
+            \right] =
+            << (turb.H_t_stag / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
+        \]
+
+        \item Мощностной КПД турбины:
+        \[
+            \eta_т = \frac{ L_{т\Sigma} }{ H_т } =
+                \frac{ << (turb.L_t_sum / 10**6) | round(4) >> \cdot 10^6 }{ << (turb.H_t / 10**6) | round(4) >> \cdot 10^6 } =
+            << turb.eta_t | round(4) >>
+        \]
+
+        \item Лопаточный КПД турбины:
+        \[
+            \eta_л = \frac{
+                        L_{т\Sigma} + 0.5 \cdot c_{вых}^2
+                    }{ H_т } =
+            \frac{
+                << (turb.L_t_sum / 10**6) | round(4) >> \cdot 10^6 + 0.5 \cdot << turb.last.c2 | round(2) >> ^ 2
+            }{ << (turb.H_t / 10**6) | round(4) >> \cdot 10^6 } =
+            << turb.eta_l | round(4) >>
+        \]
+
+        \item КПД турбины по параметрам торможения:
+        \[
+            \eta_т^* = \frac{ L_{т\Sigma} }{ H_т^* } =
+                \frac{ << (turb.L_t_sum / 10**6) | round(4) >> \cdot 10^6 }{ << (turb.H_t_stag / 10**6) | round(4) >> \cdot 10^6 } =
+            << turb.eta_t_stag | round(4) >>
+        \]
+
+    \end{enumerate}
+    </ endmacro />
 
 \end{document}

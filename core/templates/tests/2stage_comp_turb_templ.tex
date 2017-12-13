@@ -1,0 +1,65 @@
+%%
+%% Author: User1
+%% 13.12.2017
+%%
+
+% Preamble
+\documentclass[a4paper,10pt]{article}
+
+% Packages
+\usepackage{mathtext}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[left=2cm,right=2cm,
+    top=2cm,bottom=2cm,bindingoffset=0cm]{geometry}
+\usepackage{color}
+\usepackage{gensymb}
+
+\usepackage{enumitem}
+\setlist[enumerate]{label*=\arabic*.}
+
+\usepackage{indentfirst}
+
+\usepackage{titlesec}
+
+
+% Document
+\begin{document}
+
+    \section{Расчет турбины по средней линии тока}
+
+    </ import 'average_streamline.tex' as avline />
+
+    \subsection{Расчет первой ступени}
+
+    \subsubsection{Исходные данные}
+
+    << avline.stage_init_data(turb[0], 'heat_drop') >>
+
+    \subsubsection{Расчет}
+
+    << avline.heat_drop_stage(turb[0]) >>
+
+    \subsection{Расчет второй ступени}
+
+    \subsubsection{Исходные данные}
+
+    << avline.stage_init_data(turb[1], 'work') >>
+
+    \subsubsection{Расчет}
+
+    << avline.work_stage(turb[1]) >>
+
+    \subsection{Расчет интегральных параметров турбины}
+
+    </ set L_t_sum_exp = ((turb[0].L_t_rel / 10**6) | round(4)).__str__() + '\cdot 10^6' + '+' +
+        ((turb[1].L_t_rel / 10**6) | round(4)).__str__() + '\cdot 10^6' />
+
+    << avline.integrate_turbine_param(turb, L_t_sum_exp) >>
+
+\end{document}

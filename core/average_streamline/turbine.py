@@ -93,7 +93,9 @@ class Turbine:
                                                                                                      p_g_stag,
                                                                                                      T_g_stag,
                                                                                                      T_t_stag_cycle,
-                                                                                                     eta_t_stag_cycle)
+                                                                                                     eta_t_stag_cycle,
+                                                                                                     G_turbine,
+                                                                                                     G_fuel)
         self._alpha11 = alpha11
         self._eta_t_stag_cycle = eta_t_stag_cycle
         self._geom = None
@@ -147,10 +149,14 @@ class Turbine:
         self.log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
 
     @classmethod
-    def _get_p_t_stag_L_t_and_H_t(cls, work_fluid: IdealGas, p_g_stag, T_g_stag, T_t_stag, eta_t_stag):
+    def _get_p_t_stag_L_t_and_H_t(cls, work_fluid: IdealGas, p_g_stag, T_g_stag, T_t_stag, eta_t_stag,
+                                  G_turbine, G_fuel):
         work_fluid.__init__()
+        g_fuel = G_fuel / (G_turbine - G_fuel)
+        alpha_air = 1 / (work_fluid.l0 * g_fuel)
         work_fluid.T1 = T_t_stag
         work_fluid.T2 = T_g_stag
+        work_fluid.alpha = alpha_air
         L_t = work_fluid.c_p_av_int * (T_g_stag - T_t_stag)
         H_t = L_t / eta_t_stag
         pi_t = (1 - L_t / (work_fluid.c_p_av_int * T_g_stag * eta_t_stag)) ** \
@@ -302,6 +308,7 @@ class Turbine:
     def compute_integrate_turbine_parameters(self):
         logging.info('\n%s РАСЧЕТ ИНТЕГРАЛЬНЫХ ПАРАМЕТРОВ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
         self.work_fluid.__init__()
+        self.work_fluid.alpha = self.first.alpha_air_in
         self.L_t_sum = 0
         for item in self:
             self.L_t_sum += item.L_t_rel
@@ -313,7 +320,7 @@ class Turbine:
                    (1 - (self.p_g_stag / self.last.p2) ** ((1 - self.work_fluid.k_av_int) / self.work_fluid.k_av_int))
         self.eta_t = self.L_t_sum / self.H_t
         self.eta_l = (self.L_t_sum + self.last.c2 ** 2 / 2) / self.H_t
-        self.work_fluid.T2 = self.last.T_st_stag
+        self.work_fluid.T2 = self.last.T_mix_stag
         self.c_p_gas_stag = self.work_fluid.c_p_av_int
         self.k_gas_stag = self.work_fluid.k_av_int
         self.H_t_stag = self.work_fluid.c_p_av_int * self.T_g_stag * (1 - (self.p_g_stag / self.last.p2_stag) **
@@ -458,7 +465,10 @@ class Turbine:
                                                               self.p_g_stag,
                                                               self.T_g_stag,
                                                               self.T_t_stag_cycle,
-                                                              self.eta_t_stag_cycle)
+                                                              self.eta_t_stag_cycle,
+                                                              self.G_turbine,
+                                                              self.G_fuel
+                                                              )
         self._init_turbine_geom()
 
     @property
@@ -503,7 +513,11 @@ class Turbine:
                                                               self.p_g_stag,
                                                               self.T_g_stag,
                                                               self.T_t_stag_cycle,
-                                                              self.eta_t_stag_cycle)
+                                                              self.eta_t_stag_cycle,
+                                                              self.G_turbine,
+                                                              self.G_fuel
+                                                              )
+
         self._init_turbine_geom()
 
     @property
@@ -633,7 +647,10 @@ class Turbine:
                                                               self.p_g_stag,
                                                               self.T_g_stag,
                                                               self.T_t_stag_cycle,
-                                                              self.eta_t_stag_cycle)
+                                                              self.eta_t_stag_cycle,
+                                                              self.G_turbine,
+                                                              self.G_fuel
+                                                              )
         self._init_turbine_geom()
 
     @property
@@ -650,7 +667,10 @@ class Turbine:
                                                               self.p_g_stag,
                                                               self.T_g_stag,
                                                               self.T_t_stag_cycle,
-                                                              self.eta_t_stag_cycle)
+                                                              self.eta_t_stag_cycle,
+                                                              self.G_turbine,
+                                                              self.G_fuel
+                                                              )
         self._init_turbine_geom()
 
     @property
