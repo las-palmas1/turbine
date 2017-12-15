@@ -4,6 +4,7 @@ from scipy.integrate import quad
 from scipy.interpolate import interp1d
 import typing
 from scipy.optimize import fsolve, brentq
+import xlwt
 
 
 class BladeSection:
@@ -83,6 +84,14 @@ class BladeSection:
         self.y_in_edge: np.ndarray = None
         self.x_out_edge: np.ndarray = None
         self.y_out_edge: np.ndarray = None
+        self.x_in_edge_s: np.ndarray = None
+        self.y_in_edge_s: np.ndarray = None
+        self.x_in_edge_k: np.ndarray = None
+        self.y_in_edge_k: np.ndarray = None
+        self.x_out_edge_s: np.ndarray = None
+        self.y_out_edge_s: np.ndarray = None
+        self.x_out_edge_k: np.ndarray = None
+        self.y_out_edge_k: np.ndarray = None
 
         # координаты центров окружностей скруглений на кромках
         self.x01: float = None
@@ -479,6 +488,14 @@ class BladeSection:
         self.y_in_edge += dy
         self.x_out_edge += dx
         self.y_out_edge += dy
+        self.x_in_edge_s += dx
+        self.y_in_edge_s += dy
+        self.x_in_edge_k += dx
+        self.y_in_edge_k += dy
+        self.x_out_edge_s += dx
+        self.y_out_edge_s += dy
+        self.x_out_edge_k += dx
+        self.y_out_edge_k += dy
         self.x_av += dx
         self.y_av += dy
 
@@ -625,8 +642,8 @@ class BladeSection:
         else:
             phi2 = np.arctan((self.y0_k - self.y01) / (self.x0_k - self.x01)) + np.pi
         phi = np.linspace(phi1, phi2, int(self.pnt_count / 2))
-        self.x_in_edge = self.x01 + self.r1 * np.cos(phi)
-        self.y_in_edge = self.y01 + self.r1 * np.sin(phi)
+        self.x_in_edge = np.array(self.x01 + self.r1 * np.cos(phi))
+        self.y_in_edge = np.array(self.y01 + self.r1 * np.sin(phi))
         self.length_in_edge = self._get_circle_arc_length(phi1, phi2, self.r1)
 
         self.x0, self.y0 = self._get_zero_point(self.angle1, self.x01, self.y01, self.r1)
@@ -638,8 +655,8 @@ class BladeSection:
         phi1 = np.arctan((self.y2_k - self.y02) / (self.x2_k - self.x02)) + np.pi
         phi2 = np.arctan((self.y2_s - self.y02) / (self.x2_s - self.x02)) + 2 * np.pi
         phi = np.linspace(phi1, phi2, int(self.pnt_count / 2))
-        self.x_out_edge = self.x02 + self.s2 * np.cos(phi)
-        self.y_out_edge = self.y02 + self.s2 * np.sin(phi)
+        self.x_out_edge = np.array(self.x02 + self.s2 * np.cos(phi))
+        self.y_out_edge = np.array(self.y02 + self.s2 * np.sin(phi))
         self.length_out_edge = self._get_circle_arc_length(phi1, phi2, self.s2)
 
         self.y_c, self.square_y = self._get_y_c(self.x_k, self.y_k, self.x_s, self.y_s, self.x_in_edge,
@@ -651,6 +668,15 @@ class BladeSection:
 
         self.length_k = self._get_arc_length(self.x_k, self.y_k)
         self.length_s = self._get_arc_length(self.x_s, self.y_s)
+
+        self.x_in_edge_s, self.x_in_edge_k = np.split(self.x_in_edge,
+                                                      [list(self.x_in_edge).index(self.x_in_edge.min())])
+        self.y_in_edge_s, self.y_in_edge_k = np.split(self.y_in_edge,
+                                                      [list(self.x_in_edge).index(self.x_in_edge.min())])
+        self.x_out_edge_k, self.x_out_edge_s = np.split(self.x_out_edge,
+                                                        [list(self.x_out_edge).index(self.x_out_edge.max())])
+        self.y_out_edge_k, self.y_out_edge_s = np.split(self.y_out_edge,
+                                                        [list(self.x_out_edge).index(self.x_out_edge.max())])
 
         if self.convex == 'left':
             self.x1_av, self.y1_av, self.x2_av, self.y2_av = self.x1_av, -self.y1_av, self.x2_av, -self.y2_av
@@ -665,11 +691,47 @@ class BladeSection:
             self.y0 = -self.y0
             self.y_in_edge = -self.y_in_edge
             self.y_out_edge = -self.y_out_edge
+            self.y_in_edge_k = -self.y_in_edge_k
+            self.y_in_edge_s = -self.y_in_edge_s
+            self.y_out_edge_k = -self.y_out_edge_k
+            self.y_out_edge_s = -self.y_out_edge_s
             self.y_c = -self.y_c
         elif self.convex == 'right':
             pass
         else:
             raise ValueError('Parameter convex can not be equal to %s' % self.convex)
+
+    def get_y_s(self, x):
+        y_s = interp1d(self.x_s, self.y_s)
+
+        res = None
+        if self.x0_av <= x < self.x0_s:
+            res = self.y01 - np.sqrt(self.r1 ** 2 - (x - self.x01) ** 2)
+        elif self.x0_s <= x < self.x2_s:
+            res = y_s(x)
+        elif self.x2_s <= x <= self.x0_av + self.b_a:
+            res = self.y02 - np.sqrt(self.s2 ** 2 - (x - self.x02) ** 2)
+
+        if self.convex == 'right':
+            return res
+        else:
+            return -res
+
+    def get_y_k(self, x):
+        y_k = interp1d(self.x_k, self.y_k)
+
+        res = None
+        if self.x0_av <= x < self.x0_k:
+            res = self.y01 + np.sqrt(self.r1 ** 2 - (x - self.x01) ** 2)
+        elif self.x0_k <= x < self.x2_k:
+            res = y_k(x)
+        elif self.x2_k <= x <= self.x0_av + self.b_a:
+            res = self.y02 + np.sqrt(self.s2 ** 2 - (x - self.x02) ** 2)
+
+        if self.convex == 'right':
+            return res
+        else:
+            return -res
 
     def plot(self, figsize=(6, 4)):
         plt.figure(figsize=figsize)
@@ -687,6 +749,33 @@ class BladeSection:
         plt.plot([self.y_c], [self.x_c], linestyle='', marker='o', ms=8, mfc='black', color='red')
         plt.grid()
         plt.show()
+
+    def write_excel_table(self, filename: str, pnt_num: int):
+        x_arr = np.linspace(0, self.b_a, pnt_num)
+
+        book = xlwt.Workbook()
+        sheet = book.add_sheet('Sheet 1')
+        sheet.write(0, 0, '№')
+        sheet.write(0, 1, 'Корыто')
+        sheet.write(0, 3, 'Спинка')
+        sheet.write(1, 1, 'X, мм')
+        sheet.write(1, 2, 'Y, мм')
+        sheet.write(1, 3, 'X, мм')
+        sheet.write(1, 4, 'Y, мм')
+        for x, n in zip(x_arr, range(pnt_num)):
+            sheet.write(2 + n, 0, n + 1)
+            sheet.write(2 + n, 1, round((x - self.x0_av) * 1e3, 1))
+            sheet.write(2 + n, 2, round(self.get_y_k(x) * 1e3, 1))
+        for x, n in zip(x_arr, range(pnt_num)):
+            sheet.write(2 + n, 3, round((x - self.x0_av) * 1e3, 1))
+            sheet.write(2 + n, 4, round(self.get_y_s(x) * 1e3, 1))
+        sheet.write(2 + pnt_num, 0, 'R<L>вх<L>, мм')
+        sheet.write(2 + pnt_num, 1, round(self.r1 * 1e3, 1))
+        sheet.write(2 + pnt_num + 1, 0, 'R<L>вых<L>, мм')
+        sheet.write(2 + pnt_num + 1, 1, round(self.s2 * 1e3, 1))
+
+        book.save(filename)
+
 
 if __name__ == '__main__':
     bs = BladeSection(angle1=np.radians([30])[0],

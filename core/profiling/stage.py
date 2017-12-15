@@ -697,6 +697,33 @@ class StageProfiler(StageParametersRadialDistribution):
         plt.legend(fontsize=10)
         plt.show()
 
+    def write_nx_exp_file(self, filename: str, sec_num:int, blade_type='sa'):
+
+        if blade_type == 'sa':
+            section = self.sa_sections[sec_num]
+            z = self.z_sa
+        elif blade_type == 'rk':
+            section = self.rk_sections[sec_num]
+            z = self.z_rk
+        else:
+            raise ValueError("blade_type can be equal to 'sa' or 'rk'")
+
+        with open(filename, 'w') as file:
+            lines = []
+
+            lines.append('[degrees]angle1_l=%s\n' % (np.degrees([section.angle1_l])[0]))
+            lines.append('[degrees]angle2_l=%s\n' % (np.degrees([section.angle2_l])[0]))
+            lines.append('[degrees]gamma1_s=%s\n' % (np.degrees([section.gamma1_s])[0]))
+            lines.append('[degrees]gamma1_k=%s\n' % (np.degrees([section.gamma1_k])[0]))
+            lines.append('[degrees]gamma2_s=%s\n' % (np.degrees([section.gamma2_s])[0]))
+            lines.append('[degrees]gamma2_k=%s\n' % (np.degrees([section.gamma2_k])[0]))
+            lines.append('[mm]r1=%s\n' % (section.r1 * 1e3))
+            lines.append('[mm]s2=%s\n' % (section.s2 * 1e3))
+            lines.append('central_pole_pos=%s\n' % section.center_point_pos)
+            lines.append('z=%s\n' % z)
+
+            file.writelines(lines)
+
 
 if __name__ == '__main__':
     pass
