@@ -7,6 +7,26 @@ from scipy.optimize import fsolve
 from scipy.interpolate import interp1d
 
 
+def get_theta(r_in, r_out, r_max_rel, theta_max):
+    """Возвращает функцию нервномерности с заданным аксимальным значением неравномерности,
+    заданным положением масимума на заданном интервале."""
+    r_max = r_max_rel * (r_out - r_in) + r_in
+    a = 3 * (r_out - r_in - theta_max * (r_out - r_in)) / ((r_out - r_max) ** 3 - (r_in - r_max) ** 3)
+    return lambda r: a * (r - r_max) ** 2 + theta_max
+
+
+def get_T_gas(theta_gas, T_c_stag, T_gas_stag_av):
+    """Возвращает распределение температуры газа с заданной неравномерностью, температурой
+    после компрессора и среднемассовой температурой газа."""
+    return lambda r: T_c_stag + theta_gas(r) * (T_gas_stag_av - T_c_stag)
+
+
+def get_g_cool(theta_g, g_cool_av):
+    """Возвращает распределение плотности расхода охлаждающего воздуха по радиусу с заданной
+    неравномернсотью и средним значение плотности расхода."""
+    return lambda r: g_cool_av * theta_g(r)
+
+
 class GasBladeHeatExchange:
 
     @classmethod
@@ -307,19 +327,23 @@ class LocalParamCalculator:
     def get_T_cool(self, x):
         return self._T_cool_int(x).__float__()
 
-    def plot_T_wall(self, figsize=(8, 6)):
+    def plot_T_wall(self, T_material_max, figsize=(8, 6), filename=None):
         plt.figure(figsize=figsize)
         plt.plot(self.x_arr * 1e3, self.T_wall_arr, lw=2, color='red')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
+        plt.plot([min(self.x_arr) * 1e3, max(self.x_arr) * 1e3],
+                 [T_material_max, T_material_max], lw=2, linestyle='--', color='black')
         T_max = max(self.T_wall_arr)
         plt.text(0.7 * min(self.x_arr) * 1e3, T_max - 100, r'$спинка$', fontsize=16)
         plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 100, r'$корыто$', fontsize=16)
         plt.xlabel(r'$x,\ мм$', fontsize=14)
         plt.ylabel(r'$T_{ст},\ К$', fontsize=14)
         plt.grid()
+        if filename:
+            plt.savefig(filename)
         plt.show()
 
-    def plot_T_cool(self, figsize=(8, 6)):
+    def plot_T_cool(self, figsize=(8, 6), filename=None):
         plt.figure(figsize=figsize)
         plt.plot(self.x_arr * 1e3, self.T_cool_fluid_arr, lw=2, color='red')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
@@ -329,9 +353,11 @@ class LocalParamCalculator:
         plt.xlabel(r'$x,\ мм$', fontsize=14)
         plt.ylabel(r'$T_{в},\ К$', fontsize=14)
         plt.grid()
+        if filename:
+            plt.savefig(filename)
         plt.show()
 
-    def plot_T_out(self, figsize=(8, 6)):
+    def plot_T_out(self, figsize=(8, 6), filename=None):
         plt.figure(figsize=figsize)
         T_arr = [self.T_out_stag(x) for x in self.x_arr]
         plt.plot(self.x_arr * 1e3, T_arr, lw=2, color='red')
@@ -342,9 +368,11 @@ class LocalParamCalculator:
         plt.xlabel(r'$x,\ мм$', fontsize=14)
         plt.ylabel(r'$T_{обт.среды}^*,\ К$', fontsize=14)
         plt.grid()
+        if filename:
+            plt.savefig(filename)
         plt.show()
 
-    def plot_all(self, figsize=(8, 6)):
+    def plot_all(self, figsize=(8, 6), filename=None):
         plt.figure(figsize=figsize)
         T_arr = [self.T_out_stag(x) for x in self.x_arr]
         plt.plot(self.x_arr * 1e3, T_arr, lw=2, color='red', label=r'$T_{обт.среды}^*$')
@@ -356,8 +384,10 @@ class LocalParamCalculator:
         plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 100, r'$корыто$', fontsize=16)
         plt.xlabel(r'$x,\ мм$', fontsize=14)
         plt.ylabel(r'$T,\ К$', fontsize=14)
-        plt.legend(fontsize=10)
+        plt.legend(fontsize=14)
         plt.grid()
+        if filename:
+            plt.savefig(filename)
         plt.show()
 
 
@@ -403,8 +433,11 @@ class FilmCalculator:
         self.x_hole = np.array(x_hole)
         self.hole_num = np.array(hole_num)
         self.d_hole = np.array(d_hole)
-        self.phi_hole = phi_hole
-        self.mu_hole = mu_hole
+        self.phi_hole = np.array(phi_hole)
+        self.mu_hole = np.array(mu_hole)
+
+        self._modify_hole_data()
+
         self.T_gas_stag = T_gas_stag
         self.p_gas_stag = p_gas_stag
         self.v_gas = v_gas
@@ -451,6 +484,68 @@ class FilmCalculator:
         self.film_eff_list = []
         "Список функций эффективности пленок от каждого ряда отверстий"
 
+    def _modify_hole_data(self):
+        """Создает массив, в который сохранена принадлежность отверстий к корыту или спинке. Также в массиве
+        координат отверстий дубоируется отверстие находящееся в начале координат. Соответствующим образом изменяются
+        массивы остальных параметров отверстий."""
+        zero_hole_num = list(self.x_hole).count(0)
+
+        x_hole = []
+        hole_num = []
+        d_hole = []
+        mu_hole = []
+        phi_hole = []
+        belong = []
+
+        if zero_hole_num == 0:
+            x_hole = list(self.x_hole)
+            hole_num = list(self.hole_num)
+            d_hole = list(self.d_hole)
+            mu_hole = list(self.mu_hole)
+            phi_hole = list(self.phi_hole)
+            for x in self.x_hole:
+                if x < 0:
+                    belong.append('s')
+                else:
+                    belong.append('k')
+
+        elif zero_hole_num == 1:
+            for i, x in enumerate(self.x_hole):
+                if x < 0:
+                    x_hole.append(x)
+                    hole_num.append(self.hole_num[i])
+                    d_hole.append(self.d_hole[i])
+                    mu_hole.append(self.mu_hole[i])
+                    phi_hole.append(self.phi_hole[i])
+                    belong.append('s')
+                elif x == 0:
+                    x_hole.append(0)
+                    x_hole.append(0)
+                    hole_num.append(self.hole_num[i] / 2)
+                    hole_num.append(self.hole_num[i] / 2)
+                    d_hole.append(self.d_hole[i])
+                    d_hole.append(self.d_hole[i])
+                    mu_hole.append(self.mu_hole[i])
+                    mu_hole.append(self.mu_hole[i])
+                    phi_hole.append(self.phi_hole[i])
+                    phi_hole.append(self.phi_hole[i])
+                    belong.append('s')
+                    belong.append('k')
+                elif x >= 0:
+                    x_hole.append(x)
+                    hole_num.append(self.hole_num[i])
+                    d_hole.append(self.d_hole[i])
+                    mu_hole.append(self.mu_hole[i])
+                    phi_hole.append(self.phi_hole[i])
+                    belong.append('k')
+
+        self.x_hole = np.array(x_hole)
+        self.d_hole = np.array(d_hole)
+        self.hole_num = np.array(hole_num)
+        self.mu_hole = np.array(mu_hole)
+        self.phi_hole = np.array(phi_hole)
+        self.belong = belong
+
     @classmethod
     def get_film_eff_func(cls, args):
         Re_s = args[0]
@@ -458,9 +553,10 @@ class FilmCalculator:
         phi = args[2]
         s = args[3]
         x_hole = args[4]
+        belong = args[5]
 
         def A(x):
-            if x_hole >= 0:
+            if belong == 'k':
                 res = Re_s ** (-0.25) * m ** (-1.3) * phi ** (-1.25) * (x - x_hole) / s
             else:
                 res = Re_s ** (-0.25) * m ** (-1.3) * phi ** (-1.25) * (x_hole - x) / s
@@ -523,7 +619,7 @@ class FilmCalculator:
                                     ))
 
         self.film_eff_list = list(map(self.get_film_eff_func,
-                                      zip(self.Re_s, self.m, self.phi_temp, self.s, self.x_hole)))
+                                      zip(self.Re_s, self.m, self.phi_temp, self.s, self.x_hole, self.belong)))
 
     def get_T_film(self, x):
         term1 = 1
@@ -540,18 +636,26 @@ class FilmCalculator:
         res = self.T_gas_stag * term1 + term2
         return res
 
-    def get_alpha_item(self, i, x):
-        if x != self.x_hole[i]:
-            if x >= 0:
-                return self.alpha_gas(x) * (1 + 2 * self.m[i] * self.s[i] / (x - self.x_hole[i]))
+    def _get_alpha_film(self, m, s, dx, x):
+        alpha_rel_max = 15
+        if dx != 0:
+            alpha_rel = (1 + 2 * m * s / dx)
+            if alpha_rel <= alpha_rel_max:
+                return alpha_rel * self.alpha_gas(x)
             else:
-                return self.alpha_gas(x) * (1 + 2 * self.m[i] * self.s[i] / (self.x_hole[i] - x))
+                return alpha_rel_max * self.alpha_gas(x)
         else:
-            return 0
+            return alpha_rel_max * self.alpha_gas(x)
+
+    def get_alpha_item(self, i, x):
+        if self.belong[i] == 'k':
+            return self._get_alpha_film(self.m[i], self.s[i], (x - self.x_hole[i]), x)
+        else:
+            return self._get_alpha_film(self.m[i], self.s[i], (self.x_hole[i] - x), x)
 
     def get_alpha_film(self, x):
-        x_hole_s = self.x_hole[self.x_hole < 0]
-        x_hole_k = self.x_hole[self.x_hole >= 0]
+        x_hole_s = self.x_hole[np.array([i == 's' for i in self.belong])]
+        x_hole_k = self.x_hole[np.array([i == 'k' for i in self.belong])]
 
         if x <= x_hole_s[0]:
             return self.get_alpha_item(0, x)
@@ -570,11 +674,11 @@ class FilmCalculator:
                     return self.get_alpha_item(i + len(x_hole_s), x)
 
     def get_G_cool(self, x):
-        x_hole_s = self.x_hole[self.x_hole < 0]
-        x_hole_k = self.x_hole[self.x_hole >= 0]
+        x_hole_s = self.x_hole[np.array([i == 's' for i in self.belong])]
+        x_hole_k = self.x_hole[np.array([i == 'k' for i in self.belong])]
 
-        dG_hole_s = self.dG_cool_hole[self.x_hole < 0]
-        dG_hole_k = self.dG_cool_hole[self.x_hole >= 0]
+        dG_hole_s = self.dG_cool_hole[np.array([i == 's' for i in self.belong])]
+        dG_hole_k = self.dG_cool_hole[np.array([i == 'k' for i in self.belong])]
 
         if x <= x_hole_s[0]:
             return self.G_cool0 - dG_hole_s.sum()
@@ -582,13 +686,17 @@ class FilmCalculator:
             return self.G_cool0 - dG_hole_k.sum()
         elif x_hole_s[len(x_hole_s) - 1] < x < x_hole_k[0]:
             return self.G_cool0
+        elif x == 0:
+            return self.G_cool0
 
         else:
             x_hole_s = list(x_hole_s)
             x_hole_s.reverse()
             x_hole_s = -1 * np.array(x_hole_s)
+            dG_hole_s = list(dG_hole_s)
+            dG_hole_s.reverse()
 
-            if x >= 0:
+            if x > 0:
                 dG = 0
                 for i in range(len(x_hole_k) - 1):
                     dG += dG_hole_k[i]
@@ -614,54 +722,101 @@ class FilmCalculator:
             min_value = round(min(value_arr), places) - delta
         return min_value, max_value
 
-    def plot_T_film(self, x_arr, places=-2, delta=50, figsize=(7, 5)):
+    def get_integrate_film_eff(self, x):
+        return (self.T_gas_stag - self.get_T_film(x)) / (self.T_gas_stag - self.T_cool(x))
+
+    def plot_integrate_film_eff(self, x_arr, figsize=(7, 5), filename=None):
+        plt.figure(figsize=figsize)
+        x_arr_new = [x * 1e3 for x in x_arr]
+        plt.plot(x_arr_new, [self.get_integrate_film_eff(x) for x in x_arr], lw=2, color='red')
+        plt.grid(True, axis='both')
+        plt.xlabel(r'$x,\ мм$', fontsize=14)
+        plt.ylabel(r'$\theta_{пл}$', fontsize=14)
+        plt.xlim(min(x_arr_new), max(x_arr_new))
+        if filename:
+            plt.savefig(filename)
+        plt.show()
+
+    def plot_T_film(self, x_arr, places=-2, delta=50, figsize=(7, 5), filename=None):
         plt.figure(figsize=figsize)
         T_arr = [self.get_T_film(x) for x in x_arr]
 
         T_min, T_max = self._get_lim(T_arr, places, delta)
-        plt.plot(x_arr, T_arr, lw=2)
+        x_arr_new = [x * 1e3 for x in x_arr]
+        plt.plot(x_arr_new, T_arr, lw=2)
         for x in self.x_hole:
-            plt.plot([x, x], [T_min, T_max], color='black', lw=1, linestyle='--')
+            plt.plot([x * 1e3, x * 1e3], [T_min, T_max], color='black', lw=1, linestyle='--')
         plt.grid()
         plt.ylim(T_min, T_max)
-        plt.xlabel(r'$x,\ м$', fontsize=14)
+        plt.xlim(min(x_arr_new), max(x_arr_new))
+        plt.xlabel(r'$x,\ мм$', fontsize=14)
         plt.ylabel(r'$T_{пл}^*,\ К$', fontsize=14)
+        if filename:
+            plt.savefig(filename)
         plt.show()
 
-    def plot_film_eff(self, hole_num, x_arr, create_fig=False, show=False, figsize=(9, 7)):
+    def plot_film_eff(self, hole_num, x_arr, create_fig=False, show=False, figsize=(9, 7), filename=None):
+        if self.x_hole[hole_num] == 0:
+            if hole_num > 0:
+                if self.x_hole[hole_num - 1] == 0:
+                    label = 'Отверстие %s' % hole_num
+                else:
+                    label = 'Отверстие %s' % (hole_num + 1)
+            else:
+                label = 'Отверстие %s' % (hole_num + 1)
+        else:
+            if list(self.x_hole).count(0) != 0:
+                if self.x_hole[hole_num] < 0:
+                    label = 'Отверстие %s' % (hole_num + 1)
+                else:
+                    label = 'Отверстие %s' % hole_num
+            else:
+                label = 'Отверстие %s' % (hole_num + 1)
         if create_fig:
             plt.figure(figsize=figsize)
-        plt.plot(x_arr, [self.film_eff_list[hole_num](x) for x in x_arr], lw=2.0, label='Отверстие %s' % (hole_num + 1))
+        x_arr_new = [x * 1e3 for x in x_arr]
+        plt.plot(x_arr_new, [self.film_eff_list[hole_num](x) for x in x_arr], lw=2.0, label=label)
         plt.legend(fontsize=10)
-        plt.xlabel(r'$x,\ м$', fontsize=14)
+        plt.xlabel(r'$x,\ мм$', fontsize=14)
         plt.ylabel(r'$\theta_{пл}$', fontsize=14)
         plt.grid(True, axis='both')
+        plt.xlim(min(x_arr_new), max(x_arr_new))
+        if filename:
+            plt.savefig(filename)
         if show:
             plt.show()
 
-    def plot_alpha_film(self, x_arr, ylim, figsize=(7, 5)):
+    def plot_alpha_film(self, x_arr, ylim, figsize=(7, 5), filename=None):
         plt.figure(figsize=figsize)
         alpha_arr = [self.get_alpha_film(x) for x in x_arr]
-        plt.plot(x_arr, alpha_arr, lw=2)
+        x_arr_new = [x * 1e3 for x in x_arr]
+        plt.plot(x_arr_new, alpha_arr, lw=2)
         alpha_min, alpha_max = ylim
         for x in self.x_hole:
-            plt.plot([x, x], [alpha_min, alpha_max], color='black', lw=1, linestyle='--')
+            plt.plot([x * 1e3, x * 1e3], [alpha_min, alpha_max], color='black', lw=1, linestyle='--')
         plt.grid()
         plt.ylim(alpha_min, alpha_max)
-        plt.xlabel(r'$x,\ м$', fontsize=14)
+        plt.xlim(min(x_arr_new), max(x_arr_new))
+        plt.xlabel(r'$x,\ мм$', fontsize=14)
         plt.ylabel(r'$\alpha_{пл},\ \frac{Вт}{м^2 \cdot К}$', fontsize=14)
+        if filename:
+            plt.savefig(filename)
         plt.show()
 
-    def plot_G_cool(self, x_arr, places=4, delta=1e-4, figsize=(7, 5)):
+    def plot_G_cool(self, x_arr, places=4, delta=1e-4, figsize=(7, 5), filename=None):
         plt.figure(figsize=figsize)
         G_arr = [self.get_G_cool(x) for x in x_arr]
-        plt.plot(x_arr, G_arr, lw=2)
+        x_arr_new = [x * 1e3 for x in x_arr]
+        plt.plot(x_arr_new, G_arr, lw=2)
 
         G_min, G_max = self._get_lim(G_arr, places, delta)
         for x in self.x_hole:
-            plt.plot([x, x], [G_min, G_max], color='black', lw=1, linestyle='--')
+            plt.plot([x * 1e3, x * 1e3], [G_min, G_max], color='black', lw=1, linestyle='--')
         plt.grid()
         plt.ylim(G_min, G_max)
-        plt.xlabel(r'$x,\ м$', fontsize=14)
+        plt.xlim(min(x_arr_new), max(x_arr_new))
+        plt.xlabel(r'$x,\ мм$', fontsize=14)
         plt.ylabel(r'$G_в,\ кг/с$', fontsize=14)
+        if filename:
+            plt.savefig(filename)
         plt.show()

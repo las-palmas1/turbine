@@ -1,6 +1,7 @@
 import enum
 import typing
 import numpy as np
+import pickle
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from ..average_streamline.stage_geom import InvalidStageSizeValue
@@ -298,6 +299,38 @@ class StageParametersRadialDistribution:
             if filename:
                 plt.savefig('%s_%s' % (filename, n))
         plt.show()
+
+
+class ProfilingResultsForCooling:
+    """Содержит результаты профилирования, необходимые для расчета конвективно-пленочного охлаждения."""
+    def __init__(
+            self, sections: typing.List[BladeSection],
+            D_in: float,
+            D_out: float,
+            c_p: float,
+            T_gas_stag: typing.List[float],
+            p_gas_stag: typing.List[float],
+            lam_gas_in: typing.List[float],
+            lam_gas_out: typing.List[float]
+    ):
+        """
+        :param sections: массив сечений.
+        :param D_in: внутренний диаметр.
+        :param D_out: наружний диаметр.
+        :param c_p: теплоемкость газа.
+        :param T_gas_stag: массив значений температур торможения газа по высоте лопатке.
+        :param p_gas_stag: массив значений давлений торможения газа по высоте лопатке.
+        :param lam_gas_in: массив значений приведенной скорости газа по высоте лопатке на входе в лопаточный венец.
+        :param lam_gas_out: массив значений приведенной скорости газа по высоте лопатке на входе из лопаточного венца.
+        """
+        self.sections = sections
+        self.D_in = D_in
+        self.D_out = D_out
+        self.c_p = c_p
+        self.T_gas_stag = T_gas_stag
+        self.p_gas_stag = p_gas_stag
+        self.lam_gas_in = lam_gas_in
+        self.lam_gas_out = lam_gas_out
 
 
 class StageProfiler(StageParametersRadialDistribution):
@@ -697,7 +730,7 @@ class StageProfiler(StageParametersRadialDistribution):
         plt.legend(fontsize=10)
         plt.show()
 
-    def write_nx_exp_file(self, filename: str, sec_num:int, blade_type='sa'):
+    def write_nx_exp_file(self, filename: str, sec_num: int, blade_type='sa'):
 
         if blade_type == 'sa':
             section = self.sa_sections[sec_num]
@@ -711,19 +744,45 @@ class StageProfiler(StageParametersRadialDistribution):
         with open(filename, 'w') as file:
             lines = []
 
-            lines.append('[degrees]angle1_l=%s\n' % (np.degrees([section.angle1_l])[0]))
-            lines.append('[degrees]angle2_l=%s\n' % (np.degrees([section.angle2_l])[0]))
-            lines.append('[degrees]gamma1_s=%s\n' % (np.degrees([section.gamma1_s])[0]))
-            lines.append('[degrees]gamma1_k=%s\n' % (np.degrees([section.gamma1_k])[0]))
-            lines.append('[degrees]gamma2_s=%s\n' % (np.degrees([section.gamma2_s])[0]))
-            lines.append('[degrees]gamma2_k=%s\n' % (np.degrees([section.gamma2_k])[0]))
-            lines.append('[mm]r1=%s\n' % (section.r1 * 1e3))
-            lines.append('[mm]s2=%s\n' % (section.s2 * 1e3))
-            lines.append('central_pole_pos=%s\n' % section.center_point_pos)
-            lines.append('z=%s\n' % z)
+            lines.append('[degrees]angle1_l_%s%s=%s\n' % (blade_type, sec_num, np.degrees([section.angle1_l])[0]))
+            lines.append('[degrees]angle2_l_%s%s=%s\n' % (blade_type, sec_num, np.degrees([section.angle2_l])[0]))
+            lines.append('[degrees]gamma1_s_%s%s=%s\n' % (blade_type, sec_num, np.degrees([section.gamma1_s])[0]))
+            lines.append('[degrees]gamma1_k_%s%s=%s\n' % (blade_type, sec_num, np.degrees([section.gamma1_k])[0]))
+            lines.append('[degrees]gamma2_s_%s%s=%s\n' % (blade_type, sec_num, np.degrees([section.gamma2_s])[0]))
+            lines.append('[degrees]gamma2_k_%s%s=%s\n' % (blade_type, sec_num, np.degrees([section.gamma2_k])[0]))
+            lines.append('[mm]r1_%s%s=%s\n' % (blade_type, sec_num, section.r1 * 1e3))
+            lines.append('[mm]s2_%s%s=%s\n' % (blade_type, sec_num, section.s2 * 1e3))
+            lines.append('central_pole_pos_%s%s=%s\n' % (blade_type, sec_num, section.center_point_pos))
+            lines.append('z_%s%s=%s\n' % (blade_type, sec_num, z))
 
             file.writelines(lines)
 
+    def get_results_for_cooling(self, blade_type='sa', pnt_num: int = 100) -> ProfilingResultsForCooling:
+        r_arr = np.linspace(0.5 * self.D1_in, 0.5 * self.D1_out, pnt_num)
+        if blade_type == 'sa':
+            sections = self.sa_sections
+            lam_gas_in = [self.lam_c0(r) for r in r_arr]
+            lam_gas_out = [self.lam_c1(r) for r in r_arr]
+            p_gas_stag = [self.p0_stag(r) for r in r_arr]
+            T_gas_stag = [self.T0_stag(r) for r in r_arr]
+        elif blade_type == 'rk':
+            sections = self.rk_sections
+            lam_gas_in = [self.lam_w1(r) for r in r_arr]
+            lam_gas_out = [self.lam_w2(r) for r in r_arr]
+            p_gas_stag = [self.p1_w_stag(r) for r in r_arr]
+            T_gas_stag = [self.T1_w_stag(r) for r in r_arr]
+        else:
+            raise ValueError("blade_type can not be equal to %s" % blade_type)
+
+        results = ProfilingResultsForCooling(sections, self.D1_in, self.D1_out, self.c_p,
+                                             T_gas_stag, p_gas_stag, lam_gas_in, lam_gas_out)
+        return results
+
+    def save_results_for_cooling(self, filename, blade_type='sa', pnt_num: int = 100):
+        results = self.get_results_for_cooling(blade_type, pnt_num)
+
+        with open(filename, 'wb') as file:
+            pickle.dump(results, file)
 
 if __name__ == '__main__':
     pass

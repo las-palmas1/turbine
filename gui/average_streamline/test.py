@@ -156,6 +156,7 @@ class AveLineWidgetTest(unittest.TestCase):
                           T_g_stag=1450,
                           p_g_stag=400e3,
                           G_turbine=25,
+                          G_fuel=1,
                           work_fluid=NaturalGasCombustionProducts(),
                           alpha_air=2.6,
                           l1_D1_ratio=0.20,
@@ -205,7 +206,7 @@ class AveLineWidgetTest(unittest.TestCase):
         self.assertAlmostEqual(self.form.T_g_stag.value(), turbine.T_g_stag, 2)
         self.assertAlmostEqual(self.form.p_g_stag.value(), turbine.p_g_stag / 1e6, places=3)
         self.assertAlmostEqual(self.form.G_t.value(), turbine.G_turbine, places=2)
-        self.assertAlmostEqual(self.form.alpha_air.value(), turbine.alpha_air, places=2)
+        self.assertAlmostEqual(self.form.G_fuel.value(), turbine.G_fuel, places=2)
         self.assertAlmostEqual(self.form.alpha11.value(), np.degrees(turbine.alpha11), places=1)
         self.assertAlmostEqual(self.form.l1_D1_ratio.value(), turbine.l1_D1_ratio, places=2)
         self.assertAlmostEqual(self.form.n.value(), turbine.n, places=0)

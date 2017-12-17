@@ -1,9 +1,10 @@
 from .convective_defl import SectorCooler, BladeSection, GasBladeHeatExchange
-from .tools import DeflectorAverageParamCalculator, FilmCalculator
-from .film_defl import FilmSectorCooler, FilmBladeCooler
+from .tools import DeflectorAverageParamCalculator, FilmCalculator, get_theta, get_T_gas, get_g_cool
+from .film_defl import FilmSectorCooler, FilmBladeCooler, get_sa_cooler
 from gas_turbine_cycle.gases import Air, KeroseneCombustionProducts, NaturalGasCombustionProducts
 import unittest
 import numpy as np
+from scipy.integrate import quad
 from scipy.interpolate import interp1d
 from ..average_streamline.turbine import TurbineType, Turbine
 from ..profiling.turbine import TurbineProfiler, ProfilingType
@@ -58,7 +59,7 @@ class BladeSectorTest(unittest.TestCase):
                                                          self.conv_cooler.cool_fluid
                                                          )
 
-        self.x_hole1 = [-0.06, -0.04, -0.015, 0.008, 0.015, 0.04]
+        self.x_hole1 = [-0.06, -0.04, -0.015, 0, 0.008, 0.015, 0.04]
         self.film1 = FilmCalculator(x_hole=self.x_hole1,
                                     hole_num=[15 for _ in self.x_hole1],
                                     d_hole=[0.001 for _ in self.x_hole1],
@@ -135,9 +136,6 @@ class BladeSectorTest(unittest.TestCase):
         self.assertAlmostEqual(Q1, Q2, places=7)
         self.assertAlmostEqual(Q2, Q3, places=7)
 
-    # def test_channel_width_plot(self):
-    #     self.cooler.plot_channel_width_plot(np.linspace(0.05, 0.25, 10))
-
     def test_local_params(self):
         """Проверка решения дифференциального уравнения."""
         cool_fluid = self.conv_cooler.cool_fluid
@@ -178,7 +176,7 @@ class BladeSectorTest(unittest.TestCase):
         self.conv_cooler.local_param.plot_T_wall()
         self.conv_cooler.local_param.plot_all()
 
-    def test_film_calculator_with_six_holes_rows(self):
+    def test_film_calculator_with_seven_holes_rows(self):
         self.film1.compute()
         x_arr = np.linspace(self.x_hole1[0] - 0.06, self.x_hole1[len(self.x_hole1) - 1] + 0.06, 400)
         self.film1.plot_film_eff(0, x_arr, create_fig=True, show=False)
@@ -186,11 +184,22 @@ class BladeSectorTest(unittest.TestCase):
         self.film1.plot_film_eff(2, x_arr, show=False)
         self.film1.plot_film_eff(3, x_arr, show=False)
         self.film1.plot_film_eff(4, x_arr, show=False)
-        self.film1.plot_film_eff(5, x_arr, show=True)
+        self.film1.plot_film_eff(5, x_arr, show=False)
+        self.film1.plot_film_eff(6, x_arr, show=False)
+        self.film1.plot_film_eff(7, x_arr, show=True)
 
         self.film1.plot_G_cool(x_arr)
         self.film1.plot_T_film(x_arr)
         self.film1.plot_alpha_film(x_arr, (4000, 8000))
+
+        self.assertAlmostEqual(abs(self.film1.get_G_cool(0) - self.film1.get_G_cool(self.x_hole1[3] - 1e-4) -
+                                   self.film1.dG_cool_hole[3]) / self.film1.dG_cool_hole[4], 0, places=4)
+        self.assertAlmostEqual(abs(self.film1.get_G_cool(0) - self.film1.get_G_cool(self.x_hole1[3] + 1e-4) -
+                               self.film1.dG_cool_hole[4]) / self.film1.dG_cool_hole[4], 0, places=4)
+        self.assertEqual(self.film1.G_cool0, self.film1.get_G_cool(0))
+        self.assertEqual(self.film1.hole_num[3], self.film1.hole_num[2] / 2)
+        self.assertEqual(self.film1.hole_num[4], self.film1.hole_num[5] / 2)
+        self.assertEqual(self.film1.hole_num[4], self.film1.hole_num[3])
 
     def test_film_calculator_with_two_holes_rows(self):
         self.film2.compute()
@@ -270,6 +279,11 @@ class DeflectorBladeFilmCoolingTest(unittest.TestCase):
         lam_blade_int = interp1d(T_wall_arr, lam_blade_arr, bounds_error=False, fill_value='extrapolate')
         x_hole_rel = [-0.8, -0.5, -0.15, 0.1, 0.35, 0.6]
 
+        self.theta = get_theta(0.5 * stage_prof.D1_in, 0.5 * stage_prof.D1_out, 0.5, 1.12)
+        self.T_gas_stag = get_T_gas(self.theta, 650, self.turbine[0].T0_stag)
+        self.G_cool0 = 0.2
+        self.g_cool0 = get_g_cool(self.theta, 2 * self.G_cool0 / (stage_prof.D1_out - stage_prof.D1_in))
+
         self.film_blade = FilmBladeCooler(sections=stage_prof.sa_sections,
                                           channel_width=0.001,
                                           wall_thickness=0.001,
@@ -282,31 +296,44 @@ class DeflectorBladeFilmCoolingTest(unittest.TestCase):
                                           d_hole=[0.5e-3 for _ in x_hole_rel],
                                           phi_hole=[0.9 for _ in x_hole_rel],
                                           mu_hole=[0.86 for _ in x_hole_rel],
-                                          T_gas_stag=stage_prof.T0_stag,
+                                          T_gas_stag=self.T_gas_stag,
                                           p_gas_stag=stage_prof.p0_stag,
-                                          G_gas=self.turbine.G_turbine,
                                           c_p_gas_av=stage_prof.c_p,
                                           lam_gas_in=stage_prof.lam_c0,
                                           lam_gas_out=stage_prof.lam_c1,
                                           work_fluid=type(self.turbine.work_fluid)(),
                                           T_cool0=650,
                                           p_cool_stag0=self.turbine.p_g_stag + 20e3,
-                                          G_cool0=0.2,
+                                          g_cool0=self.g_cool0,
                                           cool_fluid=Air())
 
     def test_partition(self):
-        self.assertEqual(sum(self.film_blade.G_gas_arr), self.film_blade.G_gas)
-        self.assertEqual(self.film_blade.G_gas_arr[0] * 2, self.film_blade.G_gas_arr[1])
-        self.assertEqual(self.film_blade.G_gas_arr[2] * 2, self.film_blade.G_gas_arr[1])
-        self.assertEqual(sum(self.film_blade.G_cool0_arr), self.film_blade.G_cool0)
-        self.assertEqual(self.film_blade.G_cool0_arr[0] * 2, self.film_blade.G_cool0_arr[1])
-        self.assertEqual(self.film_blade.G_cool0_arr[2] * 2, self.film_blade.G_cool0_arr[1])
+        self.film_blade.plot_T_gas_stag()
+        self.film_blade.plot_g_cool()
+        self.film_blade.plot_g_gas()
+        self.film_blade.plot_lam_gas_out()
+
+        self.assertAlmostEqual(abs(sum(self.film_blade.G_gas_arr) - self.film_blade.G_gas) / self.film_blade.G_gas,
+                               0, places=3)
+        self.assertAlmostEqual(abs(sum(self.film_blade.G_cool0_arr) - self.film_blade.G_cool0) / self.film_blade.G_cool0,
+                               0, places=3)
+
+        stage_prof = self.turbine_profiler[0]
+        T_gas_av1 = 2 * quad(self.film_blade.T_gas_stag, 0.5 * stage_prof.D1_in, 0.5 * stage_prof.D1_out)[0] / \
+                    (stage_prof.D1_out - stage_prof.D1_in)
+
+        T_gas_int = 0
+        for T, h in zip(self.film_blade.T_gas_stag_arr, self.film_blade.sector_height_arr):
+            T_gas_int += T * h
+
+        T_gas_av2 = 2 * T_gas_int / (stage_prof.D1_out - stage_prof.D1_in)
+
+        self.assertAlmostEqual(abs(T_gas_av1 - T_gas_av2) / T_gas_av1, 0, places=3)
+        self.assertAlmostEqual(abs(T_gas_av1 - self.turbine[0].T0_stag) / T_gas_av1, 0, places=3)
 
         self.assertEqual(sum(self.film_blade.sector_height_arr), 0.5 * (self.film_blade.D_out - self.film_blade.D_in))
         self.assertEqual(self.film_blade.sector_height_arr[0] * 2, self.film_blade.sector_height_arr[1])
         self.assertEqual(self.film_blade.sector_height_arr[2] * 2, self.film_blade.sector_height_arr[1])
-
-        self.film_blade.plot_lam_gas_out()
 
     def test_calculation(self):
         self.film_blade.compute()
@@ -324,7 +351,38 @@ class DeflectorBladeFilmCoolingTest(unittest.TestCase):
         self.film_blade.sectors[2].local_param.plot_all()
 
         self.film_blade.sectors[0].plot_v_gas()
-        self.film_blade.plot_T_wall()
+        self.film_blade.plot_T_wall(T_material=1000)
+
+    def test_profiling_results_for_cooling(self):
+        res = self.turbine_profiler[0].get_results_for_cooling('sa')
+        cooler = get_sa_cooler(
+            res,
+            self.film_blade.channel_width,
+            self.film_blade.wall_thickness,
+            self.film_blade.T_wall_out_av_init,
+            self.film_blade.lam_blade,
+            self.film_blade.x_hole_rel,
+            self.film_blade.hole_num,
+            self.film_blade.d_hole,
+            self.film_blade.phi_hole,
+            self.film_blade.mu_hole,
+            self.film_blade.work_fluid,
+            self.film_blade.T_cool0,
+            self.film_blade.p_cool_stag0,
+            self.film_blade.g_cool0,
+            self.film_blade.cool_fluid,
+            self.film_blade.node_num,
+            self.film_blade.accuracy
+        )
+        r_arr = np.linspace(0.5 * self.film_blade.D_in, 0.5 * self.film_blade.D_out, 10)
+
+        self.assertEqual(cooler.c_p_gas_av, self.film_blade.c_p_gas_av)
+        self.assertEqual(cooler.D_in, self.film_blade.D_in)
+        self.assertEqual(cooler.D_out, self.film_blade.D_out)
+        self.assertEqual([cooler.lam_gas_in(r) for r in r_arr], [self.film_blade.lam_gas_in(r) for r in r_arr])
+        self.assertEqual([cooler.lam_gas_out(r) for r in r_arr], [self.film_blade.lam_gas_out(r) for r in r_arr])
+        self.assertEqual([cooler.T_gas_stag(r) for r in r_arr], [self.film_blade.T_gas_stag(r) for r in r_arr])
+        self.assertEqual([cooler.p_gas_stag(r) for r in r_arr], [self.film_blade.p_gas_stag(r) for r in r_arr])
 
 
 

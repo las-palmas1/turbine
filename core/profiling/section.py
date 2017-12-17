@@ -84,14 +84,6 @@ class BladeSection:
         self.y_in_edge: np.ndarray = None
         self.x_out_edge: np.ndarray = None
         self.y_out_edge: np.ndarray = None
-        self.x_in_edge_s: np.ndarray = None
-        self.y_in_edge_s: np.ndarray = None
-        self.x_in_edge_k: np.ndarray = None
-        self.y_in_edge_k: np.ndarray = None
-        self.x_out_edge_s: np.ndarray = None
-        self.y_out_edge_s: np.ndarray = None
-        self.x_out_edge_k: np.ndarray = None
-        self.y_out_edge_k: np.ndarray = None
 
         # координаты центров окружностей скруглений на кромках
         self.x01: float = None
@@ -488,14 +480,7 @@ class BladeSection:
         self.y_in_edge += dy
         self.x_out_edge += dx
         self.y_out_edge += dy
-        self.x_in_edge_s += dx
-        self.y_in_edge_s += dy
-        self.x_in_edge_k += dx
-        self.y_in_edge_k += dy
-        self.x_out_edge_s += dx
-        self.y_out_edge_s += dy
-        self.x_out_edge_k += dx
-        self.y_out_edge_k += dy
+
         self.x_av += dx
         self.y_av += dy
 
@@ -642,8 +627,8 @@ class BladeSection:
         else:
             phi2 = np.arctan((self.y0_k - self.y01) / (self.x0_k - self.x01)) + np.pi
         phi = np.linspace(phi1, phi2, int(self.pnt_count / 2))
-        self.x_in_edge = np.array(self.x01 + self.r1 * np.cos(phi))
-        self.y_in_edge = np.array(self.y01 + self.r1 * np.sin(phi))
+        self.x_in_edge = self.x01 + self.r1 * np.cos(phi)
+        self.y_in_edge = self.y01 + self.r1 * np.sin(phi)
         self.length_in_edge = self._get_circle_arc_length(phi1, phi2, self.r1)
 
         self.x0, self.y0 = self._get_zero_point(self.angle1, self.x01, self.y01, self.r1)
@@ -655,8 +640,8 @@ class BladeSection:
         phi1 = np.arctan((self.y2_k - self.y02) / (self.x2_k - self.x02)) + np.pi
         phi2 = np.arctan((self.y2_s - self.y02) / (self.x2_s - self.x02)) + 2 * np.pi
         phi = np.linspace(phi1, phi2, int(self.pnt_count / 2))
-        self.x_out_edge = np.array(self.x02 + self.s2 * np.cos(phi))
-        self.y_out_edge = np.array(self.y02 + self.s2 * np.sin(phi))
+        self.x_out_edge = self.x02 + self.s2 * np.cos(phi)
+        self.y_out_edge = self.y02 + self.s2 * np.sin(phi)
         self.length_out_edge = self._get_circle_arc_length(phi1, phi2, self.s2)
 
         self.y_c, self.square_y = self._get_y_c(self.x_k, self.y_k, self.x_s, self.y_s, self.x_in_edge,
@@ -669,14 +654,14 @@ class BladeSection:
         self.length_k = self._get_arc_length(self.x_k, self.y_k)
         self.length_s = self._get_arc_length(self.x_s, self.y_s)
 
-        self.x_in_edge_s, self.x_in_edge_k = np.split(self.x_in_edge,
-                                                      [list(self.x_in_edge).index(self.x_in_edge.min())])
-        self.y_in_edge_s, self.y_in_edge_k = np.split(self.y_in_edge,
-                                                      [list(self.x_in_edge).index(self.x_in_edge.min())])
-        self.x_out_edge_k, self.x_out_edge_s = np.split(self.x_out_edge,
-                                                        [list(self.x_out_edge).index(self.x_out_edge.max())])
-        self.y_out_edge_k, self.y_out_edge_s = np.split(self.y_out_edge,
-                                                        [list(self.x_out_edge).index(self.x_out_edge.max())])
+        # self.x_in_edge_s, self.x_in_edge_k = np.split(self.x_in_edge,
+        #                                               [list(self.x_in_edge).index(self.x_in_edge.min())])
+        # self.y_in_edge_s, self.y_in_edge_k = np.split(self.y_in_edge,
+        #                                               [list(self.x_in_edge).index(self.x_in_edge.min())])
+        # self.x_out_edge_k, self.x_out_edge_s = np.split(self.x_out_edge,
+        #                                                 [list(self.x_out_edge).index(self.x_out_edge.max())])
+        # self.y_out_edge_k, self.y_out_edge_s = np.split(self.y_out_edge,
+        #                                                 [list(self.x_out_edge).index(self.x_out_edge.max())])
 
         if self.convex == 'left':
             self.x1_av, self.y1_av, self.x2_av, self.y2_av = self.x1_av, -self.y1_av, self.x2_av, -self.y2_av
@@ -691,10 +676,7 @@ class BladeSection:
             self.y0 = -self.y0
             self.y_in_edge = -self.y_in_edge
             self.y_out_edge = -self.y_out_edge
-            self.y_in_edge_k = -self.y_in_edge_k
-            self.y_in_edge_s = -self.y_in_edge_s
-            self.y_out_edge_k = -self.y_out_edge_k
-            self.y_out_edge_s = -self.y_out_edge_s
+
             self.y_c = -self.y_c
         elif self.convex == 'right':
             pass
