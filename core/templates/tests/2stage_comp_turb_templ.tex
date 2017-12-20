@@ -57,8 +57,8 @@
 
     \subsection{Расчет интегральных параметров турбины}
 
-    </ set L_t_sum_exp = ((turb[0].L_t_rel / 10**6) | round(4)).__str__() + '\cdot 10^6' + '+' +
-        ((turb[1].L_t_rel / 10**6) | round(4)).__str__() + '\cdot 10^6' />
+    </ set L_t_sum_exp = ((turb[0].L_t_prime / 10**6) | round(4)).__str__() + '\cdot 10^6' + '+' +
+        ((turb[1].L_t_prime / 10**6) | round(4)).__str__() + '\cdot 10^6' />
 
     << avline.integrate_turbine_param(turb, L_t_sum_exp) >>
 

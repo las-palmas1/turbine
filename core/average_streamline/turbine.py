@@ -282,7 +282,7 @@ class Turbine:
                     # расчет первой ступени при числе ступеней, больше одной
                     stage_gas_dyn = get_first_stage(item, self.T_g_stag, self.p_g_stag, self.G_turbine, self.G_fuel)
                     self._gas_dynamics.append(stage_gas_dyn)
-                    L_last_stage_rel -= stage_gas_dyn.L_t_rel
+                    L_last_stage_rel -= stage_gas_dyn.L_t_prime
                 elif num == 0 and self.stage_number == 1:
                     # расчет первой ступени при числе ступеней, равному единице
                     stage_gas_dyn = get_only_work_stage(item, L_last_stage_rel, 0.9, self.T_g_stag, self.p_g_stag,
@@ -294,7 +294,7 @@ class Turbine:
                                                            self.G_fuel,
                                                            precise_heat_drop=self.precise_heat_drop)
                     self._gas_dynamics.append(stage_gas_dyn)
-                    L_last_stage_rel -= stage_gas_dyn.L_t_rel
+                    L_last_stage_rel -= stage_gas_dyn.L_t_prime
                 elif num == self.stage_number - 1:
                     # расчет последней ступени
                     if L_last_stage_rel < 0:
@@ -311,7 +311,7 @@ class Turbine:
         self.work_fluid.alpha = self.first.alpha_air_in
         self.L_t_sum = 0
         for item in self:
-            self.L_t_sum += item.L_t_rel
+            self.L_t_sum += item.L_t_prime
         self.work_fluid.T1 = self.T_g_stag
         self.work_fluid.T2 = self.last.T_st
         self.c_p_gas = self.work_fluid.c_p_av_int

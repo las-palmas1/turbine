@@ -225,6 +225,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         self.eta_l.setValue(turbine.eta_l)
         self.c_p_gas_av.setValue(turbine.c_p_gas)
         self.k_gas_av.setValue(turbine.k_gas)
+        self.N.setValue(turbine.N / 1e6)
         H0_arr = [stage_geom.H0 / 1e6 for stage_geom in turbine.geom]
         self.heat_drop_canvas.plot_heat_drop_distribution(turbine.stage_number, H0_arr)
         self.geometry_canvas.plot_geometry(turbine.geom)
@@ -283,6 +284,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_form.eta_l.setValue(turbine[i].eta_l)
             stage_form.eta_t.setValue(turbine[i].eta_t)
             stage_form.eta_t_stag.setValue(turbine[i].eta_t_stag)
+            stage_form.eta_t_stag_prime.setValue(turbine[i].eta_t_stag_prime)
             stage_form.rho_out.setValue(turbine[i].rho)
 
             stage_form.H_s.setValue(turbine[i].H_s / 1e3)
@@ -291,7 +293,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_form.rho1.setValue(turbine[i].rho1)
             stage_form.rho2.setValue(turbine[i].rho2)
             stage_form.L_st.setValue(turbine[i].L_t / 1e3)
-            stage_form.L_st_rel.setValue(turbine[i].L_t_rel / 1e3)
+            stage_form.L_st_prime.setValue(turbine[i].L_t_prime / 1e3)
             stage_form.L_u.setValue(turbine[i].L_u / 1e3)
             stage_form.k_av.setValue(turbine[i].k_gas)
             stage_form.c_p_av.setValue(turbine[i].c_p_gas)
@@ -305,7 +307,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                                                               turbine[i].c1_a, turbine[i].u1, turbine[i].c2_u,
                                                               turbine[i].c2_a, turbine[i].u2)
 
-    def get_turbine(self):
+    def get_turbine(self) -> Turbine:
         auto_set_rho = self.checkBox_rho_auto.isChecked()
         auto_compute_heat_drop = self.checkBox_h0_auto.isChecked()
         precise_heat_drop = self.checkBox_precise_h0.isChecked()

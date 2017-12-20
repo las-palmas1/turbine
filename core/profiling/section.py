@@ -85,6 +85,24 @@ class BladeSection:
         self.x_out_edge: np.ndarray = None
         self.y_out_edge: np.ndarray = None
 
+        # Координаты "геометрических" участков профиля. Участки получены не включают выходную кромку,
+        # получены разбиением профиля на 2 части так, чтобы каждую можно было представить в виде
+        # функциональной зависимости y(x).
+        self.x_s_geom: np.ndarray = None
+        self.y_s_geom: np.ndarray = None
+        self.x_k_geom: np.ndarray = None
+        self.y_k_geom: np.ndarray = None
+
+        # Координаты "физических" участков, которые (участки) можно представить в виде
+        # функцианальной зависимости y=f(x), в которые не входит выходная кромка и вдоль каждого из
+        # которых газ течет только в одном направлении.
+        self.x_s_phys: np.ndarray = None
+        self.y_s_phys: np.ndarray = None
+        self.x_k_phys: np.ndarray = None
+        self.y_k_phys: np.ndarray = None
+        self.x_inter: np.ndarray = None
+        self.y_inter: np.ndarray = None
+
         # координаты центров окружностей скруглений на кромках
         self.x01: float = None
         self.y01: float = None
@@ -104,10 +122,15 @@ class BladeSection:
         self.length_k: float = None
         self.length_s: float = None
         self.length_in_edge: float = None
+        self.length_out_edge: float = None
+        self.length_s_geom: float = None
+        self.length_k_geom: float = None
+        self.length_inter: float = None
+        self.length_k_phys: float = None
+        self.length_s_phys: float = None
         # длины дуг, полученных разделением входной кромки точкой начала отсчета
         self.length_in_edge_k: float = None
         self.length_in_edge_s: float = None
-        self.length_out_edge: float = None
 
         # положения точки начала отчета для расчета охлаждения
         self.x0: float = None
@@ -481,6 +504,18 @@ class BladeSection:
         self.x_out_edge += dx
         self.y_out_edge += dy
 
+        self.x_s_geom += dx
+        self.y_s_geom += dy
+        self.x_k_geom += dx
+        self.y_k_geom += dy
+
+        self.x_s_phys += dx
+        self.y_s_phys += dy
+        self.x_k_phys += dx
+        self.y_k_phys += dy
+        self.x_inter += dx
+        self.y_inter += dy
+
         self.x_av += dx
         self.y_av += dy
 
@@ -554,34 +589,88 @@ class BladeSection:
         return length
 
     @classmethod
-    def get_length(cls, x, x_arr, y_arr, y_int: typing.Callable[[float], float]):
+    def get_length(cls, x1, x2, x_arr, y_arr):
+        """Возвращает длину участка кривой, заданной массивами координат."""
+        y_int = interp1d(x_arr, y_arr, bounds_error=False, fill_value='extrapolate')
         length = 0
         for i in range(len(x_arr) - 1):
-            if x_arr[i + 1] < x:
+            if (x1 < x_arr[i + 1] <= x2) and (x1 <= x_arr[i] < x2):
                 length += np.sqrt((x_arr[i + 1] - x_arr[i]) ** 2 + (y_arr[i + 1] - y_arr[i]) ** 2)
-            else:
-                length += np.sqrt((x - x_arr[i]) ** 2 + (y_int(x) - y_arr[i]) ** 2)
-                break
+            elif (x_arr[i] < x1) and (x1 < x_arr[i + 1]):
+                length += np.sqrt((x_arr[i + 1] - x1) ** 2 + (y_arr[i + 1] - y_int(x2).__float__()) ** 2)
+            elif (x_arr[i] < x2) and (x2 < x_arr[i + 1]):
+                length += np.sqrt((x2 - x_arr[i]) ** 2 + (y_int(x2).__float__() - y_arr[i]) ** 2)
         return length
 
-    @classmethod
-    def get_heat_transfer_regions_bound_points(cls, x_arr: np.ndarray, y_arr: np.ndarray,
-                                               lengths: typing.List[float]):
-        """Возвращает координаты границ участков заданной длины на спинке или корыте. Длины участков задаются в виде
-        массива абсолютных значений."""
+    def transform_curve_to_cartesian(self, x_curve):
+        """
+        Переводит криволиненйную координату на профиле в декартову систему. Начало координат криволинейной системы
+        соответствует точке раздваивания потока на входной кромке, отрицаиельный координаты - спинке, положительные
+        корыту.
+        """
 
-        assert x_arr is not None and y_arr is not None, "x_arr and y_arr hasn't computed yet."
+        y_inter_int = interp1d(self.x_inter, self.y_inter, bounds_error=False, fill_value='extrapolate')
+        y_s_phys_int = interp1d(self.x_s_phys, self.y_s_phys, bounds_error=False, fill_value='extrapolate')
+        y_k_phys_int = interp1d(self.x_k_phys, self.y_k_phys, bounds_error=False, fill_value='extrapolate')
 
-        y_int = interp1d(x_arr, y_arr, bounds_error=False, fill_value='extrapolate')
+        x_cart = None
+        y_cart = None
 
-        res = []
-        for length in lengths:
-            x_res = brentq(lambda x: cls.get_length(x, x_arr, y_arr, lambda x1: y_int(x1).__float__()) - length,
-                           x_arr[0], x_arr[x_arr.shape[0] - 1])
-            y_res = y_int(x_res).__float__()
-            res.append(x_res)
-            res.append(y_res)
-        return res
+        if self.y0 <= self.y01:
+            if -self.length_s - self.length_in_edge_s <= x_curve <= -self.length_inter:
+                x_cart = brentq(lambda x: self.get_length(min(self.x_s_phys),
+                                                          x, self.x_s_phys, self.y_s_phys) -
+                                          (-x_curve - self.length_inter),
+                                self.x_s_phys[0], self.x_s_phys[self.x_s_phys.shape[0] - 1])
+                y_cart = y_s_phys_int(x_cart).__float__()
+            elif -self.length_inter < x_curve <= 0:
+                x_cart = brentq(lambda x: self.get_length(x,
+                                                          max(self.x_inter), self.x_inter, self.y_inter) - (-x_curve),
+                                self.x_inter[0], self.x_inter[self.x_inter.shape[0] - 1])
+                y_cart = y_inter_int(x_cart).__float__()
+            elif 0 < x_curve <= self.length_k + self.length_in_edge_k:
+                x_cart = brentq(lambda x: self.get_length(min(self.x_k_phys),
+                                                          x, self.x_k_phys, self.y_k_phys) - x_curve,
+                                self.x_k_phys[0], self.x_k_phys[self.x_k_phys.shape[0] - 1])
+                y_cart = y_k_phys_int(x_cart).__float__()
+        else:
+            if -self.length_s - self.length_in_edge_s <= x_curve <= 0:
+                x_cart = brentq(lambda x: self.get_length(min(self.x_s_phys),
+                                                          x, self.x_s_phys, self.y_s_phys) - (-x_curve),
+                                self.x_s_phys[0], self.x_s_phys[self.x_s_phys.shape[0] - 1])
+                y_cart = y_s_phys_int(x_cart).__float__()
+            elif 0 < x_curve <= self.length_inter:
+                x_cart = brentq(lambda x: self.get_length(x,
+                                                          max(self.x_inter), self.x_inter, self.y_inter) - x_curve,
+                                self.x_inter[0], self.x_inter[self.x_inter.shape[0] - 1])
+                y_cart = y_inter_int(x_cart).__float__()
+            elif self.length_inter < x_curve <= self.length_k + self.length_in_edge_k:
+                x_cart = brentq(lambda x: self.get_length(min(self.x_k_phys),
+                                                          x, self.x_k_phys, self.y_k_phys) -
+                                          (x_curve - self.length_inter),
+                                self.x_k_phys[0], self.x_k_phys[self.x_k_phys.shape[0] - 1])
+                y_cart = y_k_phys_int(x_cart).__float__()
+        return x_cart, y_cart
+
+    def get_holes_coordinates(self, x_rel_curve_arr):
+        """Возвращает координаты отверстий, заданных в относительных криволинейных координатах."""
+        x_abs_curv_arr = []
+
+        for x_rel_curve in x_rel_curve_arr:
+            if x_rel_curve < 0:
+                x_abs_curve = x_rel_curve * (self.length_in_edge_s + self.length_s)
+            else:
+                x_abs_curve = x_rel_curve * (self.length_in_edge_k + self.length_k)
+            x_abs_curv_arr.append(x_abs_curve)
+
+        x_cart_arr = []
+        y_cart_arr = []
+        for x_abs_curve in x_abs_curv_arr:
+            cart_coord = self.transform_curve_to_cartesian(x_abs_curve)
+            x_cart_arr.append(cart_coord[0])
+            y_cart_arr.append(cart_coord[1])
+
+        return x_cart_arr, y_cart_arr
 
     def compute_profile(self):
         self.x1_av, self.y1_av, self.x2_av, self.y2_av = self._get_central_line_poles()
@@ -654,14 +743,20 @@ class BladeSection:
         self.length_k = self._get_arc_length(self.x_k, self.y_k)
         self.length_s = self._get_arc_length(self.x_s, self.y_s)
 
-        # self.x_in_edge_s, self.x_in_edge_k = np.split(self.x_in_edge,
-        #                                               [list(self.x_in_edge).index(self.x_in_edge.min())])
-        # self.y_in_edge_s, self.y_in_edge_k = np.split(self.y_in_edge,
-        #                                               [list(self.x_in_edge).index(self.x_in_edge.min())])
-        # self.x_out_edge_k, self.x_out_edge_s = np.split(self.x_out_edge,
-        #                                                 [list(self.x_out_edge).index(self.x_out_edge.max())])
-        # self.y_out_edge_k, self.y_out_edge_s = np.split(self.y_out_edge,
-        #                                                 [list(self.x_out_edge).index(self.x_out_edge.max())])
+        self.x_s_geom = np.array(np.linspace(self.x0_av, self.x2_s, self.pnt_count * 3))
+        self.x_k_geom = np.array(np.linspace(self.x0_av, self.x2_k, self.pnt_count * 3))
+        self.y_s_geom = np.array([self.get_y_s_geom(x) for x in self.x_s_geom])
+        self.y_k_geom = np.array([self.get_y_k_geom(x) for x in self.x_k_geom])
+
+        self.length_s_geom = self._get_arc_length(self.x_s_geom, self.y_s_geom)
+        self.length_k_geom = self._get_arc_length(self.x_k_geom, self.y_k_geom)
+
+        self.x_s_phys, self.y_s_phys, \
+        self.x_k_phys, self.y_k_phys, \
+        self.x_inter, self.y_inter = self._get_phys_arrays()
+        self.length_s_phys = self._get_arc_length(self.x_s_phys, self.y_s_phys)
+        self.length_k_phys = self._get_arc_length(self.x_k_phys, self.y_k_phys)
+        self.length_inter = self._get_arc_length(self.x_inter, self.y_inter)
 
         if self.convex == 'left':
             self.x1_av, self.y1_av, self.x2_av, self.y2_av = self.x1_av, -self.y1_av, self.x2_av, -self.y2_av
@@ -676,6 +771,11 @@ class BladeSection:
             self.y0 = -self.y0
             self.y_in_edge = -self.y_in_edge
             self.y_out_edge = -self.y_out_edge
+            self.y_s_geom = -self.y_s_geom
+            self.y_k_geom = -self.y_k_geom
+            self.y_s_phys = -self.y_s_phys
+            self.y_k_phys = -self.y_k_phys
+            self.y_inter = -self.y_inter
 
             self.y_c = -self.y_c
         elif self.convex == 'right':
@@ -683,37 +783,61 @@ class BladeSection:
         else:
             raise ValueError('Parameter convex can not be equal to %s' % self.convex)
 
-    def get_y_s(self, x):
+    def _get_phys_arrays(self):
+        x_s = None
+        y_s = None
+        x_k = None
+        y_k = None
+        x_inter_arr = None
+        y_inter_arr = None
+
+        if self.y0 <= self.y01:  # начало координат на "геометричеком" корыте
+            x_inter_arr = list(np.linspace(self.x0_av, self.x0, 25))
+            y_inter_arr = [self.get_y_k_geom(x) for x in x_inter_arr]
+            x_s = list(np.linspace(self.x0_av, self.x2_s, self.pnt_count * 4))
+            y_s = [self.get_y_s_geom(x) for x in x_s]
+            x_k = np.linspace(self.x0, self.x2_k, self.pnt_count * 4)
+            y_k = [self.get_y_k_geom(x) for x in x_k]
+
+        elif self.y0 > self.y01:  # начало координат на "геометричекой" спинке
+            x_inter_arr = list(np.linspace(self.x0_av, self.x0, 10))
+            y_inter_arr = [self.get_y_s_geom(x) for x in x_inter_arr]
+            x_k = list(np.linspace(self.x0_av, self.x2_k, self.pnt_count * 4))
+            y_k = [self.get_y_k_geom(x) for x in x_k]
+            x_s = np.linspace(self.x0, self.x2_s, self.pnt_count * 4)
+            y_s = [self.get_y_s_geom(x) for x in x_s]
+
+        return np.array(x_s), np.array(y_s), np.array(x_k), np.array(y_k), np.array(x_inter_arr), np.array(y_inter_arr)
+
+    def get_y_s_geom(self, x):
         y_s = interp1d(self.x_s, self.y_s)
 
         res = None
         if self.x0_av <= x < self.x0_s:
-            res = self.y01 - np.sqrt(self.r1 ** 2 - (x - self.x01) ** 2)
+            res = self.y01 + np.sqrt(self.r1 ** 2 - (x - self.x01) ** 2)
         elif self.x0_s <= x < self.x2_s:
             res = y_s(x)
-        elif self.x2_s <= x <= self.x0_av + self.b_a:
+        elif self.x2_s <= x < self.x0_av + self.b_a:
             res = self.y02 - np.sqrt(self.s2 ** 2 - (x - self.x02) ** 2)
+        elif x == self.x0_av + self.b_a:
+            res = self.y02
 
-        if self.convex == 'right':
-            return res
-        else:
-            return -res
+        return res
 
-    def get_y_k(self, x):
+    def get_y_k_geom(self, x):
         y_k = interp1d(self.x_k, self.y_k)
 
         res = None
         if self.x0_av <= x < self.x0_k:
-            res = self.y01 + np.sqrt(self.r1 ** 2 - (x - self.x01) ** 2)
+            res = self.y01 - np.sqrt(self.r1 ** 2 - (x - self.x01) ** 2)
         elif self.x0_k <= x < self.x2_k:
             res = y_k(x)
-        elif self.x2_k <= x <= self.x0_av + self.b_a:
+        elif self.x2_k <= x < self.x0_av + self.b_a:
             res = self.y02 + np.sqrt(self.s2 ** 2 - (x - self.x02) ** 2)
+        elif x == self.x0_av + self.b_a:
+            res = self.y02
 
-        if self.convex == 'right':
-            return res
-        else:
-            return -res
+        return res
 
     def plot(self, figsize=(6, 4)):
         plt.figure(figsize=figsize)
@@ -747,10 +871,16 @@ class BladeSection:
         for x, n in zip(x_arr, range(pnt_num)):
             sheet.write(2 + n, 0, n + 1)
             sheet.write(2 + n, 1, round((x - self.x0_av) * 1e3, 1))
-            sheet.write(2 + n, 2, round(self.get_y_k(x) * 1e3, 1))
+            if self.convex == 'right':
+                sheet.write(2 + n, 2, round(self.get_y_k_geom(x) * 1e3, 1))
+            else:
+                sheet.write(2 + n, 2, round(-self.get_y_k_geom(x) * 1e3, 1))
         for x, n in zip(x_arr, range(pnt_num)):
             sheet.write(2 + n, 3, round((x - self.x0_av) * 1e3, 1))
-            sheet.write(2 + n, 4, round(self.get_y_s(x) * 1e3, 1))
+            if self.convex == 'right':
+                sheet.write(2 + n, 4, round(self.get_y_s_geom(x) * 1e3, 1))
+            else:
+                sheet.write(2 + n, 4, round(-self.get_y_s_geom(x) * 1e3, 1))
         sheet.write(2 + pnt_num, 0, 'R<L>вх<L>, мм')
         sheet.write(2 + pnt_num, 1, round(self.r1 * 1e3, 1))
         sheet.write(2 + pnt_num + 1, 0, 'R<L>вых<L>, мм')

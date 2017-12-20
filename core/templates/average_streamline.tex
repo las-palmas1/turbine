@@ -552,18 +552,18 @@
         </ if sttype != 'work' />
         \item Определим удельную работу ступени:
         \[
-            L_т^\prime = H_0 \eta_т = << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 \cdot \eta_т =
+            L_т = H_0 \eta_т = << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 \cdot \eta_т =
             = << (stgd.L_t / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
         \]
         </ endif />
 
         \item Удельная работа ступени с учетом добавления охлаждающего воздуха:
         \[
-            L_т = L_т^\prime \frac{ G_{вх} }{ G_т }  - L_т^\prime g_{охл} =
+            L_т^\prime = L_т \frac{ G_{вх} }{ G_т }  - L_т g_{охл} =
                 << (stgd.L_t / 10**6) | round(4) >> \cdot 10^6 \cdot
                 \frac{ << stgd.G_stage_in | round(2) >> }{ << stgd.G_turbine | round(2) >> }  -
                 << (stgd.L_t / 10**6) | round(4) >> \cdot 10^6 \cdot << stgd.g_cool | round(4) >> =
-            << (stgd.L_t_rel / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
+            << (stgd.L_t_prime / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
         \]
 
         \item Статическая температура за ступенью:
@@ -667,11 +667,21 @@
             << (stgd.H0_stag / 10**6) | round(4)  >> \cdot 10^6 \ Дж/кг
         \]
 
-        \item КПД по параметрам торможения:
+        \item КПД по параметрам торможения с учетом добавления охлаждающего воздуха:
+        \[
+            \eta_т^{*\prime} = \frac{ L_т^\prime }{ H_0^* } =
+                \frac{
+                    << (stgd.L_t_prime / 10**6) | round(4) >> \cdot 10^6
+                }{
+                    << (stgd.H0_stag / 10**6) | round(4)  >> \cdot 10^6 } =
+            << stgd.eta_t_stag_prime | round(4) >>
+        \]
+
+        \item КПД по параметрам торможения без учета добавления охлаждающего воздуха:
         \[
             \eta_т^* = \frac{ L_т }{ H_0^* } =
                 \frac{
-                    << (stgd.L_t_rel / 10**6) | round(4) >> \cdot 10^6
+                    << (stgd.L_t / 10**6) | round(4) >> \cdot 10^6
                 }{
                     << (stgd.H0_stag / 10**6) | round(4)  >> \cdot 10^6 } =
             << stgd.eta_t_stag | round(4) >>
@@ -870,12 +880,12 @@
 
         \item Мощностной КПД из предпоследней итерации:
         \[
-            \eta_т^\prime = << stgd.eta_t_old | round(4) >>
+            \eta_{т0} = << stgd.eta_t_old | round(4) >>
         \]
 
         \item Статический теплоперепад на ступени:
         \[
-            H_0 = \frac{L_т}{\eta_т^\prime} =
+            H_0 = \frac{L_т}{\eta_{т0}} =
                 \frac{ << (stgd.L_t / 10**6) | round(4) >> \cdot 10^6 }{ << stgd.eta_t_old | round(4) >> } =
             << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
         \]
@@ -894,7 +904,7 @@
 
         \item Невязка по мощностному КПД:
         \[
-            \delta_\eta = \frac{ \left| \eta_t - \eta_т^\prime \right| }{ \eta_т^\prime } \cdot 100 \% =
+            \delta_\eta = \frac{ \left| \eta_т - \eta_{т0} \right| }{ \eta_{т0} } \cdot 100 \% =
                 \frac{
                     \left| << stgd.eta_t | round(4) >> - << stgd.eta_t_old | round(4) >> \right|
                 }{

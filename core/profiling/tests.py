@@ -13,13 +13,13 @@ from .turbine import TurbineProfiler
 
 class SectionTest(unittest.TestCase):
     def setUp(self):
-        self.bs1 = BladeSection(angle1=np.radians([90])[0],
+        self.bs1 = BladeSection(angle1=np.radians([20])[0],
                                 angle2=np.radians([30])[0],
                                 delta1=np.radians([0])[0],
                                 delta2=np.radians([2])[0],
                                 b_a=0.03,
                                 r1=0.002,
-                                convex='left',
+                                convex='right',
                                 pnt_count=30,
                                 s2=0.0003)
         self.bs1.compute_profile()
@@ -59,6 +59,20 @@ class SectionTest(unittest.TestCase):
         self.bs2.plot()
 
     def test_partition(self):
+
+        self.assertAlmostEqual(abs(self.bs1.length_s_geom -
+                                   self.bs1.get_length(self.bs1.x0_av, self.bs1.x2_s,
+                                                       self.bs1.x_s_geom, self.bs1.y_s_geom)) / self.bs1.length_s_geom,
+                               0, places=5)
+        self.assertAlmostEqual(abs(self.bs1.length_s_phys + self.bs1.length_inter + self.bs1.length_k_phys -
+                                   (self.bs1.length_s + self.bs1.length_k + self.bs1.length_in_edge)) /
+                               (self.bs1.length_s_phys + self.bs1.length_inter + self.bs1.length_k_phys), 0,
+                               places=2)
+        self.assertAlmostEqual(abs(self.bs1.length_s_geom + self.bs1.length_k_geom -
+                                   (self.bs1.length_s + self.bs1.length_k + self.bs1.length_in_edge)) /
+                               (self.bs1.length_s_geom + self.bs1.length_k_geom), 0,
+                               places=2)
+
         plt.figure(figsize=(6, 4))
         plt.plot(self.bs1.y_av, self.bs1.x_av, lw=0.5, ls='--', color='black')
         plt.plot(self.bs1.y_s, self.bs1.x_s, lw=1, color='red')
@@ -76,15 +90,9 @@ class SectionTest(unittest.TestCase):
                  color='blue', marker='o', ms=2)
         plt.plot([self.bs1.y_c], [self.bs1.x_c], linestyle='', marker='o', ms=8, mfc='black', color='red')
         plt.plot([self.bs1.y0], [self.bs1.x0], linestyle='', marker='o', ms=4, mfc='black', color='green')
-        x12, y12, x23, y23 = self.bs1.get_heat_transfer_regions_bound_points(self.bs1.x_s, self.bs1.y_s,
-                                                                             [self.bs1.length_s * 0.45,
-                                                                              self.bs1.length_s -
-                                                                              self.bs1.chord_length / 3])
-        y_s_int = interp1d(self.bs1.x_s, self.bs1.y_s)
-        self.assertAlmostEqual(self.bs1.get_length(x12, self.bs1.x_s, self.bs1.y_s, lambda x: y_s_int(x).__float__()),
-                               self.bs1.length_s * 0.45, places=6)
-        plt.plot([y12], [x12], linestyle='', marker='o', ms=4, mfc='black', color='green')
-        plt.plot([y23], [x23], linestyle='', marker='o', ms=4, mfc='black', color='green')
+        x_holes, y_holes = self.bs1.get_holes_coordinates([-0.8, -0.5, -0.04, -0.03, -0.025, -0.02, -0.01, 0,
+                                                           0.01, 0.02, 0.025, 0.03, 0.04, 0.5, 0.8])
+        plt.plot(y_holes, x_holes, linestyle='', marker='o', ms=5, mfc='black', color='yellow')
         plt.grid()
         plt.show()
 

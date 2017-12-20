@@ -121,7 +121,7 @@ class TurbineTest(unittest.TestCase):
                                                                gd2.g_lb - gd2.g_lk - gd2.g_ld + gd2.g_cool)
         self.assertAlmostEqual(abs((L_st1 + L_st2) - self.comp_turb_h0_auto.L_t_cycle) / (L_st1 + L_st2), 0, places=2)
 
-        self.assertEqual(self.comp_turb_h0_auto[0].L_t_rel + self.comp_turb_h0_auto[1].L_t_rel,
+        self.assertEqual(self.comp_turb_h0_auto[0].L_t_prime + self.comp_turb_h0_auto[1].L_t_prime,
                          self.comp_turb_h0_auto.L_t_cycle)
 
         H_t_old = self.comp_turb_h0_auto.H_t_stag_cycle

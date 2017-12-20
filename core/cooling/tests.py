@@ -281,7 +281,7 @@ class DeflectorBladeFilmCoolingTest(unittest.TestCase):
 
         self.theta = get_theta(0.5 * stage_prof.D1_in, 0.5 * stage_prof.D1_out, 0.5, 1.12)
         self.T_gas_stag = get_T_gas(self.theta, 650, self.turbine[0].T0_stag)
-        self.G_cool0 = 0.2
+        self.G_cool0 = 0.005
         self.g_cool0 = get_g_cool(self.theta, 2 * self.G_cool0 / (stage_prof.D1_out - stage_prof.D1_in))
 
         self.film_blade = FilmBladeCooler(sections=stage_prof.sa_sections,

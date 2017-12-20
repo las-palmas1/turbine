@@ -308,6 +308,7 @@ class ProfilingResultsForCooling:
             D_in: float,
             D_out: float,
             c_p: float,
+            blade_num: int,
             T_gas_stag: typing.List[float],
             p_gas_stag: typing.List[float],
             lam_gas_in: typing.List[float],
@@ -327,6 +328,7 @@ class ProfilingResultsForCooling:
         self.D_in = D_in
         self.D_out = D_out
         self.c_p = c_p
+        self.blade_num = blade_num
         self.T_gas_stag = T_gas_stag
         self.p_gas_stag = p_gas_stag
         self.lam_gas_in = lam_gas_in
@@ -765,16 +767,18 @@ class StageProfiler(StageParametersRadialDistribution):
             lam_gas_out = [self.lam_c1(r) for r in r_arr]
             p_gas_stag = [self.p0_stag(r) for r in r_arr]
             T_gas_stag = [self.T0_stag(r) for r in r_arr]
+            blade_num = self.z_sa
         elif blade_type == 'rk':
             sections = self.rk_sections
             lam_gas_in = [self.lam_w1(r) for r in r_arr]
             lam_gas_out = [self.lam_w2(r) for r in r_arr]
             p_gas_stag = [self.p1_w_stag(r) for r in r_arr]
             T_gas_stag = [self.T1_w_stag(r) for r in r_arr]
+            blade_num = self.z_rk
         else:
             raise ValueError("blade_type can not be equal to %s" % blade_type)
 
-        results = ProfilingResultsForCooling(sections, self.D1_in, self.D1_out, self.c_p,
+        results = ProfilingResultsForCooling(sections, self.D1_in, self.D1_out, self.c_p, blade_num,
                                              T_gas_stag, p_gas_stag, lam_gas_in, lam_gas_out)
         return results
 

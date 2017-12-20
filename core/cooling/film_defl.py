@@ -197,6 +197,7 @@ class FilmSectorCooler(GasBladeHeatExchange):
         return x_hole
 
     def get_alpha_cool_fluid(self, G_cool, T_cool_fluid):
+        assert G_cool > 0, 'G_cool must not be negative.'
         return (0.02 * self.cool_fluid.lam(T_cool_fluid) / (2 * self.channel_width) *
                 (G_cool / (self.height * self.cool_fluid.mu(T_cool_fluid))) ** 0.8)
 
@@ -314,6 +315,7 @@ class FilmSectorCooler(GasBladeHeatExchange):
         self.G_cool_av = self._get_average_value(self.film.get_G_cool, self.local_param.x_arr)
         self.T_wall_out_av = self._get_average_value(self.local_param.get_T_wall, self.local_param.x_arr)
         self.T_cool_av = self._get_average_value(self.local_param.get_T_cool, self.local_param.x_arr)
+        self.logger.debug('T_cool_av = %.2f' % self.T_cool_av)
 
     def get_cool_eff(self, x):
         return (self.T_gas_stag - self.local_param.get_T_wall(x)) / (self.T_gas_stag - self.local_param.get_T_cool(x))
@@ -437,6 +439,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
         self.node_num = node_num
         self.accuracy = accuracy
         self.logger = Logger(level_name=log_level)
+
+        self.hole_step = 0.5 * (self.D_out - self.D_in) / np.array(self.hole_num)
 
         self.av_param = DeflectorAverageParamCalculator(section=self.av_section,
                                                         height=0.5 * (D_out - D_in),
@@ -813,6 +817,21 @@ class FilmBladeCooler(GasBladeHeatExchange):
         if filename:
             plt.savefig(filename)
         plt.show()
+
+    def write_nx_exp_file(self, filename: str, sector_num: int):
+        sector = self.sectors[sector_num]
+        section = sector.section
+
+        x_holes, y_holes = section.get_holes_coordinates(sector.x_hole_rel)
+
+        with open(filename, 'w') as file:
+            lines = []
+
+            for i in range(len(self.x_hole_rel)):
+                lines.append('[mm]x_hole_%s%s=%s\n' % (sector_num, i, x_holes[i]))
+                lines.append('[mm]y_hole_%s%s=%s\n' % (sector_num, i, y_holes[i]))
+                lines.append('z_hole_%s%s=%s\n' % (sector_num, i, self.hole_num[i]))
+                lines.append('[mm]d_hole_%s%s=%s\n' % (sector_num, i, self.d_hole[i]))
 
 
 @typing.overload
