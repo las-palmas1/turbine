@@ -64,6 +64,7 @@ class FilmSectorCooler(GasBladeHeatExchange):
                  T_cool0=None,
                  p_cool_stag0=None,
                  G_cool0=None,
+                 g_cool0_s=0.5,
                  c_p_cool_av=None,
                  cool_fluid: IdealGas=Air(),
                  node_num: int=500,
@@ -92,6 +93,7 @@ class FilmSectorCooler(GasBladeHeatExchange):
         :param T_cool0: Температура охлаждающей среды на входе в канал.
         :param p_cool_stag0: Полное давление охлаждающей среды на входе в канал.
         :param G_cool0: Расход охлаждающей среды на входе в канал.
+        :param g_cool0_s: Относительный расход охлаждающего воздуха на входе в канал спинки.
         :param c_p_cool_av: Средняя теплоемкость охлаждающей среды.
         :param cool_fluid: Охлаждающая среда.
         :param node_num: Число узлов для решения уравнения теплового баланса.
@@ -119,6 +121,7 @@ class FilmSectorCooler(GasBladeHeatExchange):
         self.T_cool0 = T_cool0
         self.p_cool_stag0 = p_cool_stag0
         self.G_cool0 = G_cool0
+        self.g_cool0_s = g_cool0_s
         self.c_p_cool_av = c_p_cool_av
         self.cool_fluid = cool_fluid
         self.node_num = node_num
@@ -172,7 +175,8 @@ class FilmSectorCooler(GasBladeHeatExchange):
                                    p_cool_stag0=self.p_cool_stag0,
                                    c_p_cool_av=self.c_p_cool_av,
                                    cool_fluid=self.cool_fluid,
-                                   height=self.height)
+                                   height=self.height,
+                                   g_cool0_s=self.g_cool0_s)
 
         self.mu_gas, self.lam_gas, self.Re_gas, self.Nu_gas, self.alpha_gas_av = self.get_alpha_gas_av(self.section,
                                                                                                        self.height,
@@ -279,6 +283,14 @@ class FilmSectorCooler(GasBladeHeatExchange):
         alpha_out = None
         G_cool = None
 
+        def G_cool_init(x):
+            if x < 0:
+                return self.G_cool0 * self.g_cool0_s
+            elif x > 0:
+                return self.G_cool0 * (1 - self.g_cool0_s)
+            elif x == 0:
+                return self.G_cool0
+
         while self.res >= self.accuracy:
             if not alpha_cool and not T_out_stag and not alpha_out and not G_cool:
                 self.logger.debug(self.get_regions_bound(self.section))
@@ -295,7 +307,7 @@ class FilmSectorCooler(GasBladeHeatExchange):
                     alpha_cool=lambda x, T: self.get_alpha_cool_fluid(self.G_cool0, T),
                     T_out_stag=lambda x: self.T_gas_stag,
                     alpha_out=self._get_alpha_gas,
-                    G_cool=lambda x: self.G_cool0
+                    G_cool=G_cool_init
                 )
             else:
                 (alpha_cool, T_out_stag,
@@ -380,6 +392,7 @@ class FilmBladeCooler(GasBladeHeatExchange):
                  p_cool_stag0,
                  g_cool0: typing.Callable[[float], float],
                  cool_fluid: IdealGas,
+                 g_cool0_s=0.5,
                  node_num: int = 500,
                  accuracy: float = 0.01
                  ):
@@ -406,6 +419,7 @@ class FilmBladeCooler(GasBladeHeatExchange):
         :param p_cool_stag0: Давление охлажадющего воздуха на входе в канал.
         :param g_cool0: Распределение плотности расхода охлаждающего воздуха на входе в канал.
         :param cool_fluid: Охлаждающее тело.
+        :param g_cool0_s: Относительный расход охлаждающего воздуха на входе в канал спинки.
         :param node_num: Число узлов для решения дифура.
         :param accuracy:
         """
@@ -436,6 +450,7 @@ class FilmBladeCooler(GasBladeHeatExchange):
         self.p_cool_stag0 = p_cool_stag0
         self.g_cool0 = g_cool0
         self.cool_fluid = cool_fluid
+        self.g_cool0_s = g_cool0_s
         self.node_num = node_num
         self.accuracy = accuracy
         self.logger = Logger(level_name=log_level)
@@ -527,7 +542,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
                                          G_cool0=self.G_cool0_arr[i],
                                          cool_fluid=type(self.cool_fluid)(),
                                          node_num=self.node_num,
-                                         accuracy=self.accuracy
+                                         accuracy=self.accuracy,
+                                         g_cool0_s=self.g_cool0_s
                                          ) for i in range(self.sector_num)]
 
     def _get_D_av_arr_and_height_arr(self):
@@ -828,10 +844,14 @@ class FilmBladeCooler(GasBladeHeatExchange):
             lines = []
 
             for i in range(len(self.x_hole_rel)):
-                lines.append('[mm]x_hole_%s%s=%s\n' % (sector_num, i, x_holes[i]))
-                lines.append('[mm]y_hole_%s%s=%s\n' % (sector_num, i, y_holes[i]))
+                lines.append('[mm]x_hole_%s%s=%s\n' % (sector_num, i, x_holes[i] * 1e3))
+                lines.append('[mm]y_hole_%s%s=%s\n' % (sector_num, i, y_holes[i] * 1e3))
                 lines.append('z_hole_%s%s=%s\n' % (sector_num, i, self.hole_num[i]))
-                lines.append('[mm]d_hole_%s%s=%s\n' % (sector_num, i, self.d_hole[i]))
+                lines.append('[mm]d_hole_%s%s=%s\n' % (sector_num, i, self.d_hole[i] * 1e3))
+            lines.append('[mm]wall_thickness=%s\n' % (self.wall_thickness * 1.e3))
+            lines.append('[mm]delta=%s\n' % (self.channel_width * 1.e3))
+
+            file.writelines(lines)
 
 
 @typing.overload
@@ -852,7 +872,8 @@ def get_sa_cooler(
         g_cool0: typing.Callable[[float], float],
         cool_fluid: IdealGas,
         node_num=500,
-        accuracy=0.01
+        accuracy=0.01,
+        g_cool0_s=0.5
 ):
     ...
 
@@ -875,7 +896,8 @@ def get_sa_cooler(
         g_cool0: typing.Callable[[float], float],
         cool_fluid: IdealGas,
         node_num=500,
-        accuracy=0.01
+        accuracy=0.01,
+        g_cool0_s=0.5
 ):
     ...
 
@@ -897,7 +919,8 @@ def get_sa_cooler(
         g_cool0: typing.Callable[[float], float],
         cool_fluid: IdealGas,
         node_num=500,
-        accuracy=0.01
+        accuracy=0.01,
+        g_cool0_s=0.5
 ) -> FilmBladeCooler:
 
     if type(profiling) == ProfilingResultsForCooling:
@@ -930,7 +953,8 @@ def get_sa_cooler(
                                  g_cool0=g_cool0,
                                  cool_fluid=cool_fluid,
                                  node_num=node_num,
-                                 accuracy=accuracy)
+                                 accuracy=accuracy,
+                                 g_cool0_s=g_cool0_s)
     elif type(profiling) == StageProfiler:
         cooler = FilmBladeCooler(sections=profiling.sa_sections,
                                  channel_width=channel_width,
@@ -955,7 +979,8 @@ def get_sa_cooler(
                                  g_cool0=g_cool0,
                                  cool_fluid=cool_fluid,
                                  node_num=node_num,
-                                 accuracy=accuracy)
+                                 accuracy=accuracy,
+                                 g_cool0_s=g_cool0_s)
     else:
         raise TypeError("profiling can not have this type: %s" % type(profiling))
     return cooler
@@ -979,7 +1004,8 @@ def get_rk_cooler(
         g_cool0: typing.Callable[[float], float],
         cool_fluid: IdealGas,
         node_num=500,
-        accuracy=0.01
+        accuracy=0.01,
+        g_cool0_s=0.5
 ):
     ...
 
@@ -1002,7 +1028,8 @@ def get_rk_cooler(
         g_cool0: typing.Callable[[float], float],
         cool_fluid: IdealGas,
         node_num=500,
-        accuracy=0.01
+        accuracy=0.01,
+        g_cool0_s=0.5
 ):
     ...
 
@@ -1024,7 +1051,8 @@ def get_rk_cooler(
         g_cool0: typing.Callable[[float], float],
         cool_fluid: IdealGas,
         node_num=500,
-        accuracy=0.01
+        accuracy=0.01,
+        g_cool0_s=0.5
 ) -> FilmBladeCooler:
 
     if type(profiling) == ProfilingResultsForCooling:
@@ -1057,7 +1085,8 @@ def get_rk_cooler(
                                  g_cool0=g_cool0,
                                  cool_fluid=cool_fluid,
                                  node_num=node_num,
-                                 accuracy=accuracy)
+                                 accuracy=accuracy,
+                                 g_cool0_s=g_cool0_s)
     elif type(profiling) == StageProfiler:
         cooler = FilmBladeCooler(sections=profiling.rk_sections,
                                  channel_width=channel_width,
@@ -1082,7 +1111,8 @@ def get_rk_cooler(
                                  g_cool0=g_cool0,
                                  cool_fluid=cool_fluid,
                                  node_num=node_num,
-                                 accuracy=accuracy)
+                                 accuracy=accuracy,
+                                 g_cool0_s=g_cool0_s)
     else:
         raise TypeError("profiling can not have this type: %s" % type(profiling))
     return cooler

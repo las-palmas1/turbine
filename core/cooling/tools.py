@@ -272,10 +272,10 @@ class LocalParamCalculator:
         heat_trans_coef = self._get_heat_transfer_coef(x, T_cool_fluid)
         if x >= 0:
             return (self.height * (self.T_out_stag(x) - T_cool_fluid) * heat_trans_coef /
-                    (0.5 * self.G_cool(x) * self.cool_fluid.c_p_real_func(T_cool_fluid)))
+                    (self.G_cool(x) * self.cool_fluid.c_p_real_func(T_cool_fluid)))
         else:
             return -(self.height * (self.T_out_stag(x) - T_cool_fluid) * heat_trans_coef /
-                     (0.5 * self.G_cool(x) * self.cool_fluid.c_p_real_func(T_cool_fluid)))
+                     (self.G_cool(x) * self.cool_fluid.c_p_real_func(T_cool_fluid)))
 
     def _get_T_wall(self, x, T_cool_fluid):
         heat_trans_coef = self._get_heat_transfer_coef(x, T_cool_fluid)
@@ -409,7 +409,8 @@ class FilmCalculator:
                  p_cool_stag0=None,
                  c_p_cool_av=None,
                  cool_fluid: IdealGas=Air(),
-                 height=None
+                 height=None,
+                 g_cool0_s=0.5,
                  ):
         """
         :param x_hole: Координаты рядов отверстий.
@@ -429,6 +430,7 @@ class FilmCalculator:
         :param c_p_cool_av: Средняя теплоемкость охлаждающего воздуха.
         :param cool_fluid: Охлаждающее тело.
         :param height: Высота участка лопатки
+        :param g_cool0_s: Относительный расход охлаждающего воздуха на входе в канал спинки.
         """
         self.x_hole = np.array(x_hole)
         self.hole_num = np.array(hole_num)
@@ -450,6 +452,8 @@ class FilmCalculator:
         self.c_p_cool_av = c_p_cool_av
         self.cool_fluid = cool_fluid
         self.height = height
+        self.g_coo0_s = g_cool0_s
+
         self.k_gas_av = self.work_fluid.k_func(self.c_p_gas_av)
         self.k_cool_av = self.cool_fluid.k_func(self.c_p_cool_av)
 
@@ -681,11 +685,13 @@ class FilmCalculator:
         dG_hole_k = self.dG_cool_hole[np.array([i == 'k' for i in self.belong])]
 
         if x <= x_hole_s[0]:
-            return self.G_cool0 - dG_hole_s.sum()
+            return self.G_cool0 * self.g_coo0_s - dG_hole_s.sum()
         elif x >= self.x_hole[len(self.x_hole) - 1]:
-            return self.G_cool0 - dG_hole_k.sum()
-        elif x_hole_s[len(x_hole_s) - 1] < x < x_hole_k[0]:
-            return self.G_cool0
+            return self.G_cool0 * (1 - self.g_coo0_s) - dG_hole_k.sum()
+        elif x_hole_s[len(x_hole_s) - 1] < x < 0:
+            return self.G_cool0 * self.g_coo0_s
+        elif 0 < x < x_hole_k[0]:
+            return self.G_cool0 * (1 - self.g_coo0_s)
         elif x == 0:
             return self.G_cool0
 
@@ -701,13 +707,13 @@ class FilmCalculator:
                 for i in range(len(x_hole_k) - 1):
                     dG += dG_hole_k[i]
                     if x_hole_k[i] < x <= x_hole_k[i + 1]:
-                        return self.G_cool0 - dG
+                        return self.G_cool0 * (1 - self.g_coo0_s) - dG
             else:
                 dG = 0
                 for i in range(len(x_hole_s) - 1):
                     dG += dG_hole_s[i]
                     if x_hole_s[i] < -x <= x_hole_s[i + 1]:
-                        return self.G_cool0 - dG
+                        return self.G_cool0 * self.g_coo0_s - dG
 
     @classmethod
     def _get_lim(cls, value_arr, places, delta):
@@ -811,9 +817,9 @@ class FilmCalculator:
 
         G_min, G_max = self._get_lim(G_arr, places, delta)
         for x in self.x_hole:
-            plt.plot([x * 1e3, x * 1e3], [G_min, G_max], color='black', lw=1, linestyle='--')
+            plt.plot([x * 1e3, x * 1e3], [0, G_max], color='black', lw=1, linestyle='--')
         plt.grid()
-        plt.ylim(G_min, G_max)
+        plt.ylim(0, G_max)
         plt.xlim(min(x_arr_new), max(x_arr_new))
         plt.xlabel(r'$x,\ мм$', fontsize=14)
         plt.ylabel(r'$G_в,\ кг/с$', fontsize=14)

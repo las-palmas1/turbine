@@ -122,7 +122,8 @@ class BladeSectorTest(unittest.TestCase):
                                             G_cool0=self.conv_cooler.G_cool,
                                             c_p_cool_av=1100,
                                             cool_fluid=Air(),
-                                            node_num=250)
+                                            node_num=250,
+                                            g_cool0_s=0.6)
 
     def test_av_params(self):
         """Проверка теплового баланса."""
@@ -230,6 +231,7 @@ class BladeSectorTest(unittest.TestCase):
 
         self.film_cooler.local_param.plot_all()
         self.film_cooler.film.plot_T_film(self.film_cooler.local_param.x_arr)
+        self.film_cooler.film.plot_G_cool(self.film_cooler.local_param.x_arr)
 
 
 class DeflectorBladeFilmCoolingTest(unittest.TestCase):
