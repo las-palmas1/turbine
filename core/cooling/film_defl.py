@@ -8,6 +8,7 @@ from gas_turbine_cycle.tools.gas_dynamics import GasDynamicFunctions as gd
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from scipy.integrate import quad
+import xlwt
 
 log_level = 'INFO'
 
@@ -66,6 +67,8 @@ class FilmSectorCooler(GasBladeHeatExchange):
                  G_cool0=None,
                  g_cool0_s=0.5,
                  c_p_cool_av=None,
+                 cover_thickness=0.15e-3,
+                 lam_cover=2,
                  cool_fluid: IdealGas=Air(),
                  node_num: int=500,
                  accuracy: float=0.01
@@ -96,6 +99,8 @@ class FilmSectorCooler(GasBladeHeatExchange):
         :param g_cool0_s: Относительный расход охлаждающего воздуха на входе в канал спинки.
         :param c_p_cool_av: Средняя теплоемкость охлаждающей среды.
         :param cool_fluid: Охлаждающая среда.
+        :param cover_thickness: Толщина защитного покрытия.
+        :param lam_cover: Теплопроводность защитного покрытия.
         :param node_num: Число узлов для решения уравнения теплового баланса.
         :param accuracy: Точность сходимости.
         """
@@ -126,6 +131,8 @@ class FilmSectorCooler(GasBladeHeatExchange):
         self.cool_fluid = cool_fluid
         self.node_num = node_num
         self.accuracy = accuracy
+        self.lam_cover = lam_cover
+        self.cover_thickness = cover_thickness
 
         self.k_gas_av = None
         self.k_cool_av = None
@@ -161,7 +168,9 @@ class FilmSectorCooler(GasBladeHeatExchange):
                                                 T_wall_av=self.T_wall_av,
                                                 lam_blade=self.lam_blade,
                                                 cool_fluid=self.cool_fluid,
-                                                node_num=self.node_num)
+                                                node_num=self.node_num,
+                                                lam_cover=self.lam_cover,
+                                                cover_thickness=self.cover_thickness)
         self.film = FilmCalculator(x_hole=self.x_hole,
                                    hole_num=self.hole_num,
                                    d_hole=self.d_hole,
@@ -332,29 +341,54 @@ class FilmSectorCooler(GasBladeHeatExchange):
     def get_cool_eff(self, x):
         return (self.T_gas_stag - self.local_param.get_T_wall(x)) / (self.T_gas_stag - self.local_param.get_T_cool(x))
 
-    def plot_cool_eff(self, figsize=(7, 5), filename=None):
+    def plot_cool_eff(self, figsize=(7, 5), filename=None, label=True):
         plt.figure(figsize=figsize)
         plt.plot(self.local_param.x_arr * 1e3,
                  [self.get_cool_eff(x) for x in self.local_param.x_arr], lw=2, color='red')
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$\theta_{пл},\ м$', fontsize=14)
+
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$\theta_{охл}$', fontsize=14)
         plt.xlim(min(self.local_param.x_arr) * 1e3, max(self.local_param.x_arr) * 1e3)
-        plt.grid()
+        plt.grid(linewidth=1)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_v_gas(self, figsize=(6, 4), filename=None):
+    def plot_alpha_gas(self, figsize=(7, 5), filename=None, label=True):
+        plt.figure(figsize=figsize)
+        plt.plot(self.local_param.x_arr * 1e3,
+                 [self._get_alpha_gas(x) for x in self.local_param.x_arr], lw=2, color='red')
+
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$\alpha_г,\ \frac{Вт}{м^2 \cdot К}$', fontsize=14)
+        plt.xlim(min(self.local_param.x_arr) * 1e3, max(self.local_param.x_arr) * 1e3)
+        plt.grid(linewidth=1)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.ylim(ymin=0)
+        if filename:
+            plt.savefig(filename)
+        plt.show()
+
+    def plot_v_gas(self, figsize=(6, 4), filename=None, label=True):
         plt.figure(figsize=figsize)
 
         x_arr = self.local_param.x_arr
         v_arr = [self.get_v_gas(x) for x in x_arr]
 
         plt.plot(x_arr * 1e3, v_arr, lw=2, color='red')
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$v_г,\ м/с$', fontsize=14)
+
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$v_г,\ м/с$', fontsize=14)
         plt.xlim(min(x_arr) * 1e3, max(x_arr) * 1e3)
-        plt.grid()
+        plt.grid(linewidth=1)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
         if filename:
             plt.savefig(filename)
         plt.show()
@@ -393,6 +427,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
                  g_cool0: typing.Callable[[float], float],
                  cool_fluid: IdealGas,
                  g_cool0_s=0.5,
+                 cover_thickness=0.015e-3,
+                 lam_cover=2,
                  node_num: int = 500,
                  accuracy: float = 0.01
                  ):
@@ -420,6 +456,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
         :param g_cool0: Распределение плотности расхода охлаждающего воздуха на входе в канал.
         :param cool_fluid: Охлаждающее тело.
         :param g_cool0_s: Относительный расход охлаждающего воздуха на входе в канал спинки.
+        :param cover_thickness: Толщина защитного покрытия.
+        :param lam_cover: Теплопроводность защитного покрытия.
         :param node_num: Число узлов для решения дифура.
         :param accuracy:
         """
@@ -451,6 +489,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
         self.g_cool0 = g_cool0
         self.cool_fluid = cool_fluid
         self.g_cool0_s = g_cool0_s
+        self.cover_thickness = cover_thickness
+        self.lam_cover = lam_cover
         self.node_num = node_num
         self.accuracy = accuracy
         self.logger = Logger(level_name=log_level)
@@ -464,7 +504,9 @@ class FilmBladeCooler(GasBladeHeatExchange):
                                                         T_cool_fluid0=T_cool0,
                                                         T_out_stag=T_gas_stag(0.25 * (D_in + D_out)),
                                                         cool_fluid=type(cool_fluid)(),
-                                                        lam_blade=lam_blade)
+                                                        lam_blade=lam_blade,
+                                                        cover_thickness=cover_thickness,
+                                                        lam_cover=lam_cover)
 
         self.G_cool0 = quad(g_cool0, 0.5 * D_in, 0.5 * D_out)[0]
         self.G_gas = quad(self._get_g_gas, 0.5 * D_in, 0.5 * D_out)[0]
@@ -543,7 +585,9 @@ class FilmBladeCooler(GasBladeHeatExchange):
                                          cool_fluid=type(self.cool_fluid)(),
                                          node_num=self.node_num,
                                          accuracy=self.accuracy,
-                                         g_cool0_s=self.g_cool0_s
+                                         g_cool0_s=self.g_cool0_s,
+                                         lam_cover=self.lam_cover,
+                                         cover_thickness=self.cover_thickness
                                          ) for i in range(self.sector_num)]
 
     def _get_D_av_arr_and_height_arr(self):
@@ -712,61 +756,72 @@ class FilmBladeCooler(GasBladeHeatExchange):
         plt.plot(param_arr_to_plot, r_bound_arr, lw=2, color='blue', label='Разбиение')
 
         plt.ylim(min(r_arr), max(r_arr))
-        plt.grid()
-        plt.legend(fontsize=10)
+        plt.grid(linewidth=1)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.legend(fontsize=14)
 
-    def plot_lam_gas_in(self, figsize=(6, 4), filename=None):
+    def plot_lam_gas_in(self, figsize=(6, 4), filename=None, label=True):
         self._plot_partition(self.lam_gas_in_arr, self.lam_gas_in, figsize)
-        plt.ylabel(r'$r,\ м$', fontsize=14)
-        plt.xlabel(r'$\lambda_{вх}$', fontsize=14)
+
+        if label:
+            plt.ylabel(r'$r,\ м$', fontsize=14)
+            plt.xlabel(r'$\lambda_{вх}$', fontsize=14)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_lam_gas_out(self, figsize=(6, 4), filename=None):
+    def plot_lam_gas_out(self, figsize=(6, 4), filename=None, label=True):
         self._plot_partition(self.lam_gas_out_arr, self.lam_gas_out, figsize)
-        plt.ylabel(r'$r,\ м$', fontsize=14)
-        plt.xlabel(r'$\lambda_{вых}$', fontsize=14)
+
+        if label:
+            plt.ylabel(r'$r,\ м$', fontsize=14)
+            plt.xlabel(r'$\lambda_{вых}$', fontsize=14)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_p_gas_stag(self, figsize=(6, 4), filename=None):
+    def plot_p_gas_stag(self, figsize=(6, 4), filename=None, label=True):
         self._plot_partition(self.p_gas_stag_arr, self.p_gas_stag, figsize)
-        plt.ylabel(r'$r,\ м$', fontsize=14)
-        plt.xlabel(r'$p_{г}^*,\ Па$', fontsize=14)
+
+        if label:
+            plt.ylabel(r'$r,\ м$', fontsize=14)
+            plt.xlabel(r'$p_{г}^*,\ Па$', fontsize=14)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_gas_stag(self, figsize=(6, 4), filename=None):
+    def plot_T_gas_stag(self, figsize=(6, 4), filename=None, label=True):
         self._plot_partition(self.T_gas_stag_arr, self.T_gas_stag, figsize)
-        plt.ylabel(r'$r,\ м$', fontsize=14)
-        plt.xlabel(r'$T_{г}^*,\ К$', fontsize=14)
-        plt.legend(fontsize=10)
+
+        if label:
+            plt.ylabel(r'$r,\ м$', fontsize=14)
+            plt.xlabel(r'$T_{г}^*,\ К$', fontsize=14)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_g_gas(self, figsize=(6, 4), filename=None):
+    def plot_g_gas(self, figsize=(6, 4), filename=None, label=True):
         self._plot_partition(self.g_gas_arr, self._get_g_gas, figsize)
-        plt.ylabel(r'$r,\ м$', fontsize=14)
-        plt.xlabel(r'$g_г$', fontsize=14)
-        plt.legend(fontsize=10)
+
+        if label:
+            plt.ylabel(r'$r,\ м$', fontsize=14)
+            plt.xlabel(r'$g_г$', fontsize=14)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_g_cool(self, figsize=(6, 4), filename=None):
+    def plot_g_cool(self, figsize=(6, 4), filename=None, label=True):
         self._plot_partition(self.g_cool0_arr, self.g_cool0, figsize)
-        plt.ylabel(r'$r$', fontsize=14)
-        plt.xlabel(r'$g_в$', fontsize=14)
-        plt.legend(fontsize=10)
+
+        if label:
+            plt.ylabel(r'$r$', fontsize=14)
+            plt.xlabel(r'$g_в$', fontsize=14)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_wall(self, T_material, figsize=(7, 5), filename=None):
+    def plot_T_wall(self, T_material, figsize=(7, 5), filename=None, label=True):
         plt.figure(figsize=figsize)
 
         for i, sector in enumerate(self.sectors):
@@ -776,15 +831,19 @@ class FilmBladeCooler(GasBladeHeatExchange):
         x_max = max(self.sectors[0].local_param.x_arr) * 1e3
         plt.plot([x_min, x_max], [T_material, T_material], lw=2, linestyle='--', color='black')
         plt.xlim(x_min, x_max)
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$T_{ст},\ К$', fontsize=14)
-        plt.grid()
-        plt.legend(fontsize=10)
+
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$T_{ст},\ К$', fontsize=14)
+        plt.grid(linewidth=1)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.legend(fontsize=12)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_film(self, figsize=(7, 5), filename=None):
+    def plot_T_film(self, figsize=(7, 5), filename=None, label=True):
         plt.figure(figsize=figsize)
 
         for i, sector in enumerate(self.sectors):
@@ -794,15 +853,19 @@ class FilmBladeCooler(GasBladeHeatExchange):
         x_min = min(self.sectors[0].local_param.x_arr) * 1e3
         x_max = max(self.sectors[0].local_param.x_arr) * 1e3
         plt.xlim(x_min, x_max)
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$T_{пл}^*,\ К$', fontsize=14)
-        plt.grid()
-        plt.legend(fontsize=10)
+
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$T_{пл}^*,\ К$', fontsize=14)
+        plt.grid(linewidth=1)
+        plt.legend(fontsize=12)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_cool(self, figsize=(7, 5), filename=None):
+    def plot_T_cool(self, figsize=(7, 5), filename=None, label=True):
         plt.figure(figsize=figsize)
 
         for i, sector in enumerate(self.sectors):
@@ -812,24 +875,31 @@ class FilmBladeCooler(GasBladeHeatExchange):
         x_min = min(self.sectors[0].local_param.x_arr) * 1e3
         x_max = max(self.sectors[0].local_param.x_arr) * 1e3
         plt.xlim(x_min, x_max)
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$T_{в}^*,\ К$', fontsize=14)
-        plt.grid()
-        plt.legend(fontsize=10)
+
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$T_{в}^*,\ К$', fontsize=14)
+        plt.grid(linewidth=1)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        plt.legend(fontsize=12)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_wall_in_point(self, x, T_material_max, figsize=(7, 5), filename=None):
+    def plot_T_wall_in_point(self, x, T_material_max, figsize=(7, 5), filename=None, label=True):
         plt.figure(figsize=figsize)
         r_arr = self.D_av_arr * 0.5
         T_arr = [self.sectors[i].local_param.get_T_wall(x) for i in range(self.sector_num)]
         plt.plot(T_arr, r_arr, lw=2)
         plt.plot([T_material_max, T_material_max], [min(r_arr), max(r_arr)], lw=2, linestyle='--', color='black')
         plt.ylim(min(r_arr), max(r_arr))
-        plt.ylabel(r'$r,\ м$', fontsize=14)
-        plt.xlabel(r'$T_{ст},\ К$', fontsize=14)
-        plt.grid()
+        if label:
+            plt.ylabel(r'$r,\ м$', fontsize=14)
+            plt.xlabel(r'$T_{ст},\ К$', fontsize=14)
+        plt.grid(linewidth=1)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
         if filename:
             plt.savefig(filename)
         plt.show()
@@ -853,6 +923,34 @@ class FilmBladeCooler(GasBladeHeatExchange):
 
             file.writelines(lines)
 
+    def write_excel_table(self, filename: str, sector_num: int):
+        sector = self.sectors[sector_num]
+        section = sector.section
+
+        hole_step = 0.5 * (self.D_out - self.D_in) / np.array(self.hole_num)
+        x_holes, y_holes = section.get_holes_coordinates(sector.x_hole_rel)
+
+        book = xlwt.Workbook()
+        sheet = book.add_sheet('Sheet 1')
+        sheet.write(0, 1, 'Спинка')
+        sheet.write(0, 5, 'Корыто')
+        sheet.write(1, 0, '№')
+        sheet.write(2, 0, 'X, мм')
+        sheet.write(3, 0, 'Y, мм')
+        sheet.write(4, 0, 'Кол-во')
+        sheet.write(5, 0, 'Шаг, мм')
+        sheet.write(6, 0, '<o>, мм')
+
+        for i in range(len(self.x_hole_rel)):
+            sheet.write(1, i + 1, i + 1)
+            sheet.write(2, i + 1, round(x_holes[i] * 1e3, 1))
+            sheet.write(3, i + 1, round(y_holes[i] * 1e3, 1))
+            sheet.write(4, i + 1, self.hole_num[i])
+            sheet.write(5, i + 1, round(hole_step[i] * 1e3, 2))
+            sheet.write(6, i + 1, self.d_hole[i] * 1e3)
+
+        book.save(filename)
+
 
 @typing.overload
 def get_sa_cooler(
@@ -871,6 +969,8 @@ def get_sa_cooler(
         p_cool_stag0,
         g_cool0: typing.Callable[[float], float],
         cool_fluid: IdealGas,
+        cover_thickness=0.15e-3,
+        lam_cover=2,
         node_num=500,
         accuracy=0.01,
         g_cool0_s=0.5
@@ -895,6 +995,8 @@ def get_sa_cooler(
         p_cool_stag0,
         g_cool0: typing.Callable[[float], float],
         cool_fluid: IdealGas,
+        cover_thickness=0.15e-3,
+        lam_cover=2,
         node_num=500,
         accuracy=0.01,
         g_cool0_s=0.5
@@ -918,6 +1020,8 @@ def get_sa_cooler(
         p_cool_stag0,
         g_cool0: typing.Callable[[float], float],
         cool_fluid: IdealGas,
+        cover_thickness=0.15e-3,
+        lam_cover=2,
         node_num=500,
         accuracy=0.01,
         g_cool0_s=0.5
@@ -952,6 +1056,8 @@ def get_sa_cooler(
                                  p_cool_stag0=p_cool_stag0,
                                  g_cool0=g_cool0,
                                  cool_fluid=cool_fluid,
+                                 cover_thickness=cover_thickness,
+                                 lam_cover=lam_cover,
                                  node_num=node_num,
                                  accuracy=accuracy,
                                  g_cool0_s=g_cool0_s)
@@ -978,6 +1084,8 @@ def get_sa_cooler(
                                  p_cool_stag0=p_cool_stag0,
                                  g_cool0=g_cool0,
                                  cool_fluid=cool_fluid,
+                                 cover_thickness=cover_thickness,
+                                 lam_cover=lam_cover,
                                  node_num=node_num,
                                  accuracy=accuracy,
                                  g_cool0_s=g_cool0_s)
@@ -1003,6 +1111,8 @@ def get_rk_cooler(
         p_cool_stag0,
         g_cool0: typing.Callable[[float], float],
         cool_fluid: IdealGas,
+        cover_thickness=0.15e-3,
+        lam_cover=2,
         node_num=500,
         accuracy=0.01,
         g_cool0_s=0.5
@@ -1027,6 +1137,8 @@ def get_rk_cooler(
         p_cool_stag0,
         g_cool0: typing.Callable[[float], float],
         cool_fluid: IdealGas,
+        cover_thickness=0.15e-3,
+        lam_cover=2,
         node_num=500,
         accuracy=0.01,
         g_cool0_s=0.5
@@ -1050,6 +1162,8 @@ def get_rk_cooler(
         p_cool_stag0,
         g_cool0: typing.Callable[[float], float],
         cool_fluid: IdealGas,
+        cover_thickness=0.15e-3,
+        lam_cover=2,
         node_num=500,
         accuracy=0.01,
         g_cool0_s=0.5
@@ -1084,6 +1198,8 @@ def get_rk_cooler(
                                  p_cool_stag0=p_cool_stag0,
                                  g_cool0=g_cool0,
                                  cool_fluid=cool_fluid,
+                                 cover_thickness=cover_thickness,
+                                 lam_cover=lam_cover,
                                  node_num=node_num,
                                  accuracy=accuracy,
                                  g_cool0_s=g_cool0_s)
@@ -1110,6 +1226,8 @@ def get_rk_cooler(
                                  p_cool_stag0=p_cool_stag0,
                                  g_cool0=g_cool0,
                                  cool_fluid=cool_fluid,
+                                 cover_thickness=cover_thickness,
+                                 lam_cover=lam_cover,
                                  node_num=node_num,
                                  accuracy=accuracy,
                                  g_cool0_s=g_cool0_s)

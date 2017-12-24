@@ -22,6 +22,8 @@ class SectorCooler(GasBladeHeatExchange):
                  lam_blade: typing.Callable[[float], float],
                  cool_fluid: IdealGas,
                  work_fluid: IdealGas,
+                 cover_thickness=0.15e-3,
+                 lam_cover=2,
                  node_num: int=500):
         """
         :param section: BladeSection. \n
@@ -50,6 +52,10 @@ class SectorCooler(GasBladeHeatExchange):
             Охлаждающее тело.
         :param work_fluid: IdealGas. \n
             Рабочее тело турбины.
+        :param cover_thickness: float, optional. \n
+            Толщина защитного покрытия.
+        :param lam_cover: float, optional. \n
+            Теплопроводность защитного покрытия.
         :param node_num: int, optional. \n
             Число узлов на интервале решения уравнения теплового баланса.
         """
@@ -69,6 +75,8 @@ class SectorCooler(GasBladeHeatExchange):
         self.cool_fluid = cool_fluid
         self.work_fluid = work_fluid
         self.node_num = node_num
+        self.cover_thickness = cover_thickness
+        self.lam_cover = lam_cover
         # self.ave_param = DeflectorAverageParamCalculator(section=self.section,
         #                                                  height=height,
         #                                                  D_av=D_av,
@@ -87,7 +95,9 @@ class SectorCooler(GasBladeHeatExchange):
                                                 T_out_stag=lambda x: T_gas_stag,
                                                 cool_fluid=cool_fluid,
                                                 lam_blade=lam_blade,
-                                                node_num=node_num)
+                                                node_num=node_num,
+                                                cover_thickness=cover_thickness,
+                                                lam_cover=lam_cover)
 
         self.x_2k = None
         self.x_1k = None

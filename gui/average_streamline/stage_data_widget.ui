@@ -1705,125 +1705,14 @@
                </property>
               </widget>
              </item>
-             <item row="11" column="6">
-              <widget class="QLabel" name="label_12">
-               <property name="text">
-                <string>Cp, Дж/(кг*К)</string>
-               </property>
-              </widget>
-             </item>
-             <item row="11" column="7">
-              <widget class="QDoubleSpinBox" name="c_p_av">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="10" column="6">
-              <widget class="QLabel" name="label_7">
-               <property name="text">
-                <string>Lст', кДж/кг</string>
-               </property>
-              </widget>
-             </item>
-             <item row="10" column="7">
-              <widget class="QDoubleSpinBox" name="L_st_prime">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="9" column="6">
-              <widget class="QLabel" name="label_6">
-               <property name="text">
-                <string>Lст, кДж/кг</string>
-               </property>
-              </widget>
-             </item>
-             <item row="9" column="7">
-              <widget class="QDoubleSpinBox" name="L_st">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="8" column="6">
-              <widget class="QLabel" name="label_86">
-               <property name="text">
-                <string>p2*, МПа</string>
-               </property>
-              </widget>
-             </item>
-             <item row="8" column="7">
-              <widget class="QDoubleSpinBox" name="p2_stag">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="7" column="6">
-              <widget class="QLabel" name="label_85">
-               <property name="text">
-                <string>p2, МПа</string>
-               </property>
-              </widget>
-             </item>
-             <item row="7" column="7">
-              <widget class="QDoubleSpinBox" name="p2">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="6">
-              <widget class="QLabel" name="label_84">
-               <property name="text">
-                <string>p1, МПа</string>
-               </property>
-              </widget>
-             </item>
-             <item row="6" column="7">
-              <widget class="QDoubleSpinBox" name="p1">
-               <property name="readOnly">
-                <bool>true</bool>
-               </property>
-               <property name="minimum">
-                <double>-10000.000000000000000</double>
-               </property>
-               <property name="maximum">
-                <double>10000.000000000000000</double>
-               </property>
-              </widget>
-             </item>
-             <item row="5" column="6">
+             <item row="4" column="6">
               <widget class="QLabel" name="label_91">
                <property name="text">
                 <string>rho</string>
                </property>
               </widget>
              </item>
-             <item row="5" column="7">
+             <item row="4" column="7">
               <widget class="QDoubleSpinBox" name="rho_out">
                <property name="readOnly">
                 <bool>true</bool>
@@ -1839,23 +1728,111 @@
                </property>
               </widget>
              </item>
-             <item row="4" column="6">
-              <widget class="QLabel" name="label_27">
+             <item row="5" column="6">
+              <widget class="QLabel" name="label_84">
                <property name="text">
-                <string>eta_т* '</string>
+                <string>p1, МПа</string>
                </property>
               </widget>
              </item>
-             <item row="4" column="7">
-              <widget class="QDoubleSpinBox" name="eta_t_stag_prime">
+             <item row="5" column="7">
+              <widget class="QDoubleSpinBox" name="p1">
                <property name="readOnly">
                 <bool>true</bool>
                </property>
-               <property name="decimals">
-                <number>3</number>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="6">
+              <widget class="QLabel" name="label_85">
+               <property name="text">
+                <string>p2, МПа</string>
+               </property>
+              </widget>
+             </item>
+             <item row="6" column="7">
+              <widget class="QDoubleSpinBox" name="p2">
+               <property name="readOnly">
+                <bool>true</bool>
                </property>
                <property name="minimum">
-                <double>-1000.000000000000000</double>
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="6">
+              <widget class="QLabel" name="label_86">
+               <property name="text">
+                <string>p2*, МПа</string>
+               </property>
+              </widget>
+             </item>
+             <item row="7" column="7">
+              <widget class="QDoubleSpinBox" name="p2_stag">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="minimum">
+                <double>-10000.000000000000000</double>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="8" column="6">
+              <widget class="QLabel" name="label_6">
+               <property name="text">
+                <string>Lст, кДж/кг</string>
+               </property>
+              </widget>
+             </item>
+             <item row="8" column="7">
+              <widget class="QDoubleSpinBox" name="L_st">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="9" column="6">
+              <widget class="QLabel" name="label_7">
+               <property name="text">
+                <string>Lст', кДж/кг</string>
+               </property>
+              </widget>
+             </item>
+             <item row="9" column="7">
+              <widget class="QDoubleSpinBox" name="L_st_prime">
+               <property name="readOnly">
+                <bool>true</bool>
+               </property>
+               <property name="maximum">
+                <double>10000.000000000000000</double>
+               </property>
+              </widget>
+             </item>
+             <item row="10" column="6">
+              <widget class="QLabel" name="label_12">
+               <property name="text">
+                <string>Cp, Дж/(кг*К)</string>
+               </property>
+              </widget>
+             </item>
+             <item row="10" column="7">
+              <widget class="QDoubleSpinBox" name="c_p_av">
+               <property name="readOnly">
+                <bool>true</bool>
                </property>
                <property name="maximum">
                 <double>10000.000000000000000</double>

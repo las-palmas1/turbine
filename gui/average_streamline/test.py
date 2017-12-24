@@ -131,7 +131,6 @@ class AveLineWidgetTest(unittest.TestCase):
             self.assertAlmostEqual(stage_data.p2_stag.value(), turbine[i].p2_stag / 1e6, places=2)
             self.assertAlmostEqual(stage_data.eta_t.value(), turbine[i].eta_t, places=3)
             self.assertAlmostEqual(stage_data.eta_t_stag.value(), turbine[i].eta_t_stag, places=3)
-            self.assertAlmostEqual(stage_data.eta_t_stag_prime.value(), turbine[i].eta_t_stag_prime, places=3)
             self.assertAlmostEqual(stage_data.eta_l.value(), turbine[i].eta_l, places=3)
             self.assertAlmostEqual(stage_data.eta_u.value(), turbine[i].eta_u, places=3)
             self.assertAlmostEqual(stage_data.rho_out.value(), turbine[i].rho, places=3)

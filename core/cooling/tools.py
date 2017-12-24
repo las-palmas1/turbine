@@ -90,7 +90,9 @@ class DeflectorAverageParamCalculator:
                  alpha_out=None,
                  G_cool=None,
                  lam_blade: typing.Callable[[float], float]=None,
-                 cool_fluid: IdealGas=Air()):
+                 cool_fluid: IdealGas=Air(),
+                 cover_thickness=0.15e-3,
+                 lam_cover=2):
         """
         :param section: BladeSection. \n
             Сечение рассчитываемого участка лопатки.
@@ -114,6 +116,10 @@ class DeflectorAverageParamCalculator:
             Тепопроводность материала лопатки в зависимости от температуры
         :param cool_fluid: IdealGas. \n
             Охлаждающее тело.
+        :param cover_thickness: float, optional. \n
+            Толщина защитного покрытия.
+        :param lam_cover: float, optional. \n
+            Теплопроводность защитного покрытия.
         """
         self.section = section
         self.height = height
@@ -126,6 +132,8 @@ class DeflectorAverageParamCalculator:
         self.G_cool = G_cool
         self.lam_blade = lam_blade
         self.cool_fluid = cool_fluid
+        self.cover_thickness = cover_thickness
+        self.lam_cover = lam_cover
 
         self.perimeter = None
         self.square = None
@@ -136,6 +144,7 @@ class DeflectorAverageParamCalculator:
         self.T_cool_fluid_av = None
         self.T_cool_fluid_old = None
         self.cool_fluid_temp_res = None
+        self.heat_transfer_coef = None
         self.c_p_cool_av = None
         self.mu_cool_fluid = None
         self.Re_cool_fluid = None
@@ -161,7 +170,8 @@ class DeflectorAverageParamCalculator:
     def compute(self):
         self.perimeter = (self.section.length_in_edge + self.section.length_s + self.section.length_k +
                           self.section.length_out_edge)
-        self.Q_blade = self.alpha_out * self.perimeter * self.height * (self.T_out_stag - self.T_wall_out)
+        self.heat_transfer_coef = 1 / (1 / self.alpha_out + self.cover_thickness / self.lam_cover)
+        self.Q_blade = self.heat_transfer_coef * self.perimeter * self.height * (self.T_out_stag - self.T_wall_out)
         self.square = self.perimeter * self.height
         self.T_wall_av: float = fsolve(lambda x: [self.T_wall_out -
                                                   self.Q_blade * self.wall_thickness /
@@ -197,6 +207,8 @@ class LocalParamCalculator:
                  G_cool: typing.Callable[[float], float]=None,
                  lam_blade: typing.Callable[[float], float]=None,
                  cool_fluid: IdealGas=Air(),
+                 cover_thickness=0.15e-3,
+                 lam_cover=2,
                  node_num: int = 500):
         """
         :param section: BladeSection. \n
@@ -222,6 +234,10 @@ class LocalParamCalculator:
             Тепопроводность материала лопатки в зависимости от температуры.
         :param cool_fluid: IdealGas. \n
             Охлаждающее тело.
+        :param cover_thickness: float, optional. \n
+            Толщина защитного покрытия.
+        :param lam_cover: float, optional. \n
+            Теплопроводность защитного покрытия.
         :param node_num: int, optional. \n
             Число узлов на интервале решения уравнения теплового баланса.
         """
@@ -237,6 +253,8 @@ class LocalParamCalculator:
         self.lam_blade = lam_blade
         self.cool_fluid = cool_fluid
         self.node_num = node_num
+        self.cover_thickness = cover_thickness
+        self.lam_cover = lam_cover
 
         self.T_cool_fluid_s_arr = None
         self.T_cool_fluid_k_arr = None
@@ -255,7 +273,8 @@ class LocalParamCalculator:
     def _get_heat_transfer_coef(self, x, T_cool_fluid):
         return 1 / (1 / self.alpha_cool(x, T_cool_fluid) +
                     1 / self.alpha_out(x) +
-                    self.wall_thickness / self.lam_blade(self.T_wall_av)).__float__()
+                    self.wall_thickness / self.lam_blade(self.T_wall_av).__float__() +
+                    self.cover_thickness / self.lam_cover)
 
     @classmethod
     def _solve_equation(cls, x_arr: np.ndarray, der: typing.Callable[[float, float], float], val0, eq_type='s'):
@@ -278,8 +297,9 @@ class LocalParamCalculator:
                      (self.G_cool(x) * self.cool_fluid.c_p_real_func(T_cool_fluid)))
 
     def _get_T_wall(self, x, T_cool_fluid):
+        heat_trans_coef_gas_wall = 1 / (1 / self.alpha_out(x) + self.cover_thickness / self.lam_cover)
         heat_trans_coef = self._get_heat_transfer_coef(x, T_cool_fluid)
-        return self.T_out_stag(x) - heat_trans_coef / self.alpha_out(x) * (self.T_out_stag(x) - T_cool_fluid)
+        return self.T_out_stag(x) - heat_trans_coef / heat_trans_coef_gas_wall * (self.T_out_stag(x) - T_cool_fluid)
 
     def compute(self):
         self.x_s_arr = np.array(np.linspace(0, -self.section.length_in_edge_s - self.section.length_s, self.node_num))
@@ -327,7 +347,7 @@ class LocalParamCalculator:
     def get_T_cool(self, x):
         return self._T_cool_int(x).__float__()
 
-    def plot_T_wall(self, T_material_max, figsize=(8, 6), filename=None):
+    def plot_T_wall(self, T_material_max, figsize=(8, 6), filename=None, label=True):
         plt.figure(figsize=figsize)
         plt.plot(self.x_arr * 1e3, self.T_wall_arr, lw=2, color='red')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
@@ -336,28 +356,35 @@ class LocalParamCalculator:
         T_max = max(self.T_wall_arr)
         plt.text(0.7 * min(self.x_arr) * 1e3, T_max - 100, r'$спинка$', fontsize=16)
         plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 100, r'$корыто$', fontsize=16)
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$T_{ст},\ К$', fontsize=14)
-        plt.grid()
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$T_{ст},\ К$', fontsize=14)
+        plt.grid(linewidth=1)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_cool(self, figsize=(8, 6), filename=None):
+    def plot_T_cool(self, figsize=(8, 6), filename=None, label=True):
         plt.figure(figsize=figsize)
         plt.plot(self.x_arr * 1e3, self.T_cool_fluid_arr, lw=2, color='red')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
         T_max = max(self.T_cool_fluid_arr)
         plt.text(0.7 * min(self.x_arr) * 1e3, T_max - 100, r'$спинка$', fontsize=16)
         plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 100, r'$корыто$', fontsize=16)
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$T_{в},\ К$', fontsize=14)
-        plt.grid()
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$T_{в},\ К$', fontsize=14)
+
+        plt.grid(linewidth=1)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_out(self, figsize=(8, 6), filename=None):
+    def plot_T_out(self, figsize=(8, 6), filename=None, label=True):
         plt.figure(figsize=figsize)
         T_arr = [self.T_out_stag(x) for x in self.x_arr]
         plt.plot(self.x_arr * 1e3, T_arr, lw=2, color='red')
@@ -365,14 +392,18 @@ class LocalParamCalculator:
         T_max = max(T_arr)
         plt.text(0.7 * min(self.x_arr) * 1e3, T_max - 100, r'$спинка$', fontsize=16)
         plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 100, r'$корыто$', fontsize=16)
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$T_{обт.среды}^*,\ К$', fontsize=14)
-        plt.grid()
+
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$T_{обт.среды}^*,\ К$', fontsize=14)
+        plt.grid(linewidth=1)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_all(self, figsize=(8, 6), filename=None):
+    def plot_all(self, figsize=(8, 6), filename=None, label=True):
         plt.figure(figsize=figsize)
         T_arr = [self.T_out_stag(x) for x in self.x_arr]
         plt.plot(self.x_arr * 1e3, T_arr, lw=2, color='red', label=r'$T_{обт.среды}^*$')
@@ -382,10 +413,13 @@ class LocalParamCalculator:
         T_max = max(max(T_arr), max(self.T_cool_fluid_arr), max(self.T_wall_arr))
         plt.text(0.7 * min(self.x_arr) * 1e3, T_max - 100, r'$спинка$', fontsize=16)
         plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 100, r'$корыто$', fontsize=16)
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$T,\ К$', fontsize=14)
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$T,\ К$', fontsize=14)
         plt.legend(fontsize=14)
-        plt.grid()
+        plt.grid(linewidth=1)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
         if filename:
             plt.savefig(filename)
         plt.show()
@@ -731,19 +765,23 @@ class FilmCalculator:
     def get_integrate_film_eff(self, x):
         return (self.T_gas_stag - self.get_T_film(x)) / (self.T_gas_stag - self.T_cool(x))
 
-    def plot_integrate_film_eff(self, x_arr, figsize=(7, 5), filename=None):
+    def plot_integrate_film_eff(self, x_arr, figsize=(7, 5), filename=None, label=True):
         plt.figure(figsize=figsize)
         x_arr_new = [x * 1e3 for x in x_arr]
         plt.plot(x_arr_new, [self.get_integrate_film_eff(x) for x in x_arr], lw=2, color='red')
-        plt.grid(True, axis='both')
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$\theta_{пл}$', fontsize=14)
+        plt.grid(True, axis='both', linewidth=1)
+
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$\theta_{пл}$', fontsize=14)
         plt.xlim(min(x_arr_new), max(x_arr_new))
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_film(self, x_arr, places=-2, delta=50, figsize=(7, 5), filename=None):
+    def plot_T_film(self, x_arr, places=-2, delta=50, figsize=(7, 5), filename=None, label=True):
         plt.figure(figsize=figsize)
         T_arr = [self.get_T_film(x) for x in x_arr]
 
@@ -751,65 +789,75 @@ class FilmCalculator:
         x_arr_new = [x * 1e3 for x in x_arr]
         plt.plot(x_arr_new, T_arr, lw=2)
         for x in self.x_hole:
-            plt.plot([x * 1e3, x * 1e3], [T_min, T_max], color='black', lw=1, linestyle='--')
-        plt.grid()
+            plt.plot([x * 1e3, x * 1e3], [T_min, T_max], color='black', lw=1.5, linestyle='--')
+        plt.grid(linewidth=1)
         plt.ylim(T_min, T_max)
         plt.xlim(min(x_arr_new), max(x_arr_new))
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$T_{пл}^*,\ К$', fontsize=14)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$T_{пл}^*,\ К$', fontsize=14)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_film_eff(self, hole_num, x_arr, create_fig=False, show=False, figsize=(9, 7), filename=None):
+    def plot_film_eff(self, hole_num, x_arr, create_fig=False, show=False, figsize=(9, 7), filename=None, label=True):
         if self.x_hole[hole_num] == 0:
             if hole_num > 0:
                 if self.x_hole[hole_num - 1] == 0:
-                    label = 'Отверстие %s' % hole_num
+                    line_label = 'Отверстие %s' % hole_num
                 else:
-                    label = 'Отверстие %s' % (hole_num + 1)
+                    line_label = 'Отверстие %s' % (hole_num + 1)
             else:
-                label = 'Отверстие %s' % (hole_num + 1)
+                line_label = 'Отверстие %s' % (hole_num + 1)
         else:
             if list(self.x_hole).count(0) != 0:
                 if self.x_hole[hole_num] < 0:
-                    label = 'Отверстие %s' % (hole_num + 1)
+                    line_label = 'Отверстие %s' % (hole_num + 1)
                 else:
-                    label = 'Отверстие %s' % hole_num
+                    line_label = 'Отверстие %s' % hole_num
             else:
-                label = 'Отверстие %s' % (hole_num + 1)
+                line_label = 'Отверстие %s' % (hole_num + 1)
         if create_fig:
             plt.figure(figsize=figsize)
         x_arr_new = [x * 1e3 for x in x_arr]
-        plt.plot(x_arr_new, [self.film_eff_list[hole_num](x) for x in x_arr], lw=2.0, label=label)
+        plt.plot(x_arr_new, [self.film_eff_list[hole_num](x) for x in x_arr], lw=2.0, label=line_label)
         plt.legend(fontsize=10)
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$\theta_{пл}$', fontsize=14)
-        plt.grid(True, axis='both')
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$\theta_{пл}$', fontsize=14)
+        plt.grid(True, axis='both', linewidth=1)
         plt.xlim(min(x_arr_new), max(x_arr_new))
         if filename:
             plt.savefig(filename)
         if show:
             plt.show()
 
-    def plot_alpha_film(self, x_arr, ylim, figsize=(7, 5), filename=None):
+    def plot_alpha_film(self, x_arr, ylim, figsize=(7, 5), filename=None, label=True):
         plt.figure(figsize=figsize)
         alpha_arr = [self.get_alpha_film(x) for x in x_arr]
         x_arr_new = [x * 1e3 for x in x_arr]
         plt.plot(x_arr_new, alpha_arr, lw=2)
         alpha_min, alpha_max = ylim
         for x in self.x_hole:
-            plt.plot([x * 1e3, x * 1e3], [alpha_min, alpha_max], color='black', lw=1, linestyle='--')
-        plt.grid()
+            plt.plot([x * 1e3, x * 1e3], [alpha_min, alpha_max], color='black', lw=1.5, linestyle='--')
+        plt.grid(linewidth=1)
         plt.ylim(alpha_min, alpha_max)
         plt.xlim(min(x_arr_new), max(x_arr_new))
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$\alpha_{пл},\ \frac{Вт}{м^2 \cdot К}$', fontsize=14)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$\alpha_{пл},\ \frac{Вт}{м^2 \cdot К}$', fontsize=14)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_G_cool(self, x_arr, places=4, delta=1e-4, figsize=(7, 5), filename=None):
+    def plot_G_cool(self, x_arr, places=4, delta=1e-4, figsize=(7, 5), filename=None, label=True):
         plt.figure(figsize=figsize)
         G_arr = [self.get_G_cool(x) for x in x_arr]
         x_arr_new = [x * 1e3 for x in x_arr]
@@ -817,12 +865,15 @@ class FilmCalculator:
 
         G_min, G_max = self._get_lim(G_arr, places, delta)
         for x in self.x_hole:
-            plt.plot([x * 1e3, x * 1e3], [0, G_max], color='black', lw=1, linestyle='--')
-        plt.grid()
+            plt.plot([x * 1e3, x * 1e3], [0, G_max], color='black', lw=1.5, linestyle='--')
+        plt.grid(linewidth=1)
         plt.ylim(0, G_max)
         plt.xlim(min(x_arr_new), max(x_arr_new))
-        plt.xlabel(r'$x,\ мм$', fontsize=14)
-        plt.ylabel(r'$G_в,\ кг/с$', fontsize=14)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        if label:
+            plt.xlabel(r'$x,\ мм$', fontsize=14)
+            plt.ylabel(r'$G_в,\ кг/с$', fontsize=14)
         if filename:
             plt.savefig(filename)
         plt.show()

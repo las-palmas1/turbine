@@ -262,8 +262,8 @@ class StageGasDynamics:
         if ('H0' in self._kwargs) or ('p2' in self._kwargs):
             self.L_t = self.H0 * self.eta_t
             logging.debug('%s _compute_stage_parameters L_t = %s' % (self.str(), self.L_t))
-        self.L_t_prime = self.L_t * self.G_stage_in / self.G_turbine - self.L_t * (self.g_ld + self.g_lk + self.g_lb) + \
-                       self.L_t * self.g_cool
+        self.L_t_prime = self.L_t * (self.G_stage_in / self.G_turbine -
+                                     (self.g_ld + self.g_lk + self.g_lb) + self.g_cool)
         "Удельная работа ступени, отнесенная к расходу через СА первой ступени с учетом потерь из-за утечек и " \
         "добавки охлаждающего воздуха"
         self.T_st = self.T2 + self. h_z / self.c_p_gas + self.h_tv / self.c_p_gas
@@ -277,9 +277,6 @@ class StageGasDynamics:
         self.p2_stag = self.p2 * (self.T_st_stag / self.T_st) ** (self.k_gas / (self.k_gas - 1))
         self.H0_stag = self.c_p_gas * self.T0_stag * (1 - (self.p2_stag / self.p0_stag) ** ((self.k_gas - 1) / self.k_gas))
         self.eta_t_stag = self.L_t / self.H0_stag
-        "КПД по параметрам торможения без учета добавления охлаждающего воздуха"
-        self.eta_t_stag_prime = self.L_t_prime / self.H0_stag
-        "КПД по параметрам торможения с учетом добавления охлаждающего воздуха"
         self.G_stage_out_prime = self.G_stage_in - self.G_turbine * self.g_lk
         "Расход на выходе из ступени без учета охлаждения"
         self.G_stage_out = self.G_stage_in - self.G_turbine * self.g_lk + self.G_turbine * self.g_cool

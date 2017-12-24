@@ -129,9 +129,10 @@ class BladeSectorTest(unittest.TestCase):
         """Проверка теплового баланса."""
         self.ave_param.compute()
         k = 1 / (1 / self.ave_param.alpha_out + 1 / self.ave_param.alpha_cool_fluid_av +
-                 self.conv_cooler.wall_thickness / self.conv_cooler.lam_blade(self.ave_param.T_wall_av))
+                 self.conv_cooler.wall_thickness / self.conv_cooler.lam_blade(self.ave_param.T_wall_av) +
+                 self.conv_cooler.cover_thickness / self.conv_cooler.lam_cover)
         Q1 = k * (self.conv_cooler.T_gas_stag - self.ave_param.T_cool_fluid_av)
-        Q2 = self.ave_param.alpha_out * (self.ave_param.T_out_stag - self.ave_param.T_wall_out)
+        Q2 = self.ave_param.heat_transfer_coef * (self.ave_param.T_out_stag - self.ave_param.T_wall_out)
         Q3 = self.ave_param.alpha_cool_fluid_av * (self.ave_param.T_wall_in -
                                                    self.ave_param.T_cool_fluid_av)
         self.assertAlmostEqual(Q1, Q2, places=7)
@@ -153,15 +154,16 @@ class BladeSectorTest(unittest.TestCase):
 
         def heat_trans_coef(x, T_cool):
             return 1 / (1 / (alpha_cool(x, T_cool)) + 1 / (local_param.alpha_out(x)) +
-                        self.conv_cooler.wall_thickness / self.conv_cooler.lam_blade(ave_param.T_wall_av).__float__())
+                        self.conv_cooler.wall_thickness / self.conv_cooler.lam_blade(ave_param.T_wall_av).__float__() +
+                        self.conv_cooler.cover_thickness / self.conv_cooler.lam_cover)
 
         def T_cool_der(x, T_cool):
             if x >= 0:
                 return (heat_trans_coef(x, T_cool) * self.conv_cooler.height * (self.conv_cooler.T_gas_stag - T_cool) /
-                        (0.5 * local_param.G_cool(x) * cool_fluid.c_p_real_func(T_cool)))
+                        (local_param.G_cool(x) * cool_fluid.c_p_real_func(T_cool)))
             else:
                 return -(heat_trans_coef(x, T_cool) * self.conv_cooler.height * (self.conv_cooler.T_gas_stag - T_cool) /
-                         (0.5 * local_param.G_cool(x) * cool_fluid.c_p_real_func(T_cool)))
+                         (local_param.G_cool(x) * cool_fluid.c_p_real_func(T_cool)))
 
         for i in range(1, len(local_param.x_arr)):
             T_der1 = ((local_param.T_cool_fluid_arr[i] - local_param.T_cool_fluid_arr[i - 1]) /
@@ -174,7 +176,7 @@ class BladeSectorTest(unittest.TestCase):
 
             self.assertAlmostEqual(abs(T_der1 - T_der2) / T_der1, 0, places=4)
 
-        self.conv_cooler.local_param.plot_T_wall()
+        self.conv_cooler.local_param.plot_T_wall(T_material_max=1100)
         self.conv_cooler.local_param.plot_all()
 
     def test_film_calculator_with_seven_holes_rows(self):
@@ -193,10 +195,9 @@ class BladeSectorTest(unittest.TestCase):
         self.film1.plot_T_film(x_arr)
         self.film1.plot_alpha_film(x_arr, (4000, 8000))
 
-        self.assertAlmostEqual(abs(self.film1.get_G_cool(0) - self.film1.get_G_cool(self.x_hole1[3] - 1e-4) -
-                                   self.film1.dG_cool_hole[3]) / self.film1.dG_cool_hole[4], 0, places=4)
-        self.assertAlmostEqual(abs(self.film1.get_G_cool(0) - self.film1.get_G_cool(self.x_hole1[3] + 1e-4) -
-                               self.film1.dG_cool_hole[4]) / self.film1.dG_cool_hole[4], 0, places=4)
+        self.assertAlmostEqual(abs(self.film1.get_G_cool(0) * (1 - self.film1.g_coo0_s) -
+                                   self.film1.get_G_cool(self.x_hole1[4] - 1e-4) -
+                                   self.film1.dG_cool_hole[4]) / self.film1.dG_cool_hole[4], 0, places=4)
         self.assertEqual(self.film1.G_cool0, self.film1.get_G_cool(0))
         self.assertEqual(self.film1.hole_num[3], self.film1.hole_num[2] / 2)
         self.assertEqual(self.film1.hole_num[4], self.film1.hole_num[5] / 2)

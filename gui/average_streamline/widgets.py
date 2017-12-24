@@ -284,7 +284,6 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_form.eta_l.setValue(turbine[i].eta_l)
             stage_form.eta_t.setValue(turbine[i].eta_t)
             stage_form.eta_t_stag.setValue(turbine[i].eta_t_stag)
-            stage_form.eta_t_stag_prime.setValue(turbine[i].eta_t_stag_prime)
             stage_form.rho_out.setValue(turbine[i].rho)
 
             stage_form.H_s.setValue(turbine[i].H_s / 1e3)

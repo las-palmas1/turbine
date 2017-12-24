@@ -143,6 +143,7 @@ class Turbine:
         self.eta_t = None
         self.eta_t_stag = None
         self.eta_l = None
+        self.pi_t = None
         self.N = None
         self._eta_m = eta_m
         self._init_turbine_geom()
@@ -320,6 +321,7 @@ class Turbine:
                    (1 - (self.p_g_stag / self.last.p2) ** ((1 - self.work_fluid.k_av_int) / self.work_fluid.k_av_int))
         self.eta_t = self.L_t_sum / self.H_t
         self.eta_l = (self.L_t_sum + self.last.c2 ** 2 / 2) / self.H_t
+        self.pi_t = self.first.p0_stag / self.last.p2_stag
         self.work_fluid.T2 = self.last.T_mix_stag
         self.c_p_gas_stag = self.work_fluid.c_p_av_int
         self.k_gas_stag = self.work_fluid.k_av_int
