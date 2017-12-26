@@ -1,0 +1,471 @@
+%%
+%% Author: Alexander
+%% 25.12.2017
+%%
+
+% Preamble
+\documentclass[a4paper,10pt]{article}
+
+\usepackage{mathtext}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{longtable}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[left=2cm,right=2cm,
+    top=2cm,bottom=2cm,bindingoffset=0cm]{geometry}
+\usepackage{color}
+\usepackage{gensymb}
+
+\usepackage{enumitem}
+\setlist[enumerate]{label*=\arabic*.}
+
+\usepackage{indentfirst}
+
+\usepackage{titlesec}
+% Document
+\begin{document}
+
+  %  </ macro film() />
+
+    \begin{enumerate}
+
+        \item Исходные данные и допущения для алгоритма расчета пленки по одной стороне лопатки.
+
+        \begin{enumerate}
+
+            \item Параметры газа по высоте постоянны: $T_г^* = const$ и $p_г^* = const$.
+            \item Координаты отверстий: $x_{отв\ i}$.
+            \item Диаметры отверстий: $d_{отв\ i}$.
+            \item Числа отверстий в рядах: $N_{отв\ i}$.
+            \item Коэффициенты скорости в отверстиях: $\phi_{отв\ i}$.
+            \item Коэффициенты расхода в отверстиях: $\mu_{отв\ i}$.
+            \item Давление торможения воздуха на входе в канал: $p_{в0}^*$.
+            \item Расход охраждающего воздуха на входе в канал: $G_{в0}$.
+            \item Распределение коэффициента теплоотдачи со стороны газа вдоль профиля: $\alpha_г (x)$.
+            \item Распределение температуры охлаждающего воздуха вдоль профиля: $T_в^* (x)$.
+            \item Высота участка лопатки: $l$.
+
+        \end{enumerate}
+
+        \item Зададим распределение приведенной скорости по корыту $\lambda_к \left( \overline{x} \right)$ и
+        спинке $\lambda_с \left( \overline{x} \right)$:
+
+		\begin{gather*}
+		    \lambda_к \left( \overline{x} \right) =
+			\left\{
+				1 +
+				\left[
+					\left(
+						\frac{\lambda_1}{\lambda_0}
+					\right)^{0.5}
+				\right]\overline{x}
+			\right\}^{2} \lambda_0, \/\ \overline{x} = \frac{x}{l_к}\\
+		    \lambda_с \left( \overline{x} \right) =
+			\left\{
+				1 +
+				\left[
+					\left(
+						\frac{\lambda_1}{\lambda_0}
+					\right)^{4}
+				\right]\overline{x}
+			\right\}^{0.25}\lambda_0, \/\ \overline{x} = \frac{x}{l_с}
+		,\\
+		\end{gather*}
+		где $l_к$ - длина профиля со стороны корыта, $l_с$ - длина профиля со стороны спинки,
+        $\lambda_0$ - приведенная скорость на входе в лопаточный венец, $\lambda_1$ - приведенная
+        скорость на выходе из лопаточного венца.
+
+        \item Определим критическую скорость звука $a_{кр}$:
+		\[
+			a_{кр} = \sqrt{
+				\frac{2k_г}{k_г + 1} R_г T_г^*
+			}
+		\]
+
+        \item Определим скорость газа на корыте $v_к$ и на спинке $v_с$:
+            \begin{gather*}
+                v_к\left( x \right) = \lambda_к \left( \frac{x}{l_к} \right)\\
+                v_c\left( x \right) = \lambda_к \left( \frac{x}{l_c} \right)\\
+            \end{gather*}
+
+        Дальнейший расчет идентичен для спинки и корыта, поэтому скорость газа будем обозначать как $v_г$.
+        \item Определим эквивалентную ширину щели:
+            \[
+                s = N_{отв} \frac{\pi d_{отв}^2}{4} \cdot \frac{1}{l},
+            \]
+            где $N_{отв}$ - количество отверстий, $d_{отв}$ - диаметр отверстия, $l$ - высота профильной части лопатки.
+
+        \item Определим скорость газа в точке выдува воздуха:
+            \[
+                v_{г \/\ отв} = v_г\left( x_{отв} \right),
+            \]
+            где $x_{отв}$ - криволинейная координата отверстия.
+
+        \item Определим статическую температуру газа в точке выдува воздуха:
+            \[
+                T_{г \/\ отв} = T_г^* - \frac{v_{г \/\ отв}}{2 c_{p \/\ г}}
+            \]
+
+        \item Определим статическое давление газа в точке выдува воздуха:
+            \[
+                p_{г \/\ отв} = \frac{p_г^*}{
+                    \left(
+                        \frac{
+                            T_г^*
+                        }{
+                            T_{г \/\ отв}
+                        }
+                    \right)^\frac{k_г}{k_г - 1}
+                }
+            \]
+
+        \item Определим статическую плотность газа в точке выдува воздуха:
+            \[
+                \rho_{г \/\ отв} = \frac{
+                    p_{г \/\ отв}
+                }{
+                    R_г \cdot T_{г \/\ отв}
+                }
+            \]
+
+        \item Определим скорость истечения воздуха из отверстия:
+            \[
+                v_{в \/\ отв} = \phi_{отв} \sqrt{
+                    \frac{2k_в}{k_в - 1}
+                } R_в T_в^* \left( x_{отв} \right)
+                \left[
+                    1 -
+                    \left(
+                        \frac{
+                            p_{г \/\ отв}
+                        }{
+                            p_{в0}^*
+                        }
+                    \right)^\frac{k_в - 1}{k_в}
+                \right],
+            \]
+            где $\phi_{отв}$ - коэффициент скорости, $T_в^* \left( x_{отв} \right)$ -
+            температура воздуха в точке выдува, $p_{в0}^*$ - давление воздуха.
+
+        \item Определим статическую плотность воздуха на выходе из отверстия:
+		\[
+			\rho_{в \/\ отв} = \frac{
+				p_{г \/\ отв}
+			}{
+				R_в
+				\left[
+					T_в^* \left( x_{отв} \right) - \frac{v_{в \/\ отв}^2}{2c_{p \/\ в}}
+				\right]
+			}
+		\]
+
+        \item Определим плотность торможения воздуха на входе в отверстия:
+            \[
+                \rho_{в \/\ отв}^* = \frac{p_{в0}^*}{R_в T_в^* \left( x_{отв} \right) }
+            \]
+
+        \item Определим параметр вдува:
+            \[
+                m = \frac{\rho_{в \/\ отв} v_{в \/\ отв}}{\rho_{г \/\ отв} v_{г \/\ отв}}
+            \]
+
+        \item Определим число Рейнольдса по ширине щели:
+            \[
+                Re_s = \frac{
+                    \rho_{г \/\ отв} v_{г \/\ отв} s
+                }{\mu_г\left( T_{г \/\ отв} \right)}
+            \]
+
+        \item Определим температурный фактор:
+            \[
+                \phi = T_в^* \left( x_{отв} \right) / T_г^*
+            \]
+
+        \item Определим эффективность пленки $\theta_{пл}\left( x \right)$:
+            \[
+                A\left( x \right) = Re_s^{-0.25} m^{-1.3} \phi^{-1.25}
+                \left(
+                    \frac{
+                        x - x_{отв}
+                    }{
+                        s
+                    }
+                \right)
+            \]
+            \[
+                \theta_{пл}\left( x \right) = \left\{
+                    \begin{array}{@{}ll@{}}
+                        1.0, & \text{если }\ 0 < A \leq 3 \\
+                        \left( \frac{A}{3} \right)^{-0.285}, & \text{если } 3 \leq A < 11 \\
+                        \left( \frac{A}{7.43} \right)^{-0.95}, & \text{если } A \geq 11 \\
+                    \end{array}\right.
+            \]
+
+        \item Определим темперутуру пленки в случае нескольких рядов отверстий:
+		\[
+			T_{пл}^*\left( x \right) = \left\{
+                \begin{array}{lc}
+                    T_г^*, & \text{если}\ x < x_{отв\ 1} \\
+                    T_г^* \cdot \prod_{i = 1}^{x_i \leq x}
+                    \left[
+                        \left(
+                            1 - \theta_{пл \/\ i}
+                        \right)
+                    \right] + &\\
+                    +\sum_{i = 1}^{x_i \leq x} \left[
+                        \theta_{пл \/\ i}T_в^*\left( x_{отв \/\ j} \right)
+                        \prod_{j = i + 1}^{x_j \leq x}
+                        \left(
+                            1 - \theta_{пл \/\ j}
+                        \right)
+                    \right], & \text{если}\ x_{отв\ 1} \leq x \\
+                \end{array} \right.
+		\]
+
+        \item Определим коэффициент теплоотдачи пленки в случае нескольких рядов отверстий:
+		\[
+			\alpha_{пл}\left( x \right) = \left\{
+                \begin{array}{lc}
+                    \alpha_{г}(x), & \text{если }  0 \leq x < x_{отв\ 1}  \\
+                    \alpha_{г}(x) \left(
+                        1 + \frac{
+                            2m_1
+                        }{
+                        \frac{
+                            x - x_{отв \/\ 1}
+                        }{s_1}
+                    }
+                    \right), & \text{если }  x_{отв\ 1} \leq x < x_{отв\ 2}  \\
+                    .........\\
+                    \alpha_{г}(x) \left(
+                        1 + \frac{
+                            2m_n
+                        }{
+                        \frac{
+                            x - x_{отв \/\ n}
+                        }{s_n}
+                    }
+                    \right), & \text{если }  x_{отв\ n} \leq x   \\
+                \end{array}\right.
+		\]
+
+        \item По формуле истечения из сопла определим расход через ряд отверстий:
+		\[
+			G_{отв} = s \cdot l \cdot  \mu_{отв} \sqrt{
+				\frac{2k_в}{k_в - 1} p_{в0}^*\rho_{в \/\ отв}^*
+				\left(
+					\frac{
+						p_{г \/\ отв}
+					}{
+						p_{в0}^*
+					}
+				\right)^\frac{2}{k_в}
+				\left[
+					1 -
+					\left(
+						\frac{
+							p_{г \/\ отв}
+						}{
+							p_{в0}^*
+						}
+					\right)^\frac{k_в - 1}{k_в}
+				\right]
+			}
+		\]
+
+        \item В общем случае зависимость расхода воздуха в зазоре от криволинейной координаты имеет вид:
+		\[
+			G_в \left( x \right) = G_{в0} - \sum_{i = 1}^{x_i \leq x} G_{отв \/\ i}
+		\]
+
+        \item Выходные данные расчета пленки:
+
+        \begin{enumerate}
+
+            \item Распределение вдоль профиля коэффициента теплоотдачи со стороны пленки: $\alpha_{пл} (x)$.
+            \item Распределение температуры пленки вдоль профиля: $T_{пл} (x)$.
+            \item Распределение расхода охлаждающего воздуха вдоль профиля: $G_в (x)$.
+
+        \end{enumerate}
+
+    \end{enumerate}
+
+  %  </ endmacro />
+
+ %   </ macro local_params() />
+
+    \begin{enumerate}
+
+        \item Исходные данные и допущения для расчета локальных параметров с одной стороны лопатки:
+
+        \begin{enumerate}
+            \item Теплопроводность материала лопатки: $\lambda_м$.
+            \item Толщина стенки лопатки: $\Delta$.
+            \item Теплопроводность защитного покрытия: $\lambda_п$.
+            \item Толщина покрытия: $\Delta_п$.
+            \item Распределение вдоль профиля коэффициента теплоотдачи со стороны пленки: $\alpha_{пл} (x)$.
+            \item Распределение температуры пленки вдоль профиля: $T_{пл} (x)$.
+            \item Распределение расхода охлаждающего воздуха вдоль профиля: $G_в (x)$.
+            \item Ширина канала для охлаждения лопатки: $\delta$.
+            \item Высота участка лопатки: $l$.
+            \item Теплопроводность воздуха в зависимости от температуры: $\lambda_в (T)$.
+            \item Вязкость воздуха в зависимости от температуры: $\mu_в (T)$.
+        \end{enumerate}
+
+        \item Определим зависимость коэффициента теплотдачи со строны воздуха от температуры и координаты вдоль профиля:
+        \[
+            \alpha_в(T_в^*, x) = 0.02 \cdot \lambda_в \left( T_в^* \right) \cdot \frac{1}{2 \delta} \cdot
+                \left(
+                \frac{G_в }{l \cdot \mu \left( T_в^* \right)}
+            \right)
+        \]
+
+        \item Определим зависимость коэффициента теплопередачи от температуры и координаты вдоль профиля:
+        \[
+            k (T_в^*, x) = \frac{1
+                    }{
+                \frac{1}{\alpha_в(T_в^*, x)} + \frac{1}{\alpha_{пл} (x)} + \frac{\Delta}{\lambda_м} +
+                \frac{\Delta_п}{\lambda_п}
+            }
+        \]
+
+        \item Получаем зависимость производной температуры воздуха от координаты от температуры и координаты
+        вдоль профиля:
+        \[
+            \frac{dT_в^*}{x} = \frac{
+                    k (T_в^*, x) (T_пл(x) - T_в^*) l
+            }{
+                    G_в(x) c_{pв}
+            }
+        \]
+
+        \item В итоге получаем дифференциальное уравнение вида $\frac{dy}{dx} = f(y, x)$, которое решаем любым из
+        известных методов численного решения ДУ, например, методом Эйлера.
+
+        \item Выходные результаты расчета локальных параметров:
+
+        \begin{enumerate}
+            \item Рапределение температуры воздуха вдоль профиля: $T_в^*(x)$.
+            \item Распределение коэффициента теплоотдачи со стороны воздуха вдоль профиля: $\alpha_в (x)$.
+        \end{enumerate}
+
+    \end{enumerate}
+
+%    </ endmacro />
+
+%    </ macro alpha_gas() />
+        \begin{enumerate}
+
+            \item Исходные данные для расчета распределения коэффициента теплоотдачи со стороны газа:
+            \begin{enumerate}
+                \item Расход газа через участок решетки: $G_г$.
+                \item Средний диаметр лопаточной решетки: $D_{ср}$.
+                \item Высота участка лопатки: $l$.
+                \item Длина хорды профиля: $b$.
+                \item Длины спинки и корыта: $l_к$ и $l_с$.
+                \item Длины участков входной кромки на спинке и корыте: $l_{вх\ c}$ и $l_{вх\ к}$.
+                \item Углы профиля на входе и на выходе: $\alpha_{1л}$ и $\alpha_{2л}$.
+                \item Радиус закругления входной кромки: $r_1$.
+            \end{enumerate}
+
+            \item Число Рейнольдса по газу:
+            \[
+                Re_г = \frac{G_г b }{\pi D_{ср} l \mu_г \sin{\alpha_{2л}}}
+            \]
+
+            \item Число Нуссельта:
+            \[
+                Nu_г = \left[ 0.07 + 100 \cdot ( \alpha_{1л} + \alpha_{2л} )^{-2} \right] \cdot Re_г ^{0.68}
+            \]
+
+            \item Средний коэффициент теплоотдачи со стороны газа:
+            \[
+                \alpha_{г\ ср} = \frac{Nu_г \lambda_г}{b}
+            \]
+
+            \item Коээфициент теплоотдачи со стороны газа на входной кромке:
+            \[
+                \alpha_{г\ вх} = \frac{0.74 \lambda_г}{2 r_1} \cdot
+                    \left(
+                        \frac{2 G_г r_1}{\pi D_{ср} l \sin{\alpha_{л}} \mu_г}
+                \right) ^ {0.5}
+            \]
+
+            \item Распределение коэффициента теплоотдачи от газа по профилю:
+            \[
+                \alpha_г(x) = \left\{
+                    \begin{array}{lc}
+                        1.5 \alpha_{г\ ср}, & \text{если}\ -l_c \leq x < -l_с + \frac{b}{3} \\
+                        0.6 \alpha_{г\ ср}, & \text{если}\ -l_с + \frac{b}{3} \leq x < -l_{вх\ c} \\
+                        \alpha_{г\ вх}, & \text{если}\ -l_{вх\ c} \leq x < l_{вх\ к} \\
+                        \alpha_{г\ ср}, & \text{если}\ l_{вх\ к} \leq x < l_к \\
+                    \end{array}
+                \right.
+            \]
+
+        \end{enumerate}
+%    </ endmacro />
+
+    </ macro integrate_params(cooling_results, blade_num, G_comp) />
+    \begin{enumerate}
+
+        \item Температура охлаждающего воздуха на входе в канал:
+            $ T_{в0}^{*} = << cooling_results.T_cool0 | round(1) >>\ К$.
+        \item Полное давление охлаждающего воздуха на входе в канаЛ:
+            $ p_{в0}^* = << (cooling_results.p_cool_stag0 / 10**6) | round(4) >>\ МПа $.
+        \item Суммарный расход воздуха на одну лопатку: $G_{в0} = << cooling_results.G_cool0 | round(3) >>\ кг/с$.
+        \item Относительный расход воздуха на охлаждение СА:
+            $g_{охл\ са} = << ((cooling_results.G_cool0 * blade_num) / G_comp) | round(3) >>$.
+        \item Толщина стенок: $\Delta = << (cooling_results.wall_thickness * 10**3) | round(2) >>\ мм$.
+        \item Ширина канала: $\delta = << (cooling_results.channel_width * 10**3) | round(2) >>\ мм$.
+        \item Теплопроводность покрытия: $\lambda_п = << cooling_results.lam_cover >>\ Вт/(м \cdot К)$.
+        \item Толщина покрытия: $\Delta_п = << (cooling_results.cover_thickness * 10**3) | round(2) >>\ мм$.
+        \item Средняя эффективность охлаждения: $\theta_{охл\ ср} = << cooling_results.cool_eff_av | round(3) >>$.
+    \end{enumerate}
+    </ endmacro />
+
+%    </ macro sector_params(params, caption) />
+    \begin{longtable}{
+     |
+%    </ for i in range(params['Name'].__len__() + 1) />
+    c|
+%    </ endfor />
+    }
+        \caption{<< caption >>} \\
+        \hline
+%        </ for name in params['Name'] />
+
+%        </ if loop.index == 1 />
+        << name >>
+%        </ else />
+        & << name >>
+%        </ endif />
+
+%        </ endfor />
+        \\
+        \hline
+
+%        </ for i1 in range(params['Value'][0].__len__()) />
+
+%        </ for i2 in range(params.__len__()) />
+
+%        </ if loop.index == 1 />
+        << params.iloc[i2]['Value'][i1] >>
+%        </ else />
+        & << params.iloc[i2]['Value'][i1] >>
+%        </ endif />
+
+%        </ endfor />
+        \\
+        \hline
+
+        </ endfor />
+    \end{longtable}
+%    </ endmacro />
+
+\end{document}

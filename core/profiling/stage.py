@@ -2,6 +2,7 @@ import enum
 import typing
 import numpy as np
 import pickle
+import pandas as pd
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 from ..average_streamline.stage_geom import InvalidStageSizeValue
@@ -226,6 +227,12 @@ class StageParametersRadialDistribution:
     def rho(self, r):
         return self.H_l(r) * self.T1_ad(r) / (self.H0(r) * self.T1(r))
 
+    def pi_t(self, r):
+        return self.p0_stag(r) / self.p2(r)
+
+    def pi_t_stag(self, r):
+        return self.p0_stag(r) / self.p2_stag(r)
+
     def M_c0(self, r):
         return self.c0(r) / np.sqrt(self.k * self.R * self.T0(r))
 
@@ -445,9 +452,9 @@ class StageProfiler(StageParametersRadialDistribution):
         :param gamma1_rk: callable, optional. \n
                 Зависимость угла gamma1 на РК от относительного радиуса сечения. По умолчанию равень None,
                 в таком случае он будет определятся в зависимости от угла лопатки на входе.
-        :param center_point_sa: list, optional. \n
+        :param center_point_sa: callable, optional. \n
                 Позиция, заданная в относительном виде, центрального полюса средней линии профиля СА.
-        :param center_point_rk: list, optional. \n
+        :param center_point_rk: callable, optional. \n
                 Позиция, заданная в относительном виде, центрального полюса средней линии профиля РК.
         :param section_num: int, optional. \n
                 Число рассчитываемых сечений.
@@ -732,7 +739,7 @@ class StageProfiler(StageParametersRadialDistribution):
         plt.legend(fontsize=10)
         plt.show()
 
-    def write_nx_exp_file(self, filename: str, sec_num: int, blade_type='sa'):
+    def write_nx_exp_file_profile(self, filename: str, sec_num: int, blade_type='sa'):
 
         if blade_type == 'sa':
             section = self.sa_sections[sec_num]
@@ -754,8 +761,28 @@ class StageProfiler(StageParametersRadialDistribution):
             lines.append('[degrees]gamma2_k_%s%s=%s\n' % (blade_type, sec_num, np.degrees([section.gamma2_k])[0]))
             lines.append('[mm]r1_%s%s=%s\n' % (blade_type, sec_num, section.r1 * 1e3))
             lines.append('[mm]s2_%s%s=%s\n' % (blade_type, sec_num, section.s2 * 1e3))
+            lines.append('[mm]b_a_%s%s=%s\n' % (blade_type, sec_num, section.b_a * 1e3))
+            lines.append('[mm]t_%s%s=%s\n' % (blade_type, sec_num, section.t * 1e3))
             lines.append('central_pole_pos_%s%s=%s\n' % (blade_type, sec_num, section.center_point_pos))
             lines.append('z_%s%s=%s\n' % (blade_type, sec_num, z))
+
+            file.writelines(lines)
+
+    def write_nx_exp_file_triangles(self, filename: str, sec_num: int):
+
+        radiuses = self._get_radius()
+
+        with open(filename, 'w') as file:
+            lines = []
+            lines.append('[mm]c1_%s=%s\n' % (sec_num, self.c1(radiuses[sec_num])))
+            lines.append('[mm]u_%s=%s\n' % (sec_num, self.u(radiuses[sec_num])))
+            lines.append('[mm]w1_%s=%s\n' % (sec_num, self.w1(radiuses[sec_num])))
+            lines.append('[mm]c2_%s=%s\n' % (sec_num, self.c2(radiuses[sec_num])))
+            lines.append('[mm]w2_%s=%s\n' % (sec_num, self.w2(radiuses[sec_num])))
+            lines.append('[degrees]alpha1_%s=%s\n' % (sec_num, np.degrees(self.alpha1(radiuses[sec_num]))))
+            lines.append('[degrees]beta1_%s=%s\n' % (sec_num, np.degrees(self.beta1(radiuses[sec_num]))))
+            lines.append('[degrees]alpha2_%s=%s\n' % (sec_num, np.degrees(self.alpha2(radiuses[sec_num]))))
+            lines.append('[degrees]beta2_%s=%s\n' % (sec_num, np.degrees(self.beta2(radiuses[sec_num]))))
 
             file.writelines(lines)
 
@@ -787,6 +814,87 @@ class StageProfiler(StageParametersRadialDistribution):
 
         with open(filename, 'wb') as file:
             pickle.dump(results, file)
+
+    def get_flow_params(self, r_rel=np.array([0, 0.5, 1.0])):
+        radiuses = r_rel * 0.5 * (self.D1_out - self.D1_in) + 0.5 * self.D1_in
+
+        params = pd.DataFrame.from_dict(
+            {
+                'Name': [
+                    r'$\frac{r - r_{вт}}{r_{п} - r_{вт}}$',
+                    r'$r,\ мм$',
+                    r'$\rho$',
+                    r'$c_1,\ м/с$',
+                    r'$c_{1a},\ м/с$',
+                    r'$c_{1u},\ м/с$',
+                    r'$\alpha_1,\ ^\circ$',
+                    r'$w_1,\ м/с$',
+                    r'$w_{1a},\ м/с$',
+                    r'$w_{1u},\ м/с$',
+                    r'$\beta_1,\ ^\circ$',
+                    r'$u,\ м/с$',
+                    r'$M_{c0}$',
+                    r'$M_{c1}$',
+                    r'$M_{w1}$',
+                    r'$T_1,\ К$',
+                    r'$p_1,\ МПа$',
+                    r'$T_{1w}^*,\ К$',
+                    r'$c_2,\ м/с$',
+                    r'$c_{2a},\ м/с$',
+                    r'$c_{2u},\ м/с$',
+                    r'$\alpha_2,\ ^\circ$',
+                    r'$w_2,\ м/с$',
+                    r'$w_{2a},\ м/с$',
+                    r'$w_{2u},\ м/с$',
+                    r'$\beta_2,\ ^\circ$',
+                    r'$M_{w2}$',
+                    r'$T_2,\ К$',
+                    r'$p_2,\ МПа$',
+                    r'$p_2^*,\ МПа$',
+                    r'$\pi_т$',
+                    r'$\pi_т^*$',
+                    r'$H_л,\ \frac{кДж}{кг}$',
+                    r'$H_0,\ \frac{кДж}{кг}$',
+                ],
+                'Value': [
+                    [r for r in r_rel],
+                    [round(r * 1e3, 1) for r in radiuses],
+                    [round(self.rho(r), 3) for r in radiuses],
+                    [round(self.c1(r), 1) for r in radiuses],
+                    [round(self.c1_a(r), 1) for r in radiuses],
+                    [round(self.c1_u(r), 1) for r in radiuses],
+                    [round(np.degrees([self.alpha1(r)])[0], 1) for r in radiuses],
+                    [round(self.w1(r), 1) for r in radiuses],
+                    [round(self.w1_a(r), 1) for r in radiuses],
+                    [round(self.w1_u(r), 1) for r in radiuses],
+                    [round(np.degrees([self.beta1(r)])[0], 1) for r in radiuses],
+                    [round(self.u(r), 1) for r in radiuses],
+                    [round(self.M_c0(r), 3) for r in radiuses],
+                    [round(self.M_c1(r), 3) for r in radiuses],
+                    [round(self.M_w1(r), 3) for r in radiuses],
+                    [round(self.T1(r), 1) for r in radiuses],
+                    [round(self.p1(r) / 1e6, 4) for r in radiuses],
+                    [round(self.T1_w_stag(r), 1) for r in radiuses],
+                    [round(self.c2(r), 1) for r in radiuses],
+                    [round(self.c2_a(r), 1) for r in radiuses],
+                    [round(self.c2_u(r), 1) for r in radiuses],
+                    [round(np.degrees([self.alpha2(r)])[0], 1) for r in radiuses],
+                    [round(self.w2(r), 1) for r in radiuses],
+                    [round(self.w2_a(r), 1) for r in radiuses],
+                    [round(self.w2_u(r), 1) for r in radiuses],
+                    [round(np.degrees([self.beta2(r)])[0], 1) for r in radiuses],
+                    [round(self.M_w2(r), 3) for r in radiuses],
+                    [round(self.T2(r), 1) for r in radiuses],
+                    [round(self.p2(r) / 1e6, 4) for r in radiuses],
+                    [round(self.p2_stag(r) / 1e6, 4) for r in radiuses],
+                    [round(self.pi_t(r), 3) for r in radiuses],
+                    [round(self.pi_t_stag(r), 3) for r in radiuses],
+                    [round(self.H_l(r) / 1e3, 1) for r in radiuses],
+                    [round(self.H0(r) / 1e3, 1) for r in radiuses],
+                ]
+            }
+        )
+        return params
 
 if __name__ == '__main__':
     pass

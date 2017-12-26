@@ -10,6 +10,7 @@
 \usepackage{mathtext}
 \usepackage[T2A]{fontenc}
 \usepackage[utf8]{inputenc}
+\usepackage{longtable}
 \usepackage[russian]{babel}
 \usepackage{amsmath}
 \usepackage{amsfonts}
@@ -34,6 +35,8 @@
     \section{Расчет турбины по средней линии тока}
 
     </ import 'average_streamline.tex' as avline />
+    </ import 'profiling.tex' as prof />
+    </ import 'cooling.tex' as cool />
 
     \subsection{Расчет первой ступени}
 
@@ -61,5 +64,39 @@
         ((turb[1].L_t_prime / 10**6) | round(4)).__str__() + '\cdot 10^6' />
 
     << avline.integrate_turbine_param(turb, L_t_sum_exp) >>
+
+    \section{Расчет параметров потока по высоте.}
+
+    << prof.rad_dist_alg() >>
+
+    << prof.rad_dist_res(st1_params, 'Параметры первой ступени на различных радиусах.', st1_prof_type) >>
+
+    \section{Расчет охлаждения СА первой ступени.}
+
+    \subsection{Алгоритм расчета пленки.}
+
+    << cool.film() >>
+
+    \subsection{Алгоритм расчета локальных параметров.}
+
+    << cool.local_params() >>
+
+    \subsection{Алгоритм расчета коэффициент теплоотдачи со стороны газа.}
+
+    << cool.alpha_gas() >>
+
+    \subsection{Результаты расчета.}
+
+    << cool.sector_params(film_params, caption='Значения параметров в отверстиях.') >>
+
+    << cool.sector_params(local_params, caption='Значения локальных параметров.') >>
+
+    \subsection{Интегральные параметры охлаждения.}
+
+    << cool.integrate_params(cooling_results, blade_num, G_comp) >>
+
+
+
+
 
 \end{document}

@@ -1,0 +1,220 @@
+%%
+%% Author: Alexander
+%% 25.12.2017
+%%
+
+\documentclass[a4paper,10pt]{article}
+\usepackage{mathtext}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[russian]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{longtable}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[left=2cm,right=2cm,
+    top=2cm,bottom=2cm,bindingoffset=0cm]{geometry}
+\usepackage{color}
+\usepackage{gensymb}
+
+\usepackage{enumitem}
+\setlist[enumerate]{label*=\arabic*.}
+
+\usepackage{indentfirst}
+
+\usepackage{titlesec}
+
+% Document
+\begin{document}
+
+%    </ macro rad_dist_alg() />
+
+    При расчете параметров потока по высоте лопаточного венца будем пользоваться описанной ниже методикой.
+
+    \begin{enumerate}
+
+        \item Допущения:
+
+        \begin{enumerate}
+
+            \item Постоянство температуры торможения на входе в СА: $T_0^*(r) = const$.
+            \item Постояноство скорости на входе: $c_0(r) = const$.
+            \item Постоянство угла потока на входе: $\alpha_0(r) = const$.
+            \item Постоянство полного давления на входе: $p_0^*(r) = const$.
+            \item Постоянство работы на окружности колеса: $L_u(r) = const$.
+            \item Потерь в лопаточных венцах нет.
+            \item Ступень цилиндрическая.
+
+        \end{enumerate}
+
+%        </ if type == 'const_angle' />
+
+        \item Тип профилирования: постоянный угол на выходе из СА.
+
+%        </ elif type == 'const_circ' />
+
+        \item Тип профилирования: постоянная циркуляция.
+
+%        </ endif />
+
+        \item Статическая температура на входе в СА:
+        \[
+            T_0(r) = T_0^* - \frac{c_0 ^ 2}{2 c_p}
+        \]
+
+        \item Окружная скорость на выходе из СА:
+%        </ if type == 'const angle' />
+        \[
+            c_{1u}(r) = c_{1u\ ср} \cdot \left( \frac{r_{ср}}{r} \right) ^
+                {\cos{\alpha_{1ср}} ^ 2}
+        \]
+%        </ elif type == 'const circ' />
+        \[
+            c_{1u}(r) = \frac{r_{ср}}{r} c_{1u\ ср}
+        \]
+%        </ endif />
+
+        \item Осевая скорость на выходе из СА:
+%        </ if type == 'const angle' />
+        \[
+            c_{1u}(r) = c_{1a\ ср} \cdot \left( \frac{r_{ср}}{r} \right) ^
+                {\cos{\alpha_{1ср}} ^ 2}
+        \]
+%        </ elif type == 'const circ' />
+        \[
+            c_{1u}(r) = c_{1a\ ср}
+        \]
+%        </ endif />
+
+        \item Скорость в абсолютном движении на выходе из СА:
+        \[
+            c_1(r) = \sqrt{c_{1a}(r)^2 + c_{1u}(r)^2}
+        \]
+
+        \item Угол потока в абсолютном движении на выходе из СА:
+        \[
+            \alpha_1 (r) = \arcsin{\frac{c_{1a}(r)}{c_1(r)}}
+        \]
+
+        \item Теплоперепад на СА:
+        \[
+            H_с (r) = \frac{c_1(r) ^ 2}{2}
+        \]
+
+        \item Статическое давление на выходе из СА:
+        \[
+            p_1 = p_0^*(r) \left( 1 - \frac{H_с (r)}{T_0^* c_p} \right) ^ {\frac{k}{k - 1}}
+        \]
+
+        \item Статическая температура на выходе из СА:
+        \[
+            T_1 (r) = T_0^*(r) - \frac{H_с (r)}{c_p}
+        \]
+
+        \item Окружная скорость:
+        \[
+            u(r) = \frac{2 \pi n r}{60}
+        \]
+
+        \item Температура торможения на выходе из РК:
+        \[
+            T_2^* = T_0^*(r) - \frac{L_u (r)}{c_p}
+        \]
+
+        \item Окружная скорость на выходе из РК:
+        \[
+            c_{2u}(r) = \frac{L_u(r) - c_{1u} u(r)}{u(r)}
+        \]
+
+        \item Осевая скорость на выходе из РК:
+        \[
+            c_{2a}(r) = \sqrt{
+                    c_{2a\ ср}^2 + с_{2u\ ср}^2 - c_{2u}(r)^2 -
+                    2 \cdot \int_{r_{ср}}^{r} \frac{c_{2u}(r)^2}{r} dr
+            }
+        \]
+
+        \item Скорость в абсолютном движении на выходе из РК:
+        \[
+            c_2(r) = \sqrt{c_{2a}(r)^2 + c_{2u}(r)^2}
+        \]
+
+        \item Угол потока в абсолютном движении на выходе и РК:
+        \[
+            \alpha_2 (r) = \arctan{\frac{c_{2a}(r)}{c_{2u}(r)}}
+        \]
+
+        \item Окружная составляющая относительной скорости на выходе из РК:
+        \[
+            w_{2u}(r) = c_{2u}(r) + u(r)
+        \]
+
+        \item Относитеьная скорость на выходе из РК:
+        \[
+            w_2 (r) = \sqrt{w_{2u}(r)^2 + c_{2a}(r)^2}
+        \]
+
+        \item Относительная скорость на выходе из СА:
+        \[
+            w_1 (r) = \sqrt{c_1(r)^2 + u(r)^2 - 2 \cdot u(r) c_1(r) \cos{\alpha_1(r)}}
+        \]
+
+        \item Температура торможения в относительном движении на выходе из РК:
+        \[
+            T_{1w}^* = T_1(r) + \frac{w_1(r) ^ 2}{2 c_p}
+        \]
+
+        \item Теплоперепад в РК:
+        \[
+            H_л (r) = 0.5 \cdot (w_2(r)^2 - w_1(r)^2)
+        \]
+
+        \item Статическое давление на выходе из РК:
+        \[
+            p_2 (r) = p_1(r) \cdot \left( 1 - \frac{H_л}{c_p T_1(r)} \right) ^ {\frac{k}{k - 1}}
+        \]
+
+        \item Статическая температура на выходе из РК:
+        \[
+            T_2 (r) = T_1 (r) - \frac{w_2 (r)^2 - w_1(r)^2}{2 c_p}
+        \]
+
+        \item Статический теплоперепад на ступени:
+        \[
+            H_0 (r) = c_p \cdot T_0^*(r) \cdot \left( 1 - \frac{p_0^*(r)}{p_2(r)} \right) ^ {\frac{1 - k}{k}}
+        \]
+
+        \item Степень реактивности:
+        \[
+            \rho (r) = \frac{H_л (r)}{H_0 (r)}
+        \]
+
+    \end{enumerate}
+%        </ endmacro />
+
+%    </ macro rad_dist_res(params, caption='Параметры на различных радиусах.', type='const angle') />
+    \begin{longtable}{
+    |
+%    </ for i in range(params['Value'][0].__len__() + 1) />
+    c|
+%    </ endfor />
+    }
+        \caption{<< caption >>}\\
+        \hline
+
+%        </ for i in range(params.__len__())/>
+        << params['Name'][i] >>
+%        </ for val in params['Value'][i]/>
+        & << val >>
+%        </ endfor />
+        \\
+        \hline
+%        </ endfor />
+
+    \end{longtable}
+
+%        </ endmacro />
+
+
+\end{document}

@@ -71,7 +71,7 @@ class GasBladeHeatExchange:
         mu_gas = work_fluid.mu(T_gas_stag)
         lam_gas = work_fluid.lam(T_gas_stag)
         alpha_gas_inlet = (0.74 * lam_gas / (2 * section.r1) *
-                                (G_gas * 2 * section.r1 /
+                                    (G_gas * 2 * section.r1 /
                                  (np.pi * D_av * height * np.sin(section.angle1) * mu_gas)) ** 0.5)
         return alpha_gas_inlet
 

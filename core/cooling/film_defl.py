@@ -3,6 +3,8 @@ from ..profiling.section import BladeSection
 from ..profiling.stage import StageProfiler, ProfilingResultsForCooling
 from gas_turbine_cycle.gases import IdealGas, Air
 import numpy as np
+import pandas as pd
+import pickle
 import typing
 from gas_turbine_cycle.tools.gas_dynamics import GasDynamicFunctions as gd
 import matplotlib.pyplot as plt
@@ -393,6 +395,84 @@ class FilmSectorCooler(GasBladeHeatExchange):
             plt.savefig(filename)
         plt.show()
 
+    def get_film_params(self):
+
+        params = pd.DataFrame.from_dict(
+            {
+                'Name': [
+                    r'$x,\ мм$',
+                    r'$s,\ 10^{-3}\ мм$',
+                    r'$\phi_{отв}$',
+                    r'$\mu_{отв}$',
+                    r'$m$',
+                    r'$\phi$',
+                    r'$G_{отв},\ г/с$',
+                    r'$G_{отв}/G_{в0}$',
+                ],
+                'Value': [
+                    [round(x * 1e3, 1) for x in self.film.x_hole],
+                    [round(s * 1e6, 1) for s in self.film.s],
+                    [round(phi, 3) for phi in self.film.phi_hole],
+                    [round(mu, 3) for mu in self.film.mu_hole],
+                    [round(m, 3) for m in self.film.m],
+                    [round(phi, 3) for phi in self.film.phi_temp],
+                    [round(G * 1e3, 3) for G in self.film.dG_cool_hole],
+                    [round(G / self.film.G_cool0, 3) for G in self.film.dG_cool_hole],
+                ]
+            }
+        )
+
+        return params
+
+    def get_local_params(self, pnt_num=40):
+        x_arr = np.array(np.linspace(self.local_param.x_arr.min(), self.local_param.x_arr.max(), pnt_num))
+
+        params = pd.DataFrame.from_dict(
+            {
+                'Name': [
+                    r'$x,\ мм$',
+                    r'$\alpha_{пл},\ \frac{Вт}{м^2 \cdot К}$',
+                    r'$\alpha_{в},\ \frac{Вт}{м^2 \cdot К}$',
+                    r'$\alpha_{г},\ \frac{Вт}{м^2 \cdot К}$',
+                    r'$T_{в}^*,\ К$',
+                    r'$T_{пл}^*,\ К$',
+                    r'$T_{ст},\ К$',
+                    r'$\theta_{пл}$',
+                    r'$\theta_{охл}$'
+                ],
+                'Value': [
+                    [round(x * 1e3, 1) for x in x_arr],
+                    [round(self.film.get_alpha_film(x), 1) for x in x_arr],
+                    [round(self.get_alpha_cool_fluid(self.film.get_G_cool(x),
+                                                     self.local_param.get_T_cool(x)), 1) for x in x_arr],
+                    [round(self._get_alpha_gas(x), 1) for x in x_arr],
+                    [round(self.local_param.get_T_cool(x)) for x in x_arr],
+                    [round(self.film.get_T_film(x)) for x in x_arr],
+                    [round(self.local_param.get_T_wall(x)) for x in x_arr],
+                    [round(self.film.get_integrate_film_eff(x), 3) for x in x_arr],
+                    [round(self.get_cool_eff(x), 3) for x in x_arr],
+                ]
+            }
+        )
+        return params
+
+
+class FilmBladeCoolingResults:
+    def __init__(self, p_cool_stag0, T_cool0, G_cool0, channel_width, wall_thickness, cool_eff_av,
+                 lam_cover, cover_thickness,
+                 film_params: typing.List[pd.DataFrame],
+                 local_params: typing.List[pd.DataFrame]):
+        self.p_cool_stag0 = p_cool_stag0
+        self.T_cool0 = T_cool0
+        self.G_cool0 = G_cool0
+        self.channel_width = channel_width
+        self.wall_thickness = wall_thickness
+        self.cool_eff_av = cool_eff_av
+        self.lam_cover = lam_cover
+        self.cover_thickness = cover_thickness
+        self.film_params = film_params
+        self.local_params = local_params
+
 
 class FilmBladeCooler(GasBladeHeatExchange):
     """
@@ -731,6 +811,35 @@ class FilmBladeCooler(GasBladeHeatExchange):
             self.res = self._get_residual()
             self.logger.info('Blade computing: Iter №%s, residual = %.4f\n' % (self.iter_num, self.res))
 
+    def get_cool_eff_av(self):
+        T_gas_av = 2 * quad(lambda r: self.T_gas_stag(r), 0.5 * self.D_in, 0.5 * self.D_out)[0] / (self.D_out - self.D_in)
+        return (T_gas_av - self.T_wall_out_av) / (T_gas_av - self.T_cool_av)
+
+    def get_cooling_results(self) -> FilmBladeCoolingResults:
+        film_params = []
+        local_params = []
+
+        for sector in self.sectors:
+            film_params.append(sector.get_film_params())
+            local_params.append(sector.get_local_params())
+
+        results = FilmBladeCoolingResults(self.p_cool_stag0,
+                                          self.T_cool0,
+                                          self.G_cool0,
+                                          self.channel_width,
+                                          self.wall_thickness,
+                                          self.get_cool_eff_av(),
+                                          self.lam_cover,
+                                          self.cover_thickness,
+                                          film_params,
+                                          local_params)
+        return results
+
+    def save_results(self, filename: str):
+        with open(filename, 'wb') as file:
+            results = self.get_cooling_results()
+            pickle.dump(results, file)
+
     def _plot_partition(self, param_arr, param_func, figsize):
         plt.figure(figsize=figsize)
         r_arr = 0.5 * np.array(np.linspace(self.D_in, self.D_out, 100))
@@ -974,7 +1083,7 @@ def get_sa_cooler(
         node_num=500,
         accuracy=0.01,
         g_cool0_s=0.5
-):
+) -> FilmBladeCooler:
     ...
 
 
@@ -1000,7 +1109,7 @@ def get_sa_cooler(
         node_num=500,
         accuracy=0.01,
         g_cool0_s=0.5
-):
+) -> FilmBladeCooler:
     ...
 
 
