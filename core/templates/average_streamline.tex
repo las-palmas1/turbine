@@ -41,7 +41,7 @@
 
         \[
             u_1 = \frac{\pi D_1 n }{60} =
-                \frac{\pi \cdot << stgd.D1 | round(4) >> \cdot << stgd.n >>} =
+                \frac{\pi \cdot << stgd.D1 | round(4) >> \cdot << stgd.n >>}{60} =
             << stgd.u1 | round(2) >>\ м/с
         \]
 
@@ -559,12 +559,11 @@
         \]
         </ endif />
 
-        \item Удельная работа ступени с учетом добавления охлаждающего воздуха:
+        \item Удельная работа ступени, отнесенная к расходу на в СА первой ступени:
         \[
-            L_т^\prime = L_т \frac{ G_{вх} }{ G_т }  - L_т g_{охл} =
+            L_т^\prime = L_т \frac{ G_{вх} }{ G_т }  =
                 << (stgd.L_t / 10**6) | round(4) >> \cdot 10^6 \cdot
-                \frac{ << stgd.G_stage_in | round(2) >> }{ << stgd.G_turbine | round(2) >> }  -
-                << (stgd.L_t / 10**6) | round(4) >> \cdot 10^6 \cdot << stgd.g_cool | round(4) >> =
+                \frac{ << stgd.G_stage_in | round(2) >> }{ << stgd.G_turbine | round(2) >> } =
             << (stgd.L_t_prime / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
         \]
 
@@ -1049,7 +1048,7 @@
         \begin{gather*}
             H_т^* = c_{pг}^* T_г^* \left[
                         1 - \left(
-                                \frac{p_г^*}{p_т} ^
+                                \frac{p_г^*}{p_т^*} ^
                                 \frac{1 - k_г^*}{k_г^*}
                     \right)
                 \right] =\\
@@ -1059,7 +1058,7 @@
                             \frac{
                                 << (turb.p_g_stag / 10**6) | round(4) >> \cdot 10^6
                             }{
-                                << (turb.last.p2 / 10**6) | round(4) >> \cdot 10^6 } ^
+                                << (turb.last.p2_stag / 10**6) | round(4) >> \cdot 10^6 } ^
                             \frac{ 1 - << turb.k_gas_stag | round(4) >> }{ << turb.k_gas_stag | round(4) >> }
                     \right)
             \right] =

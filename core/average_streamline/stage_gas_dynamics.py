@@ -262,8 +262,7 @@ class StageGasDynamics:
         if ('H0' in self._kwargs) or ('p2' in self._kwargs):
             self.L_t = self.H0 * self.eta_t
             logging.debug('%s _compute_stage_parameters L_t = %s' % (self.str(), self.L_t))
-        self.L_t_prime = self.L_t * (self.G_stage_in / self.G_turbine -
-                                     (self.g_ld + self.g_lk + self.g_lb) + self.g_cool)
+        self.L_t_prime = self.L_t * (self.G_stage_in / self.G_turbine - (self.g_ld + self.g_lk + self.g_lb))
         "Удельная работа ступени, отнесенная к расходу через СА первой ступени с учетом потерь из-за утечек и " \
         "добавки охлаждающего воздуха"
         self.T_st = self.T2 + self. h_z / self.c_p_gas + self.h_tv / self.c_p_gas
@@ -282,6 +281,8 @@ class StageGasDynamics:
         self.G_stage_out = self.G_stage_in - self.G_turbine * self.g_lk + self.G_turbine * self.g_cool
         self.g_fuel_out = self.G_fuel / (self.G_stage_out_prime - self.G_fuel + self.g_cool * self.G_turbine)
         self.alpha_air_out = 1 / (self.work_fluid.l0 * self.g_fuel_out)
+        self.pi = self.p0_stag / self.p2
+        self.pi_stag = self.p0_stag / self.p2_stag
         self.G_cool = self.g_cool * self.G_turbine
 
         self.T_mix_stag_new, self.mixture, self.c_p_gas_true_out, \
