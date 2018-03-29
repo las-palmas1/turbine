@@ -5,6 +5,7 @@ from PyQt5.QtCore import Qt
 from gui.average_streamline.widgets import AveLineWidget, StageDataWidget
 from turbine.average_streamline.turbine import Turbine, TurbineType
 import sys
+from turbine.profiling.stage import ProfilingType
 from gas_turbine_cycle.gases import NaturalGasCombustionProducts
 import numpy as np
 
@@ -66,6 +67,25 @@ class AveLineWidgetTest(unittest.TestCase):
             self.assertTrue(stage_data_widget.H0.isHidden())
         self.form.stage_number.setValue(1)
 
+    def test_default_plot_values_list(self):
+        stage_data: StageDataWidget = self.form.stackedWidget.widget(0)
+        plot_values = stage_data.get_plot_values_list()
+        self.assertEqual(plot_values[0], 'alpha1')
+        self.assertEqual(plot_values[1], 'alpha2')
+        self.assertEqual(plot_values[2], 'beta1')
+        self.assertEqual(plot_values[3], 'beta2')
+
+    def test_change_profiling_type(self):
+        stage_data: StageDataWidget = self.form.stackedWidget.widget(0)
+        stage_data.set_profiling_type(ProfilingType.ConstantCirculation)
+        self.assertEqual(stage_data.profiling_type.currentIndex(), 1)
+
+    def test_change_plot_valus(self):
+        stage_data: StageDataWidget = self.form.stackedWidget.widget(0)
+        stage_data.set_plot_values(['c1', 'c2'])
+        self.assertEqual(stage_data.plot_value_list.item(0).text(), 'c1')
+        self.assertEqual(stage_data.plot_value_list.item(1).text(), 'c2')
+
     def test_compute_btn_click(self):
         """Тестируется правильность вывода значений в выходные поля"""
         turbine = self.form.get_turbine()
@@ -74,6 +94,8 @@ class AveLineWidgetTest(unittest.TestCase):
         turbine.compute_integrate_turbine_parameters()
         QTest.mouseClick(self.form.compute_btn, Qt.LeftButton)
         self.assertNotEqual(self.form.turbine, None)
+        self.assertAlmostEqual(self.form.pi_t.value(), turbine.pi_t, places=2)
+        self.assertAlmostEqual(self.form.pi_t_stag.value(), turbine.pi_t_stag, places=2)
         self.assertAlmostEqual(self.form.eta_t.value(), turbine.eta_t, places=3)
         self.assertAlmostEqual(self.form.L_t_sum.value(), turbine.L_t_sum / 1e3, places=2)
         self.assertAlmostEqual(self.form.H_t_stag.value(), turbine.H_t_stag / 1e3, places=2)

@@ -5,6 +5,7 @@ import numpy as np
 from gas_turbine_cycle.gases import KeroseneCombustionProducts, NaturalGasCombustionProducts
 from turbine.average_streamline.stage_geom import TurbineGeomAndHeatDropDistribution, StageGeomAndHeatDrop
 from turbine.average_streamline.turbine import TurbineType, Turbine
+from turbine.profiling.stage import ProfilingType, StageParametersRadialDistribution
 from gui.average_streamline.main_form import Ui_Form
 import gui.average_streamline.stage_data_form as stage_data_form
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
@@ -15,6 +16,7 @@ import os
 from PyQt5.QtWidgets import QFileDialog
 import gui.average_streamline.main_window_sdi_form as main_window_sdi_form
 import logging
+import typing
 
 logger = create_logger(__name__, filename=os.path.join(os.getcwd(), 'error.log'),
                        loggerlevel=logging.ERROR,
@@ -110,15 +112,83 @@ class Canvas(FigureCanvas):
         self.axes.set_ylim(bottom=0)
         self.draw()
 
+    def plot_radial_distribution(self,  stage_par_dist: StageParametersRadialDistribution, par_names: typing.List[str]):
+        self.axes.cla()
+        r_in = 0.5 * stage_par_dist.D1_in
+        r_out = 0.5 * stage_par_dist.D1_out
+        r_av = 0.5 * stage_par_dist.D1_av
+        get_atr = object.__getattribute__
+        y1 = np.array(np.linspace(r_in, r_out, 100)) / r_av
+        y = np.array(np.linspace(r_in, r_out, 100))
+        deg = np.pi / 180
+        for n, item in enumerate(par_names):
+            par = get_atr(stage_par_dist, item)
+            x = [par(i) for i in y]
+            if item.startswith('alpha') or item.startswith('beta') or item.startswith('delta') or \
+                    item.startswith('gamma'):
+                x = [i / deg for i in x]
+            self.axes.plot(x, y1, linewidth=2, label=item)
+        self.axes.legend(fontsize=16)
+        self.axes.set_ylabel(r'$\frac{r}{r_{av}}$', fontsize=22)
+        self.axes.grid()
+        self.draw()
+
 
 class StageDataWidget(QtWidgets.QWidget, stage_data_form.Ui_Form):
-    def __init__(self):
-        QtWidgets.QWidget.__init__(self)
+    def __init__(self, parent=None):
+        QtWidgets.QWidget.__init__(self, parent)
         self.setupUi(self)
         self.triangle_canvas = Canvas(self)
         self.geometry_canvas = Canvas(self)
+        self.rad_dist_canvas = Canvas(self)
+        self.stage_rad_dist: StageParametersRadialDistribution = None
         self.verticalLayout_plot.addWidget(self.triangle_canvas)
         self.verticalLayout_plot.addWidget(self.geometry_canvas)
+        self.horizontalLayout_plot.addWidget(self.rad_dist_canvas)
+        self.plot_rad_dist_btn.clicked.connect(self.on_plot_rad_dist_btn)
+
+    def set_plot_values(self, values: typing.List[str]):
+        self.plot_value_list.clear()
+        for value in values:
+            self.plot_value_list.addItem(value)
+
+    def set_profiling_type(self, profiling_type: ProfilingType):
+        if profiling_type == ProfilingType.ConstantAngle:
+            self.profiling_type.setCurrentIndex(0)
+        elif profiling_type == ProfilingType.ConstantCirculation:
+            self.profiling_type.setCurrentIndex(1)
+
+    def get_plot_values_list(self):
+        result = []
+        for i in range(self.plot_value_list.count()):
+            result.append(self.plot_value_list.item(i).text())
+        return result
+
+    def get_profiling_type(self) -> ProfilingType:
+        profiling_type_index = self.profiling_type.currentIndex()
+        if profiling_type_index == 0:
+            return ProfilingType.ConstantAngle
+        elif profiling_type_index == 1:
+            return ProfilingType.ConstantCirculation
+
+    def show_error_message(self, message):
+        err_message = QtWidgets.QMessageBox(self)
+        err_message.setIcon(QtWidgets.QMessageBox.Warning)
+        err_message.setWindowTitle('Error')
+        err_message.setText('An error occurred during the calculation')
+        err_message.setDetailedText('Exception message:\n%s' % message)
+        err_message.show()
+
+    def on_plot_rad_dist_btn(self):
+        try:
+            profiling_type = self.get_profiling_type()
+            self.stage_rad_dist.profiling_type = profiling_type
+            values_to_plot = self.get_plot_values_list()
+            if values_to_plot:
+                self.rad_dist_canvas.plot_radial_distribution(self.stage_rad_dist, values_to_plot)
+        except Exception as ex:
+            logger.error(ex)
+            self.show_error_message(str(ex))
 
 
 class AveLineWidget(QtWidgets.QWidget, Ui_Form):
@@ -129,7 +199,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         self.geometry_canvas = Canvas(self)
         self.verticalLayout_plot.addWidget(self.heat_drop_canvas)
         self.verticalLayout_plot.addWidget(self.geometry_canvas)
-        stage_widget = StageDataWidget()
+        stage_widget = StageDataWidget(self)
         stage_widget.H0.setVisible(False)
         stage_widget.rho.setVisible(False)
         stage_widget.label_H0.setVisible(False)
@@ -138,6 +208,9 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         self.change_rho_auto()
         self.change_heat_drop_auto()
         self.turbine: Turbine = None
+        self.profiling_type_list: typing.List[ProfilingType] = self.get_profiling_type_list()
+        self.stage_rad_dist_list: typing.List[StageParametersRadialDistribution] = None
+        self.plot_values_lists: typing.List[typing.List[str]] = self.get_plot_values_lists()
         self.prevPage_btn.clicked.connect(self.on_prev_page_btn_click)
         self.nextPage_btn.clicked.connect(self.on_next_page_btn_click)
         self.stage_number.valueChanged.connect(self.change_stage_number)
@@ -145,6 +218,68 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         self.checkBox_rho_auto.stateChanged.connect(self.change_rho_auto)
         self.checkBox_h0_auto.stateChanged.connect(self.change_heat_drop_auto)
         self.compute_btn.clicked.connect(self.on_compute_btn_click)
+
+    def get_plot_values_lists(self) -> typing.List[typing.List[str]]:
+        res = []
+        for i in range(self.stackedWidget.count()):
+            stage_data: StageDataWidget = self.stackedWidget.widget(i)
+            res.append(stage_data.get_plot_values_list())
+        return res
+
+    def get_profiling_type_list(self) -> typing.List[ProfilingType]:
+        res = []
+        for i in range(self.stackedWidget.count()):
+            stage_data: StageDataWidget = self.stackedWidget.widget(i)
+            res.append(stage_data.get_profiling_type())
+        return res
+
+    def get_stage_rad_dist_list(self, turbine: Turbine) -> typing.List[StageParametersRadialDistribution]:
+        res: typing.List[StageParametersRadialDistribution] = []
+        for i in range(self.turbine.stage_number):
+            if i == 0:
+                res.append(StageParametersRadialDistribution(
+                    profiling_type=self.profiling_type_list[i],
+                    p0_stag=lambda r: turbine[i].p0_stag,
+                    T0_stag=lambda r: turbine[i].T0_stag,
+                    c0=lambda r: self.c_inlet.value(),
+                    alpha0=lambda r: np.radians(90).__float__(),
+                    c_p=self.turbine[i].c_p_gas,
+                    k=self.turbine[i].k_gas,
+                    D1_in=self.turbine.geom[i].D1 - self.turbine.geom[i].l1,
+                    D1_av=self.turbine.geom[i].D1,
+                    D1_out=self.turbine.geom[i].D1 + self.turbine.geom[i].l1,
+                    n=self.turbine.n,
+                    c1_av=self.turbine[i].c1,
+                    alpha1_av=self.turbine[i].alpha1,
+                    L_u_av=self.turbine[i].L_u,
+                    c2_a_av=self.turbine[i].c2_a,
+                    c2_u_av=self.turbine[i].c2_u,
+                ))
+            else:
+                res.append(StageParametersRadialDistribution(
+                    profiling_type=self.profiling_type_list[i],
+                    p0_stag=res[i - 1].p2_stag,
+                    T0_stag=res[i - 1].T2_stag,
+                    c0=res[i - 1].c2,
+                    alpha0=res[i - 1].alpha2,
+                    c_p=self.turbine[i].c_p_gas,
+                    k=self.turbine[i].k_gas,
+                    D1_in=self.turbine.geom[i].D1 - self.turbine.geom[i].l1,
+                    D1_av=self.turbine.geom[i].D1,
+                    D1_out=self.turbine.geom[i].D1 + self.turbine.geom[i].l1,
+                    n=self.turbine.n,
+                    c1_av=self.turbine[i].c1,
+                    alpha1_av=self.turbine[i].alpha1,
+                    L_u_av=self.turbine[i].L_u,
+                    c2_a_av=self.turbine[i].c2_a,
+                    c2_u_av=self.turbine[i].c2_u,
+                ))
+        return res
+
+    def set_stage_rad_dist_in_stage_widgets(self):
+        for i in range(self.turbine.stage_number):
+            stage_data: StageDataWidget = self.stackedWidget.widget(i)
+            stage_data.stage_rad_dist = self.stage_rad_dist_list[i]
 
     def on_prev_page_btn_click(self):
         cur_index = self.stackedWidget.currentIndex()
@@ -165,7 +300,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         old_stage_num = self.stackedWidget.count()
         if old_stage_num < new_stage_num:
             for i in range(old_stage_num, new_stage_num):
-                widget = StageDataWidget()
+                widget = StageDataWidget(self)
                 widget.label_stage_title.setText('Ступень %s' % (i + 1))
                 self.stackedWidget.addWidget(widget)
                 self.change_heat_drop_auto()
@@ -217,6 +352,8 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                 widget.label_H0.setVisible(True)
 
     def _set_output(self, turbine: Turbine):
+        self.pi_t.setValue(turbine.pi_t)
+        self.pi_t_stag.setValue(turbine.pi_t_stag)
         self.L_t_sum.setValue(turbine.L_t_sum / 1e3)
         self.H_t_stag.setValue(turbine.H_t_stag / 1e3)
         self.H_t.setValue(turbine.H_t / 1e3)
@@ -230,8 +367,8 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         self.heat_drop_canvas.plot_heat_drop_distribution(turbine.stage_number, H0_arr)
         self.geometry_canvas.plot_geometry(turbine.geom)
         for i in range(self.stackedWidget.count()):
-            stage_data: StageDataWidget = self.stackedWidget.widget(i)
-            stage_data.geometry_canvas.plot_geometry(turbine.geom)
+            stage_form: StageDataWidget = self.stackedWidget.widget(i)
+            stage_form.geometry_canvas.plot_geometry(turbine.geom)
         for i in range(self.stackedWidget.count()):
             stage_form: StageDataWidget = self.stackedWidget.widget(i)
 
@@ -539,25 +676,53 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             turbine.compute_stages_gas_dynamics()
             turbine.compute_integrate_turbine_parameters()
             self._set_output(turbine)
+            self.profiling_type_list = self.get_profiling_type_list()
+            self.stage_rad_dist_list = self.get_stage_rad_dist_list(self.turbine)
+            self.set_stage_rad_dist_in_stage_widgets()
         except Exception as ex:
             logger.error(ex)
             self.show_error_message(str(ex))
 
-    def save_turbine_file(self, fname):
+    def save_data_to_file(self, fname):
         if not self.turbine:
             turbine = self.get_turbine()
         else:
             turbine = self.turbine
+        c_inlet = self.c_inlet.value()
+        profiling_type_list = self.get_profiling_type_list()
+        plot_values_lists = self.get_plot_values_lists()
+        save_data = {
+            'turbine': turbine,
+            'profiling_type_list': profiling_type_list,
+            'c_inlet': c_inlet,
+            'plot_values_lists': plot_values_lists
+        }
         file = open(fname, 'wb')
-        pc.dump(turbine, file)
+        pc.dump(save_data, file)
         file.close()
 
     @classmethod
-    def get_turbine_from_file(cls, fname) -> Turbine:
+    def get_data_from_file(cls, fname):
         file = open(fname, 'rb')
-        turbine: Turbine = pc.load(file)
+        data = pc.load(file)
         file.close()
-        return turbine
+        return data
+
+    def set_input_from_save_data(self, data):
+        turbine = data['turbine']
+        profiling_type_list = data['profiling_type_list']
+        c_inlet = data['c_inlet']
+        plot_values_lists = data['plot_values_lists']
+
+        self.set_input_from_turbine(turbine)
+        self.c_inlet.setValue(c_inlet)
+        self.profiling_type_list = profiling_type_list
+        self.plot_values_lists = plot_values_lists
+
+        for i in range(self.stackedWidget.count()):
+            stage_data: StageDataWidget = self.stackedWidget.widget(i)
+            stage_data.set_plot_values(self.plot_values_lists[i])
+            stage_data.set_profiling_type(self.profiling_type_list[i])
 
     def set_input_from_turbine(self, turbine: Turbine):
 
@@ -674,8 +839,8 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
         if fname:
             try:
                 ave_line_widget: AveLineWidget = self.centralWidget()
-                turbine = ave_line_widget.get_turbine_from_file(fname)
-                ave_line_widget.set_input_from_turbine(turbine)
+                data = ave_line_widget.get_data_from_file(fname)
+                ave_line_widget.set_input_from_save_data(data)
                 self.setWindowTitle(fname)
                 self.save_count = 1
             except Exception as ex:
@@ -688,7 +853,7 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
         if fname:
             try:
                 ave_line_widget: AveLineWidget = self.centralWidget()
-                ave_line_widget.save_turbine_file(os.path.splitext(fname)[0] + self.file_ext)
+                ave_line_widget.save_data_to_file(os.path.splitext(fname)[0] + self.file_ext)
                 self.setWindowTitle(os.path.splitext(fname)[0] + self.file_ext)
                 self.save_count += 1
             except Exception as ex:
@@ -700,7 +865,7 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
             try:
                 fname = self.windowTitle()
                 ave_line_widget: AveLineWidget = self.centralWidget()
-                ave_line_widget.save_turbine_file(fname)
+                ave_line_widget.save_data_to_file(fname)
             except Exception as ex:
                 logger.error(ex)
                 self.show_error_message(str(ex), 'saving')
@@ -710,15 +875,13 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
             if fname:
                 try:
                     ave_line_widget: AveLineWidget = self.centralWidget()
-                    ave_line_widget.save_turbine_file(fname + self.file_ext)
-                    self.setWindowTitle(fname + self.file_ext)
+                    ave_line_widget.save_data_to_file(os.path.splitext(fname)[0] + self.file_ext)
+                    self.setWindowTitle(os.path.splitext(fname)[0] + self.file_ext)
                     self.save_count += 1
                 except Exception as ex:
                     logger.error(ex)
                     self.show_error_message(str(ex), 'saving')
 
+
 if __name__ == '__main__':
-    app = QtWidgets.QApplication(sys.argv)
-    window = AveStreamLineMainWindow()
-    window.show()
-    sys.exit(app.exec_())
+    pass
