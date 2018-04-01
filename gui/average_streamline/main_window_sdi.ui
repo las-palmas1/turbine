@@ -41,6 +41,8 @@
     </property>
     <addaction name="act_new"/>
     <addaction name="act_open"/>
+    <addaction name="act_load_input_data"/>
+    <addaction name="act_write_input_data"/>
     <addaction name="separator"/>
     <addaction name="act_save"/>
     <addaction name="act_save_as"/>
@@ -54,15 +56,24 @@
    <property name="text">
     <string>Новый</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+N</string>
+   </property>
   </action>
   <action name="act_open">
    <property name="text">
     <string>Открыть</string>
    </property>
+   <property name="shortcut">
+    <string>Ctrl+O</string>
+   </property>
   </action>
   <action name="act_save">
    <property name="text">
     <string>Сохранить</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+S</string>
    </property>
   </action>
   <action name="act_save_as">
@@ -73,6 +84,16 @@
   <action name="act_exit">
    <property name="text">
     <string>Выход</string>
+   </property>
+  </action>
+  <action name="act_load_input_data">
+   <property name="text">
+    <string>Загрузить файл входных данных</string>
+   </property>
+  </action>
+  <action name="act_write_input_data">
+   <property name="text">
+    <string>Записать файл входных данных для следующей турбины</string>
    </property>
   </action>
  </widget>

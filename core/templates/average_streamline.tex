@@ -706,7 +706,7 @@
             << stgd.G_cool | round(3) >>
         \]
 
-        \item Определим температуру торможения на выходе из турбины после подмешивания охлаждающего воздуха.
+        \item Определим температуру торможения на выходе из ступени после подмешивания охлаждающего воздуха.
         \begin{enumerate}
 
             \item Истинная теплоемкость охлаждающего воздуха при температуре $T_{охл} = << stgd.T_cool | round(2) >>\ К $:
@@ -1088,6 +1088,20 @@
             \eta_т^* = \frac{ L_{т\Sigma} }{ H_т^* } =
                 \frac{ << (turb.L_t_sum / 10**6) | round(4) >> \cdot 10^6 }{ << (turb.H_t_stag / 10**6) | round(4) >> \cdot 10^6 } =
             << turb.eta_t_stag | round(4) >>
+        \]
+
+        \item Степень понижения давления по статическим параметрам:
+        \[
+            \pi_{т} = \frac{p_{01}^*}{p_{2 << turb.stage_number >>}} =
+            \frac{<< (turb.first.p0_stag / 10**6) | round(4) >>}{<< (turb.last.p2 / 10**6) | round(4) >>} =
+            << (turb.pi_t) | round(3) >>
+        \]
+
+        \item Степень понижения давления по параметрам торможения:
+        \[
+            \pi_{т}^* = \frac{p_{01}^*}{p_{2 << turb.stage_number >>}^*} =
+            \frac{<< (turb.first.p0_stag / 10**6) | round(4) >>}{<< (turb.last.p2_stag / 10**6) | round(4) >>} =
+            << (turb.pi_t_stag) | round(3) >>
         \]
 
     \end{enumerate}

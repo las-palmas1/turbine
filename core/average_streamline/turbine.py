@@ -8,12 +8,34 @@ from .stage_gas_dynamics import StageGasDynamics, get_first_stage, \
 from enum import Enum
 from scipy.interpolate import interp1d
 import os
+from gas_turbine_cycle.tools.functions import eta_turb_stag_p
 import pickle as pk
 
 
 class TurbineType(Enum):
     Power = 0
     Compressor = 1
+
+
+class TurbineInput:
+    """ Содержит входные данные для расчета турбина по средней линии тока, известные из расчета цикла. """
+
+    ext = '.avlinit'
+
+    def __init__(self, turbine_type: TurbineType, T_g_stag, p_g_stag, G_turbine, G_fuel,
+                 work_fluid: IdealGas, T_t_stag_cycle, eta_t_stag_cycle):
+        self.turbine_type = turbine_type
+        self.T_g_stag = T_g_stag
+        self.p_g_stag = p_g_stag
+        self.G_turbine = G_turbine
+        self.G_fuel = G_fuel
+        self.work_fluid = work_fluid
+        self.T_t_stag_cycle = T_t_stag_cycle
+        self.eta_t_stag_cycle = eta_t_stag_cycle
+
+    def write_input_file(self, fname: str):
+        with open(os.path.splitext(fname)[0] + self.ext, 'wb') as f:
+            pk.dump(self, f)
 
 
 class Turbine:
@@ -146,6 +168,7 @@ class Turbine:
         self.pi_t = None
         self.pi_t_stag = None
         self.N = None
+        self.eta_t_stag_p = None
         self._eta_m = eta_m
         self._init_turbine_geom()
         self.log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
@@ -331,6 +354,7 @@ class Turbine:
                                                                       ((1 - self.work_fluid.k_av_int) /
                                                                        self.work_fluid.k_av_int))
         self.eta_t_stag = self.L_t_sum / self.H_t_stag
+        self.eta_t_stag_p = eta_turb_stag_p(self.pi_t_stag, self.k_gas_stag, self.eta_t_stag)
         self.N = self.L_t_sum * self.G_turbine * self.eta_m
 
     def save(self, filename='average_streamline_calculation_results'):

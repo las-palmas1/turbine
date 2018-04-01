@@ -1,5 +1,5 @@
 from .turbine import TurbineType, Turbine
-from gas_turbine_cycle.gases import KeroseneCombustionProducts
+from gas_turbine_cycle.gases import KeroseneCombustionProducts, NaturalGasCombustionProducts
 import unittest
 import numpy as np
 
@@ -7,15 +7,14 @@ import numpy as np
 class TurbineTest(unittest.TestCase):
     def setUp(self):
         self.comp_turb_h0_auto = Turbine(TurbineType.Compressor,
-                                         T_g_stag=1400,
-                                         p_g_stag=5.5e5,
-                                         G_turbine=25,
-                                         G_fuel=1,
+                                         T_g_stag=1523,
+                                         p_g_stag=16e5,
+                                         G_turbine=40,
+                                         G_fuel=0.8,
                                          work_fluid=KeroseneCombustionProducts(),
-                                         alpha_air=2.87,
                                          l1_D1_ratio=0.25,
-                                         n=15e3,
-                                         T_t_stag_cycle=1200,
+                                         n=13e3,
+                                         T_t_stag_cycle=1100,
                                          stage_number=2,
                                          eta_t_stag_cycle=0.91,
                                          k_n=6.8,
@@ -29,21 +28,20 @@ class TurbineTest(unittest.TestCase):
                                          gamma_av=np.radians([4])[0],
                                          gamma_sum=np.radians([10])[0])
         self.comp_turb_h0_auto.geom[0].g_cool = 0.03
-        self.comp_turb_h0_auto.geom[0].g_lb = 0.002
-        self.comp_turb_h0_auto.geom[0].g_lk = 0.001
-        self.comp_turb_h0_auto.geom[0].g_ld = 0.0015
+        self.comp_turb_h0_auto.geom[0].g_lb = 0.00
+        self.comp_turb_h0_auto.geom[0].g_lk = 0.00
+        self.comp_turb_h0_auto.geom[0].g_ld = 0.00
         self.comp_turb_h0_auto.geom[0].T_cool = 750
         self.comp_turb_h0_auto.geom[1].g_cool = 0.03
         self.comp_turb_h0_hand = Turbine(TurbineType.Compressor,
-                                         T_g_stag=1400,
-                                         p_g_stag=5.5e5,
-                                         G_turbine=25,
-                                         G_fuel=1,
-                                         work_fluid=KeroseneCombustionProducts(),
-                                         alpha_air=2.87,
-                                         l1_D1_ratio=0.25,
-                                         n=15e3,
-                                         T_t_stag_cycle=1200,
+                                         T_g_stag=1523,
+                                         p_g_stag=16e5,
+                                         G_turbine=40,
+                                         G_fuel=0.8,
+                                         work_fluid=NaturalGasCombustionProducts(),
+                                         l1_D1_ratio=0.12,
+                                         n=13e3,
+                                         T_t_stag_cycle=1100,
                                          stage_number=2,
                                          eta_t_stag_cycle=0.91,
                                          k_n=6.8,
@@ -61,7 +59,6 @@ class TurbineTest(unittest.TestCase):
                                           G_turbine=25,
                                           G_fuel=1,
                                           work_fluid=KeroseneCombustionProducts(),
-                                          alpha_air=2.87,
                                           l1_D1_ratio=0.25,
                                           n=15e3,
                                           T_t_stag_cycle=1200,
@@ -84,7 +81,6 @@ class TurbineTest(unittest.TestCase):
                                           G_turbine=25,
                                           G_fuel=1,
                                           work_fluid=KeroseneCombustionProducts(),
-                                          alpha_air=2.87,
                                           l1_D1_ratio=0.25,
                                           n=15e3,
                                           T_t_stag_cycle=1200,
@@ -116,9 +112,9 @@ class TurbineTest(unittest.TestCase):
         gd1 = self.comp_turb_h0_auto[0]
         gd2 = self.comp_turb_h0_auto[1]
 
-        L_st1 = gd1.c_p_gas * (gd1.T0_stag - gd1.T_st_stag) * (1 - gd1.g_lb - gd1.g_lk - gd1.g_ld + gd1.g_cool)
+        L_st1 = gd1.c_p_gas * (gd1.T0_stag - gd1.T_st_stag) * (1 - gd1.g_lb - gd1.g_lk - gd1.g_ld)
         L_st2 = gd2.c_p_gas * (gd2.T0_stag - gd2.T_st_stag) * (gd2.G_stage_in / gd2.G_turbine -
-                                                               gd2.g_lb - gd2.g_lk - gd2.g_ld + gd2.g_cool)
+                                                               gd2.g_lb - gd2.g_lk - gd2.g_ld)
         self.assertAlmostEqual(abs((L_st1 + L_st2) - self.comp_turb_h0_auto.L_t_cycle) / (L_st1 + L_st2), 0, places=2)
 
         self.assertEqual(self.comp_turb_h0_auto[0].L_t_prime + self.comp_turb_h0_auto[1].L_t_prime,
@@ -206,7 +202,7 @@ class TurbineTest(unittest.TestCase):
         self.comp_turb_h0_auto.compute_integrate_turbine_parameters()
 
         self.assertEqual(self.comp_turb_h0_auto[0].T_mix_stag, self.comp_turb_h0_auto[1].T0_stag)
-        self.assertEqual(self.comp_turb_h0_auto[0].p2_stag, self.comp_turb_h0_auto[1].p0_stag)
+        self.assertAlmostEqual(self.comp_turb_h0_auto[0].p2_stag, self.comp_turb_h0_auto[1].p0_stag, places=3)
         self.assertEqual(self.comp_turb_h0_auto[0].G_turbine, self.comp_turb_h0_auto[1].G_turbine)
         self.assertEqual(self.comp_turb_h0_auto[0].G_stage_out, self.comp_turb_h0_auto[1].G_stage_in)
         self.assertEqual(self.comp_turb_h0_auto[0].alpha_air_out, self.comp_turb_h0_auto[1].alpha_air_in)
@@ -239,8 +235,8 @@ class TurbineTest(unittest.TestCase):
         self.assertEqual(self.comp_turb_h0_auto.geom[1].epsilon, self.comp_turb_h0_auto[1].epsilon)
         self.assertEqual(self.comp_turb_h0_auto.geom[1].delta_r_rk, self.comp_turb_h0_auto[1].delta_r_rk)
 
-        self.assertLess(self.comp_turb_h0_auto[0].T_mix_stag, self.comp_turb_h0_auto[0].T_st_stag)
-        self.assertLess(self.comp_turb_h0_auto[0].alpha_air_in, self.comp_turb_h0_auto[0].alpha_air_out)
+        self.assertLessEqual(self.comp_turb_h0_auto[0].T_mix_stag, self.comp_turb_h0_auto[0].T_st_stag)
+        self.assertLessEqual(self.comp_turb_h0_auto[0].alpha_air_in, self.comp_turb_h0_auto[0].alpha_air_out)
 
 
 

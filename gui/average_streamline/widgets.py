@@ -4,7 +4,7 @@ import pickle as pc
 import numpy as np
 from gas_turbine_cycle.gases import KeroseneCombustionProducts, NaturalGasCombustionProducts
 from turbine.average_streamline.stage_geom import TurbineGeomAndHeatDropDistribution, StageGeomAndHeatDrop
-from turbine.average_streamline.turbine import TurbineType, Turbine
+from turbine.average_streamline.turbine import TurbineType, Turbine, TurbineInput
 from turbine.profiling.stage import ProfilingType, StageParametersRadialDistribution
 from gui.average_streamline.main_form import Ui_Form
 import gui.average_streamline.stage_data_form as stage_data_form
@@ -241,7 +241,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
                     profiling_type=self.profiling_type_list[i],
                     p0_stag=lambda r: turbine[i].p0_stag,
                     T0_stag=lambda r: turbine[i].T0_stag,
-                    c0=lambda r: self.c_inlet.value(),
+                    c0=lambda r: self.turbine.geom.c_inlet,
                     alpha0=lambda r: np.radians(90).__float__(),
                     c_p=self.turbine[i].c_p_gas,
                     k=self.turbine[i].k_gas,
@@ -362,6 +362,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         self.eta_l.setValue(turbine.eta_l)
         self.c_p_gas_av.setValue(turbine.c_p_gas)
         self.k_gas_av.setValue(turbine.k_gas)
+        self.eta_t_stag_p.setValue(turbine.eta_t_stag_p)
         self.N.setValue(turbine.N / 1e6)
         H0_arr = [stage_geom.H0 / 1e6 for stage_geom in turbine.geom]
         self.heat_drop_canvas.plot_heat_drop_distribution(turbine.stage_number, H0_arr)
@@ -688,13 +689,11 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             turbine = self.get_turbine()
         else:
             turbine = self.turbine
-        c_inlet = self.c_inlet.value()
         profiling_type_list = self.get_profiling_type_list()
         plot_values_lists = self.get_plot_values_lists()
         save_data = {
             'turbine': turbine,
             'profiling_type_list': profiling_type_list,
-            'c_inlet': c_inlet,
             'plot_values_lists': plot_values_lists
         }
         file = open(fname, 'wb')
@@ -708,14 +707,29 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         file.close()
         return data
 
+    def write_input_data_for_next_turbine(self, fname):
+        if os.path.exists(fname):
+            with open(fname, 'rb') as f:
+                turb_input: TurbineInput = pc.load(f)
+            turb_input.T_g_stag = self.turbine.last.T_mix_stag
+            turb_input.p_g_stag = self.turbine.last.p2_stag
+            turb_input.G_fuel = self.turbine.last.G_fuel
+            turb_input.G_turbine = self.turbine.last.G_stage_out
+            turb_input.work_fluid = self.turbine.work_fluid
+            turb_input.write_input_file(fname)
+        else:
+            turb_input = TurbineInput(TurbineType.Power, self.turbine.last.T_mix_stag, self.turbine.last.p2_stag,
+                                      self.turbine.last.G_stage_out, self.turbine.last.G_fuel,
+                                      self.turbine.work_fluid, self.turbine.last.T_mix_stag - 200,
+                                      self.turbine.eta_t_stag_cycle)
+            turb_input.write_input_file(fname)
+
     def set_input_from_save_data(self, data):
         turbine = data['turbine']
         profiling_type_list = data['profiling_type_list']
-        c_inlet = data['c_inlet']
         plot_values_lists = data['plot_values_lists']
 
         self.set_input_from_turbine(turbine)
-        self.c_inlet.setValue(c_inlet)
         self.profiling_type_list = profiling_type_list
         self.plot_values_lists = plot_values_lists
 
@@ -723,6 +737,22 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_data: StageDataWidget = self.stackedWidget.widget(i)
             stage_data.set_plot_values(self.plot_values_lists[i])
             stage_data.set_profiling_type(self.profiling_type_list[i])
+
+    def set_data_from_turbine_input(self, turb_input: TurbineInput):
+        if turb_input.turbine_type == TurbineType.Power:
+            self.turbine_type.setCurrentIndex(0)
+        elif turb_input.turbine_type == TurbineType.Compressor:
+            self.turbine_type.setCurrentIndex(1)
+        if type(turb_input.work_fluid) == KeroseneCombustionProducts:
+            self.fuel.setCurrentIndex(0)
+        elif type(turb_input.work_fluid) == NaturalGasCombustionProducts:
+            self.fuel.setCurrentIndex(1)
+        self.G_fuel.setValue(turb_input.G_fuel)
+        self.T_g_stag.setValue(turb_input.T_g_stag)
+        self.p_g_stag.setValue(turb_input.p_g_stag / 1e6)
+        self.T_t_stag_cycle.setValue(turb_input.T_t_stag_cycle)
+        self.eta_t_stag_cycle.setValue(turb_input.eta_t_stag_cycle)
+        self.G_t.setValue(turb_input.G_turbine)
 
     def set_input_from_turbine(self, turbine: Turbine):
 
@@ -818,6 +848,8 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
         self.act_open.triggered.connect(self.on_open_action)
         self.act_save_as.triggered.connect(self.on_save_as_action)
         self.act_save.triggered.connect(self.on_save_action)
+        self.act_load_input_data.triggered.connect(self.on_load_input_data_action)
+        self.act_write_input_data.triggered.connect(self.on_write_input_data_action)
 
     def show_error_message(self, message, process_name='saving'):
         err_message = QtWidgets.QMessageBox(self)
@@ -832,9 +864,38 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
         self.setWindowTitle('Unnamed')
         self.save_count = 0
 
+    @classmethod
+    def get_turbine_input(cls, fname) -> TurbineInput:
+        with open(fname, 'rb') as f:
+            turb_input = pc.load(f)
+        return turb_input
+
+    def on_write_input_data_action(self):
+        fname, _ = QFileDialog.getOpenFileName(self, 'Сохранить как...', os.getcwd(),
+                                               'Turbine Input files  (*%s)' % TurbineInput.ext[1:])
+        if fname:
+            try:
+                ave_line_widget: AveLineWidget = self.centralWidget()
+                ave_line_widget.write_input_data_for_next_turbine(fname)
+            except Exception as ex:
+                logger.error(ex)
+                self.show_error_message(str(ex), 'loading input file')
+
+    def on_load_input_data_action(self):
+        fname, _ = QFileDialog.getOpenFileName(self, 'Открыть файл', os.getcwd(),
+                                               'Turbine Input files  (*%s)' % TurbineInput.ext[1:])
+        if fname:
+            try:
+                turb_input = self.get_turbine_input(fname)
+                ave_line_widget: AveLineWidget = self.centralWidget()
+                ave_line_widget.set_data_from_turbine_input(turb_input)
+            except Exception as ex:
+                logger.error(ex)
+                self.show_error_message(str(ex), 'loading input file')
+
     def on_open_action(self):
         fname, _ = QFileDialog.getOpenFileName(self, 'Открыть файл', os.getcwd(),
-                                               'Turbine AveLine files  (*%s)' % 'avl')
+                                               'Turbine AveLine files  (*%s)' % self.file_ext[1:])
 
         if fname:
             try:
@@ -849,7 +910,7 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
 
     def on_save_as_action(self):
         fname, _ = QFileDialog.getSaveFileName(self, 'Сохранить как...', os.getcwd(),
-                                               'Turbine AveLine files (*%s)' % 'avl')
+                                               'Turbine AveLine files (*%s)' % self.file_ext[1:])
         if fname:
             try:
                 ave_line_widget: AveLineWidget = self.centralWidget()
@@ -871,7 +932,7 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
                 self.show_error_message(str(ex), 'saving')
         else:
             fname, _ = QFileDialog.getSaveFileName(self, 'Сохранить как...', os.getcwd(),
-                                                   'Turbine AveLine files (*%s)' % 'avl')
+                                                   'Turbine AveLine files (*%s)' % self.file_ext[1:])
             if fname:
                 try:
                     ave_line_widget: AveLineWidget = self.centralWidget()

@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QApplication
 from PyQt5.QtTest import QTest
 from PyQt5.QtCore import Qt
 from gui.average_streamline.widgets import AveLineWidget, StageDataWidget
-from turbine.average_streamline.turbine import Turbine, TurbineType
+from turbine.average_streamline.turbine import Turbine, TurbineType, TurbineInput
 import sys
 from turbine.profiling.stage import ProfilingType
 from gas_turbine_cycle.gases import NaturalGasCombustionProducts
@@ -105,6 +105,7 @@ class AveLineWidgetTest(unittest.TestCase):
         self.assertAlmostEqual(self.form.c_p_gas_av.value(), turbine.c_p_gas, places=2)
         self.assertAlmostEqual(self.form.k_gas_av.value(), turbine.k_gas, places=3)
         self.assertAlmostEqual(self.form.N.value(), turbine.N / 1e6, places=3)
+        self.assertAlmostEqual(self.form.eta_t_stag_p.value(), turbine.eta_t_stag_p, places=3)
         for i in range(self.form.stackedWidget.count()):
             stage_data: StageDataWidget = self.form.stackedWidget.widget(i)
             self.assertAlmostEqual(stage_data.gamma_sum.value(), np.degrees(turbine.geom.gamma_sum), places=2)
@@ -172,6 +173,19 @@ class AveLineWidgetTest(unittest.TestCase):
             self.assertAlmostEqual(stage_data.T1_w_stag.value(), turbine[i].T1_w_stag, places=1)
             self.assertAlmostEqual(stage_data.T_mix_stag.value(), turbine[i].T_mix_stag, places=1)
             self.assertAlmostEqual(stage_data.alpha_air_out.value(), turbine[i].alpha_air_out, places=1)
+
+    def test_setting_data_from_input_file(self):
+        turbine_input = TurbineInput(TurbineType.Compressor, 1500, 12e5, 25, 1,
+                                     NaturalGasCombustionProducts(), 1200, 0.91)
+        self.form.set_data_from_turbine_input(turbine_input)
+        self.assertEqual(self.form.turbine_type.currentIndex(), 1)
+        self.assertEqual(self.form.fuel.currentIndex(), 1)
+        self.assertAlmostEqual(self.form.T_g_stag.value(), turbine_input.T_g_stag, 2)
+        self.assertAlmostEqual(self.form.p_g_stag.value(), turbine_input.p_g_stag / 1e6, places=3)
+        self.assertAlmostEqual(self.form.G_t.value(), turbine_input.G_turbine, places=2)
+        self.assertAlmostEqual(self.form.G_fuel.value(), turbine_input.G_fuel, places=2)
+        self.assertAlmostEqual(self.form.T_t_stag_cycle.value(), turbine_input.T_t_stag_cycle, places=0)
+        self.assertAlmostEqual(self.form.eta_t_stag_cycle.value(), turbine_input.eta_t_stag_cycle, places=2)
 
     def test_setting_input_data_from_turbine(self):
         turbine = Turbine(turbine_type=TurbineType.Compressor,

@@ -372,7 +372,7 @@ def get_last_work_stage(stage_geom: StageGeomAndHeatDrop, prev_stage: StageGasDy
                         prev_stage_geom: StageGeomAndHeatDrop, L_stage_rel, eta_t0, G_fuel) -> StageGasDynamics:
     """Расчет последней ступени по работе турбины (для компрессорной турбины)"""
     L_stage = L_stage_rel / (prev_stage.G_stage_out / prev_stage.G_turbine -
-                             (stage_geom.g_lb + stage_geom.g_ld + stage_geom.g_lk) + stage_geom.g_cool)
+                             (stage_geom.g_lb + stage_geom.g_ld + stage_geom.g_lk))
     p0_stag = prev_stage.p2 * (1 + (prev_stage_geom.mu * prev_stage.c2) ** 2 / (2 * prev_stage.c_p_gas *
                                                                            prev_stage.T_st)) ** \
                               (prev_stage.k_gas / (prev_stage.k_gas - 1))
@@ -388,7 +388,7 @@ def get_last_work_stage(stage_geom: StageGeomAndHeatDrop, prev_stage: StageGasDy
 
 def get_only_work_stage(stage_geom: StageGeomAndHeatDrop, L_stage_rel, eta_t0,
                         T0_stag, p0_stag, G_turbine, G_fuel) -> StageGasDynamics:
-    L_stage = L_stage_rel / (1 - (stage_geom.g_lb + stage_geom.g_ld + stage_geom.g_lk) + stage_geom.g_cool)
+    L_stage = L_stage_rel / (1 - (stage_geom.g_lb + stage_geom.g_ld + stage_geom.g_lk))
     result = StageGasDynamics(T0_stag, p0_stag, G_turbine, G_turbine, G_fuel, KeroseneCombustionProducts(),
                               stage_geom.rho, stage_geom.phi, stage_geom.psi, stage_geom.l1, stage_geom.l2,
                               stage_geom.D1, stage_geom.D2, stage_geom.delta_r_rk, stage_geom.n, stage_geom.epsilon,

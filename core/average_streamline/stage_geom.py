@@ -517,6 +517,18 @@ class TurbineGeomAndHeatDropDistribution:
                      ((self.p_g_stag / self.p_t) ** ((self.k_gas - 1) / self.k_gas) - 1)
         "Коэффициент возврата теплоты"
 
+    def _compute_inlet_velocity(self):
+        square = np.pi * self[0].D0 * self[0].l0
+        rho_stag = self.p_g_stag / (self.T_g_stag * self.work_fluid.R)
+        a_cr = GasDynamicFunctions.a_cr(self.T_g_stag, self.k_gas, self.work_fluid.R)
+        c_in = fsolve(
+            lambda X: [
+                self.G_turbine -
+                square * X[0] * rho_stag * GasDynamicFunctions.eps_lam(X[0] / a_cr, self.k_gas)
+            ], np.array([100])
+        )[0]
+        self.c_inlet = c_in
+
     def compute(self):
         if self.auto_compute_heat_drop:
             self._specify_h01()
@@ -527,6 +539,7 @@ class TurbineGeomAndHeatDropDistribution:
         self._compute_geometry()
         self._compute_sigma_l()
         self._compute_outlet_static_parameters()
+        self._compute_inlet_velocity()
 
     def _specify_h01(self):
         logging.info('')
