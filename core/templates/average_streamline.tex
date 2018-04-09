@@ -590,26 +590,26 @@
             << stgd.work_fluid.c_p_av_func(stgd.T0_stag, alpha=stgd.alpha_air_in) | round(2) >> \ Дж/(кг \cdot К)
         \]
 
-        \item Средняя теплоемкость газа в интервале температур от 273 К до $T_{ст}$:
+        \item Средняя теплоемкость газа в интервале температур от 273 К до $T_{ст}^*$:
         \[
-            c_{pг\ ср} (T_{ст}, \alpha_{вх}) =
-            << stgd.work_fluid.c_p_av_func(stgd.T_st, alpha=stgd.alpha_air_in) | round(2) >> \ Дж/(кг \cdot К)
+            c_{pг\ ср} (T_{ст}^*, \alpha_{вх}) =
+            << stgd.work_fluid.c_p_av_func(stgd.T_st_stag, alpha=stgd.alpha_air_in) | round(2) >> \ Дж/(кг \cdot К)
         \]
 
-        \item Средняя теплоемкость газа в интервале температур от $T_0^*$ до $T_{ст}$:
+        \item Средняя теплоемкость газа в интервале температур от $T_0^*$ до $T_{ст}^*$:
         \begin{gather*}
             c_{pг}^\prime = \frac{
-		        c_{pг\ ср} (T_0^*, \alpha_{вх}) (T_0^* - T_0) - c_{pг\ ср} (T_{ст}, \alpha_{вх})(T_{ст} - T_0)
+		        c_{pг\ ср} (T_0^*, \alpha_{вх}) (T_0^* - T_0) - c_{pг\ ср} (T_{ст}^*, \alpha_{вх})(T_{ст}^* - T_0)
 		    }{
-		        T_0^* - T_{ст}} =\\
+		        T_0^* - T_{ст}^*} =\\
             =\frac{
 		        << stgd.work_fluid.c_p_av_func(stgd.T0_stag, alpha=stgd.alpha_air_in) | round(2) >> \cdot
                 (<< stgd.T0_stag | round(2) >> - 273) -
-		        << stgd.work_fluid.c_p_av_func(stgd.T_st, alpha=stgd.alpha_air_in) | round(2) >> \cdot
-                (<< stgd.T_st | round(2) >> - 273)
+		        << stgd.work_fluid.c_p_av_func(stgd.T_st_stag, alpha=stgd.alpha_air_in) | round(2) >> \cdot
+                (<< stgd.T_st_stag | round(2) >> - 273)
 		    }{
-		        << stgd.T0_stag | round(2) >> - << stgd.T_st | round(2) >>} =
-		    << stgd.work_fluid.c_p_av_int_func(stgd.T_st, stgd.T0_stag, alpha=stgd.alpha_air_in) | round(2) >> \ Дж / (кг \cdot К)\\
+		        << stgd.T0_stag | round(2) >> - << stgd.T_st_stag | round(2) >>} =
+		    << stgd.work_fluid.c_p_av_int_func(stgd.T_st_stag, stgd.T0_stag, alpha=stgd.alpha_air_in) | round(2) >> \ Дж / (кг \cdot К)\\
         \end{gather*}
 
         \item Новое значение показателя адиабаты:
@@ -631,7 +631,7 @@
                 }{
                     << stgd.k_gas | round(4) >>
                 } \cdot 100 \% =
-            << (stgd.dk_rel * 100) | round(4) >> \%
+            << (stgd.k_res * 100) | round(4) >> \%
         \]
 
         \item Давление торможения на выходе из ступени:
@@ -900,7 +900,7 @@
                     \left| << stgd.eta_t | round(4) >> - << stgd.eta_t_old | round(4) >> \right|
                 }{
                     << stgd.eta_t_old | round(4) >> } \cdot 100 \% =
-            << (stgd.d_eta_t_rel * 100) | round(3) >> \%
+            << (stgd.eta_t_res * 100) | round(3) >> \%
         \]
 
     \end{enumerate}

@@ -218,7 +218,7 @@ class TurbineGeomAndHeatDropDistribution:
     """
     def __init__(self, stage_number, eta_t_stag, n, work_fluid: IdealGas, T_g_stag,
                  p_g_stag, G_fuel, G_turbine, l1_D1_ratio, alpha11, k_n, T_t_stag,
-                 auto_compute_heat_drop: bool=True, **kwargs):
+                 auto_compute_heat_drop: bool=True, precision=0.001, **kwargs):
         """
         :param stage_number:
         :param eta_t_stag:
@@ -233,6 +233,7 @@ class TurbineGeomAndHeatDropDistribution:
         :param k_n:
         :param T_t_stag:
         :param auto_compute_heat_drop:
+        :param precision: точность.
         :param kwargs: gamma_av, gamma_sum, gamma_in, gamma_out, c21
         """
         self.stage_number = stage_number
@@ -250,6 +251,7 @@ class TurbineGeomAndHeatDropDistribution:
         self.p_t_stag, self.H_t_stag = self._get_p_t_stag_and_H_t(self.work_fluid, p_g_stag, T_g_stag,
                                                                   T_t_stag, eta_t_stag, G_turbine, G_fuel)
         self.auto_compute_heat_drop = auto_compute_heat_drop
+        self.precision = precision
         self._kwargs = kwargs
         if ('gamma_av' in kwargs) and ('gamma_sum' in kwargs):
             self.gamma_av = kwargs['gamma_av']
@@ -336,9 +338,9 @@ class TurbineGeomAndHeatDropDistribution:
     def _compute_t_11(self):
         """Вычисляет величину температуры перед РК первой ступени T_11"""
         logging.info('Вычисление температуры перед РК первой ступени')
-        self.dT11_rel = 1.
+        self.T11_res = 1.
         self._iter_number_d1_l1 = 0
-        while self.dT11_rel >= 0.001:
+        while self.T11_res >= self.precision:
             self._iter_number_d1_l1 += 1
             logging.debug('%s _compute_t_11 iter_number = %s' % (self.str(), self._iter_number_d1_l1))
             self.work_fluid.T1 = self.T_g_stag
@@ -351,9 +353,9 @@ class TurbineGeomAndHeatDropDistribution:
             self.c_p_gas11 = self.work_fluid.c_p_av_int
             logging.debug('%s _compute_t_11 c_p_gas11 = %s' % (self.str(), self.k_gas11))
             self.T_11 = self.T_g_stag - self.H_s1 * self._stages[0].phi ** 2 / self.c_p_gas11
-            self.dT11_rel = abs(self.T_11 - self.work_fluid.T2) / self.work_fluid.T2
+            self.T11_res = abs(self.T_11 - self.work_fluid.T2) / self.work_fluid.T2
             self.work_fluid.T2 = self.T_11
-            logging.debug('%s _compute_t_11 dT11_rel = %s' % (self.str(), self.dT11_rel))
+            logging.debug('%s _compute_t_11 T11_res = %s' % (self.str(), self.T11_res))
 
     def _compute_angles(self):
         logging.info('Вычисление углов')
@@ -480,9 +482,9 @@ class TurbineGeomAndHeatDropDistribution:
         self.work_fluid.alpha = self.alpha_air
         self.rho_t_stag = self.p_t_stag / (self.work_fluid.R * self.T_t_stag)
         self.work_fluid.T1 = self.T_t_stag
-        self.dT_t_rel = 1
+        self.T_t_res = 1
         self._iter_number_static_par = 0
-        while self.dT_t_rel >= 0.001:
+        while self.T_t_res >= self.precision:
             self._iter_number_static_par += 1
             logging.debug('%s _compute_outlet_static_parameters _iter_number = %s' %
                          (self.str(), self._iter_number_static_par))
@@ -490,12 +492,15 @@ class TurbineGeomAndHeatDropDistribution:
             self.k_gas_t = self.work_fluid.k_av_int
             logging.debug('%s _compute_outlet_static_parameters k_gas_t = %s' % (self.str(), self.k_gas_t))
             self.a_cr_t = GasDynamicFunctions.a_cr(self.T_t_stag, self.work_fluid.k_av_int, self.work_fluid.R)
+            G_outlet = self.G_turbine
+            for i in self:
+                G_outlet += i.g_cool * self.G_turbine
 
             def eps(c):
                 return GasDynamicFunctions.eps_lam(c / self.a_cr_t, self.work_fluid.k)
 
             def func_to_solve(x):
-                return [x[0] * eps(x[0]) - self.G_turbine / (self.rho_t_stag * self.last.A2)]
+                return [x[0] * eps(x[0]) - G_outlet / (self.rho_t_stag * self.last.A2)]
 
             x = fsolve(func_to_solve, np.array([200]))
             self.c_t = x[0]
@@ -504,8 +509,8 @@ class TurbineGeomAndHeatDropDistribution:
             self.p_t = self.p_t_stag * GasDynamicFunctions.pi_lam(self.lam_t, self.work_fluid.k_av_int)
             self.T_t = self.T_t_stag * GasDynamicFunctions.tau_lam(self.lam_t, self.work_fluid.k_av_int)
             logging.debug('%s _compute_outlet_static_parameters T_t = %s' % (self.str(), self.T_t))
-            self.dT_t_rel = abs(self.T_t - self.work_fluid.T2) / self.work_fluid.T2
-            logging.debug('%s _compute_outlet_static_parameters dT_t_rel = %s' % (self.str(), self.dT_t_rel))
+            self.T_t_res = abs(self.T_t - self.work_fluid.T2) / self.work_fluid.T2
+            logging.debug('%s _compute_outlet_static_parameters T_t_res = %s' % (self.str(), self.T_t_res))
             self.work_fluid.T2 = self.T_t
         self.work_fluid.T1 = self.T_g_stag
         self.work_fluid.T2 = self.T_t
@@ -548,7 +553,7 @@ class TurbineGeomAndHeatDropDistribution:
         dh01_rel = 1.
         H01 = self.H01
         iter_number = 0
-        while dh01_rel >= 0.01:
+        while dh01_rel >= self.precision:
             iter_number += 1
             logging.info('%s ИТЕРАЦИЯ %s %s\n' % ('-' * 20, iter_number, '-' * 20))
             logging.debug('specify_h01 iter_number = %s' % iter_number)
@@ -563,41 +568,7 @@ class TurbineGeomAndHeatDropDistribution:
 
 
 if __name__ == '__main__':
-    deg = np.pi / 180
-    turbine_geom = TurbineGeomAndHeatDropDistribution(2, 0.91, 10e3, KeroseneCombustionProducts(),
-                                                      1400, 1.3e6, 2.4, 4, 0.3, 15 * deg,
-                                                      6.8, 850, True, gamma_av=0 * deg,
-                                                      gamma_sum=8 * deg, c21=250)
-    turbine_geom[0].delta_a_b_sa_ratio = 0.23
-    turbine_geom[0].delta_a_b_rk_ratio = 0.25
-    turbine_geom[0].l1_b_sa_ratio = 2
-    turbine_geom[0].l2_b_rk_ratio = 2.5
-    turbine_geom[0].delta_r_rk_l2_ratio = 0.01
-    turbine_geom[0].mu = 1
-    turbine_geom[0].H0 = 150e3
-    turbine_geom[0].rho = 0.4
-    turbine_geom[1].delta_a_b_sa_ratio = 0.25
-    turbine_geom[1].delta_a_b_rk_ratio = 0.28
-    turbine_geom[1].delta_r_rk_l2_ratio = 0.01
-    turbine_geom[1].l1_b_sa_ratio = 2.5
-    turbine_geom[1].l2_b_rk_ratio = 2.8
-    turbine_geom[1].mu = 1
-    turbine_geom.compute()
-    turbine_geom.plot_geometry()
-    turbine_geom.plot_heat_drop_distribution()
-    print(turbine_geom.c_t)
-    print(turbine_geom.p_t)
-    print(turbine_geom.T_t)
-    print(turbine_geom.lam_t)
-    print(turbine_geom.n)
-    print(turbine_geom.gamma_av / deg)
-    print(turbine_geom.gamma_out / deg)
-    print(turbine_geom.gamma_in / deg)
-    print(turbine_geom.D1)
-    print(turbine_geom.l1)
-    print(turbine_geom[1].D1)
-    print(turbine_geom[1].l1)
-    print(turbine_geom.alpha)
+    pass
 
 
 

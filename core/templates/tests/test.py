@@ -76,7 +76,7 @@ class TemplateTester(unittest.TestCase):
             cover_thickness=0,
         )
         self.cooler.compute()
-        self.cooler.plot_T_wall(T_material=1100)
+        # self.cooler.plot_T_wall(T_material=1100)
 
     def test_comp_turb_2st(self):
         loader = FileSystemLoader(

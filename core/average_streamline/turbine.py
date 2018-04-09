@@ -1,4 +1,4 @@
-from gas_turbine_cycle.gases import KeroseneCombustionProducts, IdealGas
+from gas_turbine_cycle.gases import KeroseneCombustionProducts, IdealGas, Air
 from .stage_geom import InvalidStageSizeValue, StageGeomAndHeatDrop, \
     TurbineGeomAndHeatDropDistribution, set_logging
 import logging
@@ -11,6 +11,12 @@ import os
 from gas_turbine_cycle.tools.functions import eta_turb_stag_p
 import pickle as pk
 
+
+# TODO: добавить в шаблоне расчет адиабатического процесса в турбине
+# TODO: поменять названия типов турбин
+# TODO: изменить в шаблоне расчет смеси
+# TODO: изменить в шаблоне расчет ступени по давлению
+# TODO: изменить шаблон для вычисления интегральных параметров
 
 class TurbineType(Enum):
     Power = 0
@@ -46,6 +52,7 @@ class Turbine:
                  auto_set_rho: bool=True,
                  auto_compute_heat_drop: bool=True,
                  precise_heat_drop: bool=False,
+                 precision=0.001,
                  **kwargs):
         """
         :param turbine_type: TurbineType \n
@@ -89,6 +96,8 @@ class Turbine:
         :param precise_heat_drop: bool, optional. \n
             Если True, то теплоперепад на ступене будет уточняться с учетом величигы
             коэффициента использования скорости.
+        :param precision: float, optional. \n
+            Точность схождения вычислений в цикле.
         :param kwargs: Возможны следующие наборы ключевых слов: \n
             1.  Должны быть обязаетльно указаны gamma_av и gamma_sum или gamma_in и gamma_out. Это соответственно
                 угол наклона средней линии и суммарный угол раскрытия проточной част и углы наклона образующей
@@ -130,6 +139,7 @@ class Turbine:
         self.precise_heat_drop = precise_heat_drop
         self.auto_set_rho = auto_set_rho
         self.auto_compute_heat_drop = auto_compute_heat_drop
+        self.precision = precision
         if not auto_set_rho:
             assert 'rho_list' in kwargs, 'rho_list is not specified.'
             assert len(kwargs['rho_list']) == stage_number, "Length of rho_list isn't equal to the stage number."
@@ -169,6 +179,7 @@ class Turbine:
         self.pi_t_stag = None
         self.N = None
         self.eta_t_stag_p = None
+        self.i_cool_sum = None
         self._eta_m = eta_m
         self._init_turbine_geom()
         self.log_filename = os.path.join(os.getcwd(), 'average_streamline.log')
@@ -224,22 +235,24 @@ class Turbine:
         try:
             if self._gamma_out is not None and self._gamma_in is not None:
                 self._geom = TurbineGeomAndHeatDropDistribution(self.stage_number, self.eta_t_stag_cycle,
-                                                                self.n, KeroseneCombustionProducts(),
+                                                                self.n, type(self.work_fluid)(),
                                                                 self.T_g_stag, self.p_g_stag, self.G_fuel,
                                                                 self.G_turbine, self.l1_D1_ratio,
                                                                 self.alpha11, self.k_n,
                                                                 self.T_t_stag_cycle,
+                                                                precision=self.precision,
                                                                 auto_compute_heat_drop=self.auto_compute_heat_drop,
                                                                 c21=self.c21_init,
                                                                 gamma_in=self.gamma_in,
                                                                 gamma_out=self.gamma_out)
             elif self._gamma_av is not None and self._gamma_sum is not None:
                 self._geom = TurbineGeomAndHeatDropDistribution(self.stage_number, self.eta_t_stag_cycle,
-                                                                self.n, KeroseneCombustionProducts(),
+                                                                self.n, type(self.work_fluid)(),
                                                                 self.T_g_stag, self.p_g_stag, self.G_fuel,
                                                                 self.G_turbine, self.l1_D1_ratio,
                                                                 self.alpha11, self.k_n,
                                                                 self.T_t_stag_cycle,
+                                                                precision=self.precision,
                                                                 auto_compute_heat_drop=self.auto_compute_heat_drop,
                                                                 c21=self.c21_init,
                                                                 gamma_av=self.gamma_av,
@@ -271,6 +284,7 @@ class Turbine:
         """
         Вычисление газодинамических параметров на ступенях турбины
         """
+        self._gas_dynamics.clear()
         logging.info('\n%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
         if self.turbine_type == TurbineType.Power:
             for num, item in enumerate(self.geom):
@@ -278,25 +292,33 @@ class Turbine:
                 logging.debug('%s compute_gas_dynamics num = %s' % (self.str(), num))
                 if num == 0 and self.stage_number > 1:
                     # расчет первой ступени при числе ступеней, больше одной
-                    stage_gas_dyn = get_first_stage(item, self.T_g_stag, self.p_g_stag, self.G_turbine,
-                                                    self.G_fuel)
+                    stage_gas_dyn = get_first_stage(type(self.work_fluid)(), item, self.T_g_stag, self.p_g_stag,
+                                                    self.G_turbine, self.G_fuel, precision=self.precision)
                     self._gas_dynamics.append(stage_gas_dyn)
                 elif num == 0 and self.stage_number == 1:
                     # расчет первой ступени при числе ступеней, равному единице
-                    stage_gas_dyn = get_only_pressure_stage(self.geom, self.T_g_stag, self.p_g_stag, self.G_turbine,
-                                                            self.G_fuel)
+                    stage_gas_dyn = get_only_pressure_stage(type(self.work_fluid)(), self.geom,
+                                                            p2_stag=self.p_t_stag_cycle,
+                                                            T0_stag=self.T_g_stag,
+                                                            p0_stag=self.p_g_stag,
+                                                            G_turbine=self.G_turbine,
+                                                            G_fuel=self.G_fuel,
+                                                            precision=self.precision)
                     self._gas_dynamics.append(stage_gas_dyn)
                 elif num < self.stage_number - 1:
                     # расчет промежуточных ступеней
-                    stage_gas_dyn = get_intermediate_stage(item, self._gas_dynamics[num - 1], self.geom[num - 1],
-                                                           self.G_fuel,
-                                                           precise_heat_drop=self.precise_heat_drop)
+                    stage_gas_dyn = get_intermediate_stage(type(self.work_fluid)(), item, self._gas_dynamics[num - 1],
+                                                           self.geom[num - 1],
+                                                           self.G_fuel, precise_heat_drop=self.precise_heat_drop,
+                                                           precision=self.precision)
                     self._gas_dynamics.append(stage_gas_dyn)
                 elif num == self.stage_number - 1:
                     # расчет последней ступени
-                    stage_gas_dyn = get_last_pressure_stage(self.geom, item,
+                    stage_gas_dyn = get_last_pressure_stage(type(self.work_fluid)(), item,
                                                             self._gas_dynamics[num - 1], self.geom[num - 1],
-                                                            self.G_fuel)
+                                                            p2_stag=self.p_t_stag_cycle,
+                                                            G_fuel=self.G_fuel,
+                                                            precision=self.precision)
                     self._gas_dynamics.append(stage_gas_dyn)
         elif self.turbine_type == TurbineType.Compressor:
             L_last_stage_rel = self.L_t_cycle
@@ -305,27 +327,34 @@ class Turbine:
                 logging.debug('%s compute_gas_dynamics num = %s' % (self.str(), num))
                 if num == 0 and self.stage_number > 1:
                     # расчет первой ступени при числе ступеней, больше одной
-                    stage_gas_dyn = get_first_stage(item, self.T_g_stag, self.p_g_stag, self.G_turbine, self.G_fuel)
+                    stage_gas_dyn = get_first_stage(type(self.work_fluid)(), item, self.T_g_stag, self.p_g_stag,
+                                                    self.G_turbine, self.G_fuel,
+                                                    precision=self.precision)
                     self._gas_dynamics.append(stage_gas_dyn)
                     L_last_stage_rel -= stage_gas_dyn.L_t_prime
                 elif num == 0 and self.stage_number == 1:
                     # расчет первой ступени при числе ступеней, равному единице
-                    stage_gas_dyn = get_only_work_stage(item, L_last_stage_rel, 0.9, self.T_g_stag, self.p_g_stag,
-                                                        self.G_turbine, self.G_fuel)
+                    stage_gas_dyn = get_only_work_stage(type(self.work_fluid)(), item, L_last_stage_rel, 0.9,
+                                                        self.T_g_stag, self.p_g_stag,
+                                                        self.G_turbine, self.G_fuel,
+                                                        precision=self.precision)
                     self._gas_dynamics.append(stage_gas_dyn)
                 elif num < self.stage_number - 1:
                     # расчет промежуточных ступеней
-                    stage_gas_dyn = get_intermediate_stage(item, self._gas_dynamics[num - 1], self.geom[num - 1],
+                    stage_gas_dyn = get_intermediate_stage(type(self.work_fluid)(), item, self._gas_dynamics[num - 1],
+                                                           self.geom[num - 1],
                                                            self.G_fuel,
-                                                           precise_heat_drop=self.precise_heat_drop)
+                                                           precise_heat_drop=self.precise_heat_drop,
+                                                           precision=self.precision)
                     self._gas_dynamics.append(stage_gas_dyn)
                     L_last_stage_rel -= stage_gas_dyn.L_t_prime
                 elif num == self.stage_number - 1:
                     # расчет последней ступени
                     if L_last_stage_rel < 0:
                         raise InvalidStageSizeValue('L_last_stage_rel must not be negative')
-                    stage_gas_dyn = get_last_work_stage(item, self._gas_dynamics[num - 1], self.geom[num - 1],
-                                                        L_last_stage_rel, 0.9, self.G_fuel)
+                    stage_gas_dyn = get_last_work_stage(type(self.work_fluid)(), item, self._gas_dynamics[num - 1],
+                                                        self.geom[num - 1], L_last_stage_rel, 0.9, self.G_fuel,
+                                                        precision=self.precision)
                     self._gas_dynamics.append(stage_gas_dyn)
         for n, i in enumerate(self):
             self.geom[n].H0 = i.H0
@@ -335,24 +364,29 @@ class Turbine:
         self.work_fluid.__init__()
         self.work_fluid.alpha = self.first.alpha_air_in
         self.L_t_sum = 0
-        for item in self:
+        self.H_t_stag = 0
+        self.H_t = 0
+        self.i_cool_sum = 0
+        for n, item in enumerate(self):
             self.L_t_sum += item.L_t_prime
+            self.H_t_stag += item.H0_stag_ad_t_prime
+            if n != self.stage_number - 1:
+                self.H_t += item.H0_stag_ad_t_prime
+                self.i_cool_sum += item.i_cool
+            else:
+                self.H_t += item.H0_ad_t_prime
         self.work_fluid.T1 = self.T_g_stag
         self.work_fluid.T2 = self.last.T_st
+        self.work_fluid.alpha = self.last.alpha_air_in
         self.c_p_gas = self.work_fluid.c_p_av_int
         self.k_gas = self.work_fluid.k_av_int
-        self.H_t = self.work_fluid.c_p_av_int * self.T_g_stag * \
-                   (1 - (self.p_g_stag / self.last.p2) ** ((1 - self.work_fluid.k_av_int) / self.work_fluid.k_av_int))
         self.eta_t = self.L_t_sum / self.H_t
         self.eta_l = (self.L_t_sum + self.last.c2 ** 2 / 2) / self.H_t
         self.pi_t = self.first.p0_stag / self.last.p2
         self.pi_t_stag = self.first.p0_stag / self.last.p2_stag
-        self.work_fluid.T2 = self.last.T_mix_stag
+        self.work_fluid.T2 = self.last.T_st_stag
         self.c_p_gas_stag = self.work_fluid.c_p_av_int
         self.k_gas_stag = self.work_fluid.k_av_int
-        self.H_t_stag = self.work_fluid.c_p_av_int * self.T_g_stag * (1 - (self.p_g_stag / self.last.p2_stag) **
-                                                                      ((1 - self.work_fluid.k_av_int) /
-                                                                       self.work_fluid.k_av_int))
         self.eta_t_stag = self.L_t_sum / self.H_t_stag
         self.eta_t_stag_p = eta_turb_stag_p(self.pi_t_stag, self.k_gas_stag, self.eta_t_stag)
         self.N = self.L_t_sum * self.G_turbine * self.eta_m
@@ -755,46 +789,7 @@ class Turbine:
 
 
 if __name__ == '__main__':
-    # TODO: выяснить, как считается коэффициент использования скорости
-    # TODO: сделать уточнение коэффициентов скорости
-    deg = np.pi / 180
-    turbine = Turbine(TurbineType.Compressor,
-                      T_g_stag=1400,
-                      p_g_stag=300e3,
-                      G_turbine=25,
-                      work_fluid=KeroseneCombustionProducts(),
-                      alpha_air=2.5,
-                      l1_D1_ratio=0.25,
-                      n=15e3,
-                      T_t_stag_cycle=1150,
-                      stage_number=2,
-                      eta_t_stag_cycle=0.91,
-                      k_n=6.8,
-                      eta_m=0.99,
-                      auto_compute_heat_drop=True,
-                      auto_set_rho=True,
-                      precise_heat_drop=False,
-                      H01_init=120e3,
-                      c21_init=250,
-                      alpha11=17*deg,
-                      gamma_av=4 * deg,
-                      gamma_sum=10 * deg)
-
-    turbine.compute_geometry()
-    turbine.compute_stages_gas_dynamics()
-    turbine.geom.plot_geometry(figsize=(5, 5))
-    turbine.compute_integrate_turbine_parameters()
-    # turbine.geom.plot_heat_drop_distribution()
-    # for num, i in enumerate(turbine):
-    #     i.plot_velocity_triangle('Stage %s' % (num + 1))
-    print('l1/b_sa = %.4f' % turbine.geom[0].l1_b_sa_ratio)
-    print('l2/b_rk = %.4f' % turbine.geom[0].l2_b_rk_ratio)
-    print('delta_a_sa / b_sa = %.4f' % turbine.geom[0].delta_a_b_sa_ratio)
-    print('delta_a_rk / b_rk = %.4f' % turbine.geom[0].delta_a_b_rk_ratio)
-    print('pho = %.3f' % turbine.geom[0].rho)
-    print('H0 = %.3f' % turbine.geom[0].H0)
-    print('L_t = %.3f' % turbine.L_t_sum)
-    print('eta_t = %.3f' % turbine.eta_t)
+    pass
 
 
 
