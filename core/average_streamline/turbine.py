@@ -12,15 +12,12 @@ from gas_turbine_cycle.tools.functions import eta_turb_stag_p
 import pickle as pk
 
 
-# TODO: добавить в шаблоне расчет адиабатического процесса в турбине
 # TODO: поменять названия типов турбин
-# TODO: изменить в шаблоне расчет смеси
-# TODO: изменить в шаблоне расчет ступени по давлению
-# TODO: изменить шаблон для вычисления интегральных параметров
+
 
 class TurbineType(Enum):
-    Power = 0
-    Compressor = 1
+    PRESSURE = 0
+    WORK = 1
 
 
 class TurbineInput:
@@ -286,7 +283,7 @@ class Turbine:
         """
         self._gas_dynamics.clear()
         logging.info('\n%s РАСЧЕТ ГАЗОДИНАМИЧЕСКИХ ПАРАМЕТРОВ ТУРБИНЫ %s\n' % (30 * '*', 30 * '*'))
-        if self.turbine_type == TurbineType.Power:
+        if self.turbine_type == TurbineType.PRESSURE:
             for num, item in enumerate(self.geom):
                 logging.info('\n%s СТУПЕНЬ %s %s\n' % (15 * '*', num + 1, 15 * '*'))
                 logging.debug('%s compute_gas_dynamics num = %s' % (self.str(), num))
@@ -320,7 +317,7 @@ class Turbine:
                                                             G_fuel=self.G_fuel,
                                                             precision=self.precision)
                     self._gas_dynamics.append(stage_gas_dyn)
-        elif self.turbine_type == TurbineType.Compressor:
+        elif self.turbine_type == TurbineType.WORK:
             L_last_stage_rel = self.L_t_cycle
             for num, item in enumerate(self.geom):
                 logging.info('\n%s СТУПЕНЬ %s %s\n' % (15 * '*', num + 1, 15 * '*'))

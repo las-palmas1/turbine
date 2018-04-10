@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'main_widget.ui'
+# Form implementation generated from reading ui file 'C:\Users\User\Documents\study\turbine\gui\average_streamline\main_widget.ui'
 #
 # Created by: PyQt5 UI code generator 5.6
 #
@@ -476,11 +476,11 @@ class Ui_Form(object):
         self.groupBox.setTitle(_translate("Form", "Настройки расчета"))
         self.checkBox_h0_auto.setText(_translate("Form", "Автонастройка теплоперепада по ступеням"))
         self.label_30.setText(_translate("Form", "Способ задания формы проточной части"))
-        self.turbine_type.setItemText(0, _translate("Form", "Силовая"))
-        self.turbine_type.setItemText(1, _translate("Form", "Компрессорная"))
+        self.turbine_type.setItemText(0, _translate("Form", "Расчет для заданного выходному давлению"))
+        self.turbine_type.setItemText(1, _translate("Form", "Расчет для заданной работе"))
         self.checkBox_rho_auto.setText(_translate("Form", "Автонастройка степени реактивности"))
         self.label_29.setText(_translate("Form", "Число ступеней"))
-        self.label_28.setText(_translate("Form", "Тип турбины"))
+        self.label_28.setText(_translate("Form", "Тип расчета турбины"))
         self.gamma_sum_av.setText(_translate("Form", "Угол раскрытия проточной части и угол наклона средней линии"))
         self.gamma_in_out.setText(_translate("Form", "Угол наклона периферии и втулки"))
         self.checkBox_precise_h0.setText(_translate("Form", "Уточнение теплоперепада по ступеням"))

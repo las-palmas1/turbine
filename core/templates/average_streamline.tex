@@ -24,7 +24,7 @@
 
     \begin{enumerate}
 
-        </ macro stage_core(stgd, sttype='heat_drop') />
+        </ macro stage_core(stgd) />
         <# sttype can be equal to 'heat_drop', or 'pressure', or 'work' #>
 
         </ set degr = 180 / 3.141592653589793 />
@@ -551,13 +551,11 @@
             << stgd.eta_l | round(4) >>
         \]
 
-        </ if sttype != 'work' />
         \item Определим удельную работу ступени:
         \[
-            L_т = H_0 \eta_т = << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 \cdot \eta_т =
+            L_т = H_0 \eta_т = << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 \cdot << stgd.eta_t | round(4) >> =
             = << (stgd.L_t / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
         \]
-        </ endif />
 
         \item Удельная работа ступени, отнесенная к расходу на в СА первой ступени:
         \[
@@ -646,6 +644,144 @@
             << (stgd.p2_stag / 10**6) | round(4) >> \cdot 10^6 \ Па
         \]
 
+        \item Статическая температура на выходе из ступени при адиабатическом процессе в турбине:
+        \[
+            T_{2ад\ т} = T_{0ад\ т}^* \cdot \frac{p_2}{p_0^*} ^ {
+                    \frac{k_{г\ ад\ т} - 1}{k_{г\ ад\ т} }
+            } = << stgd.T0_stag_ad_t |round(2) >> \cdot
+            \frac{ << (stgd.p2 / 10**6) | round(4) >>
+            }{
+            << (stgd.p0_stag / 10**6) | round(4) >>
+            } ^ {
+                    \frac{<< stgd.k_gas_ad_t | round(3) >> - 1}{<< stgd.k_gas_ad_t | round(3) >>}
+            } =
+            << stgd.T2_ad_t | round(2) >>\ К
+        \]
+
+        \item Полная температура на выходе из ступени при адиабатическом процессе в турбине:
+        \[
+            T_{2ад\ т}^* = T_{0ад\ т}^* \cdot \frac{p_2^*}{p_0^*} ^ {
+                    \frac{k_{г\ ад\ т}^* - 1}{k_{г\ ад\ т}^*}
+            } = << stgd.T0_stag_ad_t |round(2) >> \cdot
+            \frac{ << (stgd.p2_stag / 10**6) | round(4) >>
+            }{
+            << (stgd.p0_stag / 10**6) | round(4) >>
+            } ^ {
+                    \frac{<< stgd.k_gas_stag_ad_t | round(3) >> - 1}{<< stgd.k_gas_stag_ad_t | round(3) >>}
+            } =
+            << stgd.T2_stag_ad_t | round(2) >>\ К
+        \]
+
+        \item Статический теплоперепад при адиабатическом процессе в турбине:
+        \[
+            H_{0ад\ т} = c_{pг\ ад\ т} \cdot \left(
+            T_{0ад\ т}^* - T_{2ад\ т}
+            \right) =
+            << stgd.c_p_gas_ad_t | round(2) >> \cdot \left(
+            << stgd.T0_stag_ad_t |round(2) >> - << stgd.T2_ad_t | round(2) >>
+            \right) =
+            << (stgd.H0_ad_t / 10 **6) | round(4) >> \cdot 10^6 \ Дж/кг
+        \]
+
+        \item Статический теплоперепад при адиабатическом процессе в турбине, отнесенный к расходу на входе:
+        \[
+            H_{0ад\ т}^\prime = H_{0ад\ т} \cdot \frac{ G_{вх} }{ G_т }  =
+                << (stgd.H0_ad_t / 10**6) | round(4) >> \cdot 10^6 \cdot
+                \frac{ << stgd.G_stage_in | round(2) >> }{ << stgd.G_turbine | round(2) >> } =
+            << (stgd.H0_ad_t_prime / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
+        \]
+
+        \item Теплоперепад по параметрам торможения при адиабатическом процессе в турбине:
+        \[
+            H_{0ад\ т}^* = c_{pг\ ад\ т}^* \cdot \left(
+            T_{0ад\ т}^* - T_{2ад\ т}^*
+            \right) =
+            << stgd.c_p_gas_stag_ad_t | round(2) >> \cdot \left(
+            << stgd.T0_stag_ad_t |round(2) >> - << stgd.T2_stag_ad_t | round(2) >>
+            \right) =
+            << (stgd.H0_stag_ad_t / 10 **6) | round(4) >> \cdot 10^6 \ Дж/кг
+        \]
+
+        \item Теплоперепад по параметрам торможения при адиабатическом процессе в турбине, отнесенный к расходу на входе:
+        \[
+            H_{0ад\ т}^{*\prime} = H_{0ад\ т}^* \cdot \frac{ G_{вх} }{ G_т }  =
+                << (stgd.H0_stag_ad_t / 10**6) | round(4) >> \cdot 10^6 \cdot
+                \frac{ << stgd.G_stage_in | round(2) >> }{ << stgd.G_turbine | round(2) >> } =
+            << (stgd.H0_stag_ad_t_prime / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
+        \]
+
+        \item Средняя теплоемкость газа в интервале температур от 273 К до $T_{0ад\ т}^*$:
+        \[
+            c_{pг\ ср} (T_{0ад\ т}^*, \alpha_{вх}) =
+            << stgd.work_fluid.c_p_av_func(stgd.T0_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \ Дж/(кг \cdot К)
+        \]
+
+        \item Средняя теплоемкость газа в интервале температур от 273 К до $T_{2ад\ т}$:
+        \[
+            c_{pг\ ср} (T_{2ад\ т}, \alpha_{вх}) =
+            << stgd.work_fluid.c_p_av_func(stgd.T2_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \ Дж/(кг \cdot К)
+        \]
+
+        \item Средняя теплоемкость газа в интервале температур от $T_{0ад\ т}^*$ до $T_{2ад\ т}$:
+        \begin{gather*}
+            c_{pг\ ад\ т}^\prime = \frac{
+		        c_{pг\ ср} (T_{0ад\ т}^*, \alpha_{вх}) (T_{0ад\ т}^* - T_0) - c_{pг\ ср} (T_{2ад\ т}, \alpha_{вх})(T_{2ад\ т} - T_0)
+		    }{
+		        T_{0ад\ т}^* - T_{2ад\ т}} =\\
+            =\frac{
+		        << stgd.work_fluid.c_p_av_func(stgd.T0_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \cdot
+                (<< stgd.T0_stag_ad_t | round(2) >> - 273) -
+		        << stgd.work_fluid.c_p_av_func(stgd.T2_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \cdot
+                (<< stgd.T2_ad_t | round(2) >> - 273)
+		    }{
+		        << stgd.T0_stag_ad_t | round(2) >> - << stgd.T2_ad_t | round(2) >>} =
+		    << stgd.work_fluid.c_p_av_int_func(stgd.T2_ad_t, stgd.T0_stag, alpha=stgd.alpha_air_in) | round(2) >> \ Дж / (кг \cdot К)\\
+        \end{gather*}
+
+        \item Новое значение показателя адиабаты:
+        \[
+            k_{г\ ад\ т}^\prime = \frac{c_{pг\ ад\ т}^\prime}{c_{pг\ ад\ т}^\prime - R_г} =
+                \frac{
+                    << stgd.work_fluid_ad.c_p_av_int | round(2) >>
+                }{
+                    << stgd.work_fluid_ad.c_p_av_int | round(2) >> - << stgd.work_fluid_ad.R | round(2) >>
+                }
+            = << stgd.work_fluid_ad.k_av_int | round(4) >>
+        \]
+
+        \item Средняя теплоемкость газа в интервале температур от 273 К до $T_{2ад\ т}^*$:
+        \[
+            c_{pг\ ср} (T_{2ад\ т}^*, \alpha_{вх}) =
+            << stgd.work_fluid.c_p_av_func(stgd.T2_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \ Дж/(кг \cdot К)
+        \]
+
+        \item Средняя теплоемкость газа в интервале температур от $T_{0ад\ т}^*$ до $T_{2ад\ т}$:
+        \begin{gather*}
+            c_{pг\ ад\ т}^{*\prime} = \frac{
+		        c_{pг\ ср}(T_{0ад\ т}^*, \alpha_{вх}) (T_{0ад\ т}^* - T_0) - c_{pг\ ср}(T_{2ад\ т}^*, \alpha_{вх}) (T_{2ад\ т}^* - T_0)
+		    }{
+		        T_{0ад\ т}^* - T_{2ад\ т}^*} =\\
+            =\frac{
+		        << stgd.work_fluid.c_p_av_func(stgd.T0_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \cdot
+                (<< stgd.T0_stag_ad_t | round(2) >> - 273) -
+		        << stgd.work_fluid.c_p_av_func(stgd.T2_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \cdot
+                (<< stgd.T2_stag_ad_t | round(2) >> - 273)
+		    }{
+		        << stgd.T0_stag_ad_t | round(2) >> - << stgd.T2_stag_ad_t | round(2) >>} =
+		    << stgd.work_fluid.c_p_av_int_func(stgd.T2_stag_ad_t, stgd.T0_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \ Дж / (кг \cdot К)\\
+        \end{gather*}
+
+        \item Новое значение показателя адиабаты:
+        \[
+            k_{г\ ад\ т}^{*\prime} = \frac{c_{pг\ ад\ т}^{*\prime}}{c_{pг\ ад\ т}^{*\prime} - R_г} =
+                \frac{
+                    << stgd.work_fluid_stag_ad.c_p_av_int | round(2) >>
+                }{
+                    << stgd.work_fluid_stag_ad.c_p_av_int | round(2) >> - << stgd.work_fluid_stag_ad.R | round(2) >>
+                }
+            = << stgd.work_fluid_stag_ad.k_av_int | round(4) >>
+        \]
+
         \item Теплоперепад по параметрам торможения:
         \begin{gather*}
             H_0^* = c_{pг} T_0^* \left[
@@ -709,39 +845,39 @@
         \item Определим температуру торможения на выходе из ступени после подмешивания охлаждающего воздуха.
         \begin{enumerate}
 
-            \item Истинная теплоемкость охлаждающего воздуха при температуре $T_{охл} = << stgd.T_cool | round(2) >>\ К $:
+            \item Средняя теплоемкость охлаждающего воздуха при температуре $T_{охл} = << stgd.T_cool | round(2) >>\ К $:
             \[
-                c_{pв} (T_{охл}) = << stgd.cool_fluid.c_p_real_func(stgd.T_cool) | round(2) >>\ Дж/ (кг \cdot К)
+                c_{pв\ ср} (T_{охл}) = << stgd.cool_fluid.c_p_av_func(stgd.T_cool) | round(2) >>\ Дж/ (кг \cdot К)
             \]
 
-            \item Истинная теплоемкость газа при температуре $T_{ст}^* = << stgd.T_st_stag | round(2) >> \ К $:
+            \item Средняя теплоемкость газа при температуре $T_{ст}^* = << stgd.T_st_stag | round(2) >> \ К $:
             \[
-                c_{pг} (T_{ст}^*, \alpha_{вх}) =
-                << stgd.work_fluid.c_p_real_func(stgd.T_st_stag, alpha=stgd.alpha_air_in) | round(2) >>\ Дж/ (кг \cdot К)
+                c_{pг\ ср} (T_{ст}^*, \alpha_{вх}) =
+                << stgd.work_fluid.c_p_av_func(stgd.T_st_stag, alpha=stgd.alpha_air_in) | round(2) >>\ Дж/ (кг \cdot К)
             \]
 
             \item Значение температуры смеси с предпоследней итерации $T_{см}^{*} = << stgd.T_mix_stag | round(2) >>\ К$.
 
-            \item Истинная теплоемкость смеси:
+            \item Средняя теплоемкость смеси:
             \[
-                c_{pг} (T_{см}^{*}, \alpha_{вых}) =
-                << stgd.work_fluid.c_p_real_func(stgd.T_mix_stag, alpha=stgd.alpha_air_out) | round(2) >>\ Дж/ (кг \cdot К)
+                c_{pг\ ср} (T_{см}^{*}, \alpha_{вых}) =
+                << stgd.work_fluid.c_p_av_func(stgd.T_mix_stag, alpha=stgd.alpha_air_out) | round(2) >>\ Дж/ (кг \cdot К)
             \]
 
             \item Новое значение температуры смеси:
             \begin{gather*}
                 T_{см}^*\prime = \frac{
-                        c_{pг} (T_{ст}^*, \alpha_{вх}) T_{ст}^* G_{вх} + c_{pв} (T_{охл}) T_{охл} G_{охл}
+                        c_{pг\ ср} (T_{ст}^*, \alpha_{вх}) T_{ст}^* G_{вх} + c_{pв\ ср} (T_{охл}) T_{охл} G_{охл}
                     }{
-                        c_{pг} (T_{см}^{*}, \alpha_{вых}) G_{вых}
+                        c_{pг\ ср} (T_{см}^{*}, \alpha_{вых}) G_{вых}
                     } =\\
                 = \frac{
-                    << stgd.work_fluid.c_p_real_func(stgd.T_st_stag, alpha=stgd.alpha_air_in) | round(2) >>
+                    << stgd.work_fluid.c_p_av_func(stgd.T_st_stag, alpha=stgd.alpha_air_in) | round(2) >>
                     \cdot << stgd.T_st_stag | round(2) >> \cdot << stgd.G_stage_in | round(2) >> +
-                    << stgd.cool_fluid.c_p_real_func(stgd.T_cool) | round(2) >>
+                    << stgd.cool_fluid.c_p_av_func(stgd.T_cool) | round(2) >>
                     \cdot << stgd.T_cool | round(2) >> \cdot << stgd.G_cool | round(3) >>
                 }{
-                    << stgd.work_fluid.c_p_real_func(stgd.T_mix_stag, alpha=stgd.alpha_air_out) | round(2) >>
+                    << stgd.work_fluid.c_p_av_func(stgd.T_mix_stag, alpha=stgd.alpha_air_out) | round(2) >>
                     \cdot  << stgd.G_stage_out | round(2) >>
                 } =
                 << stgd.T_mix_stag_new | round(2) >>\ К\\
@@ -757,7 +893,60 @@
                     } \cdot 100 \% =
                 << ( stgd.T_mix_stag_res * 100) | round(3) >> \%
             \]
+        \end{enumerate}
 
+
+        \item Определим температуру торможения на выходе из ступени после подмешивания охлаждающего воздуха при адиабатическом процессе в турбине..
+        \begin{enumerate}
+
+            \item Средняя теплоемкость охлаждающего воздуха при температуре $T_{охл} = << stgd.T_cool | round(2) >>\ К $:
+            \[
+                c_{pв\ ср} (T_{охл}) = << stgd.cool_fluid.c_p_av_func(stgd.T_cool) | round(2) >>\ Дж/ (кг \cdot К)
+            \]
+
+            \item Средняя теплоемкость газа при температуре $T_{2ад\ т}^* = << stgd.T2_stag_ad_t | round(2) >> \ К $:
+            \[
+                c_{pг\ ср} (T_{2ад\ т}^*, \alpha_{вх}) =
+                << stgd.work_fluid.c_p_av_func(stgd.T2_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >>\ Дж/ (кг \cdot К)
+            \]
+
+            \item Значение температуры смеси с предпоследней итерации $T_{см\ ад\ т}^{*} = << stgd.T_mix_stag_ad_t | round(2) >>\ К$.
+
+            \item Средняя теплоемкость смеси:
+            \[
+                c_{pг\ ср} (T_{см\ ад\ т}^{*}, \alpha_{вых}) =
+                << stgd.work_fluid.c_p_av_func(stgd.T_mix_stag_ad_t, alpha=stgd.alpha_air_out) | round(2) >>\ Дж/ (кг \cdot К)
+            \]
+
+            \item Новое значение температуры смеси:
+            \begin{gather*}
+                T_{см\ ад\ т}^*\prime = \frac{
+                        c_{pг\ ср} (T_{2ад\ т}^*, \alpha_{вх}) T_{2ад\ т}^* G_{вх} + c_{pв\ ср} (T_{охл}) T_{охл} G_{охл}
+                    }{
+                        c_{pг\ ср} (T_{см\ ад\ т}^{*}, \alpha_{вых}) G_{вых}
+                    } =\\
+                = \frac{
+                    << stgd.work_fluid.c_p_av_func(stgd.T2_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >>
+                    \cdot << stgd.T2_stag_ad_t | round(2) >> \cdot << stgd.G_stage_in | round(2) >> +
+                    << stgd.cool_fluid.c_p_av_func(stgd.T_cool) | round(2) >>
+                    \cdot << stgd.T_cool | round(2) >> \cdot << stgd.G_cool | round(3) >>
+                }{
+                    << stgd.work_fluid.c_p_av_func(stgd.T_mix_stag_ad_t, alpha=stgd.alpha_air_out) | round(2) >>
+                    \cdot  << stgd.G_stage_out | round(2) >>
+                } =
+                << stgd.T_mix_stag_ad_t_new | round(2) >>\ К\\
+            \end{gather*}
+
+            \item Значение невязки:
+            \[
+                \delta = \frac{ \left| T_{см\ ад\ т}^{*} - T_{см\ ад\ т}^*\prime \right| }{T_{см\ ад\ т}^{*}} \cdot 100 \% =
+                    \frac{
+                        \left| << stgd.T_mix_stag_ad_t | round(2) >> - << stgd.T_mix_stag_ad_t_new | round(2) >> \right|
+                    }{
+                        << stgd.T_mix_stag_ad_t | round(2) >>
+                    } \cdot 100 \% =
+                << ( stgd.T_mix_stag_ad_t_res * 100) | round(3) >> \%
+            \]
         \end{enumerate}
 
         </ endmacro />
@@ -792,7 +981,27 @@
             c_{pг} = << stgd.c_p_gas | round(2) >> \ Дж/(кг \cdot К)
         \]
 
-        << stage_core(stgd, 'heat_drop') >>
+        \item Средний в ступени коэффициент адиабаты при адиабатическом расширении в турбине до статических параметров из предпоследней итерации:
+        \[
+            k_{г\ ад\ т} = << stgd.k_gas_ad_t | round(4) >>
+        \]
+
+        \item Средняя в ступени теплоемкость при адиабатическом расширении в турбине до статических параметров из предпоследней итерации:
+        \[
+            c_{pг\ ад\ т} = << stgd.c_p_gas_ad_t | round(2) >> \ Дж/(кг \cdot К)
+        \]
+
+        \item Средний в ступени коэффициент адиабаты при адиабатическом расширении в турбине до параметров торможения из предпоследней итерации:
+        \[
+            k_{г\ ад\ т}^* = << stgd.k_gas_stag_ad_t | round(4) >>
+        \]
+
+        \item Средняя в ступени теплоемкость при адиабатическом расширении в турбине до параметров торможения из предпоследней итерации:
+        \[
+            c_{pг\ ад\ т}^* = << stgd.c_p_gas_stag_ad_t | round(2) >> \ Дж/(кг \cdot К)
+        \]
+
+        << stage_core(stgd) >>
 
     \end{enumerate}
     </ endmacro />
@@ -826,26 +1035,42 @@
             c_{pг} = << stgd.c_p_gas | round(2) >> \ Дж/(кг \cdot К)
         \]
 
-        \item Статический теплоперепад на ступени:
+        \item Средний в ступени коэффициент адиабаты при адиабатическом расширении в турбине до статических параметров из предпоследней итерации:
         \[
-            H_0 = c_{pг} T_0^* \left[
-                        1 - \left(
-                            \frac{p_0^*}{p_2} ^ \frac{1 - k_г}{k_г}
-                        \right)
-                    \right] =
-            << stgd.c_p_gas | round(2) >> \cdot << stgd.T0_stag | round(2) >> \cdot \left[
-                        1 - \left(
-                            \frac{
-                                << (stgd.p0_stag / 10**6) | round(4) >> \cdot 10^6
-                            }{
-                                << (stgd.p2 / 10**6) | round(4) >> \cdot 10^6 } ^
-                            \frac{1 - << stgd.k_gas | round(4) >>}{<< stgd.k_gas | round(4) >>}
-                        \right)
-                    \right] =
-            << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
+            k_{г\ ад\ т} = << stgd.k_gas_ad_t | round(4) >>
         \]
 
-        << stage_core(stgd, 'pressure') >>
+        \item Средняя в ступени теплоемкость при адиабатическом расширении в турбине до статических параметров из предпоследней итерации:
+        \[
+            c_{pг\ ад\ т} = << stgd.c_p_gas_ad_t | round(2) >> \ Дж/(кг \cdot К)
+        \]
+
+        \item Средний в ступени коэффициент адиабаты при адиабатическом расширении в турбине до параметров торможения из предпоследней итерации:
+        \[
+            k_{г\ ад\ т}^* = << stgd.k_gas_stag_ad_t | round(4) >>
+        \]
+
+        \item Средняя в ступени теплоемкость при адиабатическом расширении в турбине до параметров торможения из предпоследней итерации:
+        \[
+            c_{pг\ ад\ т}^* = << stgd.c_p_gas_stag_ad_t | round(2) >> \ Дж/(кг \cdot К)
+        \]
+
+        \item Значение статического теплоперепада с предыдущей итерации на ступени:
+        \[
+            H_0 = << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
+        \]
+
+        << stage_core(stgd) >>
+
+        \item Значение невязки по выходному полному давлению:
+        \[
+            \delta_p = \frac{ \left| p_{2\ зад}^* - p_2^* \right| }{ p_{2\ зад}^* } \cdot 100 \% =
+                \frac{
+                    \left| << (stgd.p2_stag_pre / 10**6) | round(4) >> - << (stgd.p2_stag / 10**6) | round(4) >> \right|
+                }{
+                    << (stgd.p2_stag_pre / 10**6) | round(4) >> } \cdot 100 \% =
+            << (stgd.p2_stag_res * 100) | round(4) >> \%
+        \]
 
     \end{enumerate}
     </ endmacro />
@@ -876,8 +1101,8 @@
 
         \item Статический теплоперепад на ступени:
         \[
-            H_0 = \frac{L_т}{\eta_{т0}} =
-                \frac{ << (stgd.L_t / 10**6) | round(4) >> \cdot 10^6 }{ << stgd.eta_t_old | round(4) >> } =
+            H_0 = \frac{L_{т\ зад}}{\eta_{т0}} =
+                \frac{ << (stgd.L_t_pre / 10**6) | round(4) >> \cdot 10^6 }{ << stgd.eta_t_old | round(4) >> } =
             << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
         \]
 
@@ -891,16 +1116,36 @@
             c_{pг} = << stgd.c_p_gas | round(2) >> \ Дж/(кг \cdot К)
         \]
 
-        << stage_core(stgd, 'work') >>
-
-        \item Невязка по мощностному КПД:
+        \item Средний в ступени коэффициент адиабаты при адиабатическом расширении в турбине до статических параметров из предпоследней итерации:
         \[
-            \delta_\eta = \frac{ \left| \eta_т - \eta_{т0} \right| }{ \eta_{т0} } \cdot 100 \% =
+            k_{г\ ад\ т} = << stgd.k_gas_ad_t | round(4) >>
+        \]
+
+        \item Средняя в ступени теплоемкость при адиабатическом расширении в турбине до статических параметров из предпоследней итерации:
+        \[
+            c_{pг\ ад\ т} = << stgd.c_p_gas_ad_t | round(2) >> \ Дж/(кг \cdot К)
+        \]
+
+        \item Средний в ступени коэффициент адиабаты при адиабатическом расширении в турбине до параметров торможения из предпоследней итерации:
+        \[
+            k_{г\ ад\ т}^* = << stgd.k_gas_stag_ad_t | round(4) >>
+        \]
+
+        \item Средняя в ступени теплоемкость при адиабатическом расширении в турбине до параметров торможения из предпоследней итерации:
+        \[
+            c_{pг\ ад\ т}^* = << stgd.c_p_gas_stag_ad_t | round(2) >> \ Дж/(кг \cdot К)
+        \]
+
+        << stage_core(stgd) >>
+
+        \item Невязка по работе ступени:
+        \[
+            \delta_L = \frac{ \left| L_{т\ зад} - L_т \right| }{ L_{т\ зад} } \cdot 100 \% =
                 \frac{
-                    \left| << stgd.eta_t | round(4) >> - << stgd.eta_t_old | round(4) >> \right|
+                    \left| << (stgd.L_t_pre / 10**6) | round(4) >> - << (stgd.L_t / 10**6) | round(4) >> \right|
                 }{
-                    << stgd.eta_t_old | round(4) >> } \cdot 100 \% =
-            << (stgd.eta_t_res * 100) | round(3) >> \%
+                    << (stgd.L_t_pre / 10**6) | round(4) >> } \cdot 100 \% =
+            << (stgd.L_t_res * 100) | round(4) >> \%
         \]
 
     \end{enumerate}
@@ -912,6 +1157,7 @@
 
         \item Температура торможения на входе в ступень: $T_0^* = << stgd.T0_stag | round(2) >>\ К $.
         \item Давление торможения на входе в ступень: $p_0^* = << (stgd.p0_stag / 10**6) | round(4) >> \cdot 10^6 \ Па$.
+        \item Температура торможения на входе в ступень при адиабатическом процессе в турбине: $T_{0ад\ т}^* = << stgd.T0_stag_ad_t | round(2) >>\ К$
         \item Расход газа на входе в ступень: $G_{вх} = << stgd.G_stage_in | round(2) >>\ кг/с$.
         \item Расход газа на входе в СА первой ступени: $ G_т = << stgd.G_turbine | round(2) >>\ кг/с $.
         \item Расход топлива на входе в турбину: $ G_{топл} = << stgd.G_fuel | round(3) >>\ кг/с $.
@@ -932,10 +1178,10 @@
         \item Статический теплоперепад на ступени: $ H_0 = << (stgd.H0 / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг $.
 
         </ elif sttype=='pressure' />
-        \item Статическое давление на выходе: $ p_2 = << (stgd.p2 / 10**6) | round(4) >> \cdot 10^6 \ Па $.
+        \item Полное давление на выходе: $ p_{2\ зад}^* = << (stgd.p2_stag / 10**6) | round(4) >> \cdot 10^6 \ Па $.
 
         </ elif sttype=='work' />
-        \item Удельная работы турбины: $ L_т = << (stgd.L_t / 10**6) | round(4)  >> \cdot 10^6 \ Дж/кг $.
+        \item Удельная работы турбины: $ L_{т\ зад} = << (stgd.L_t / 10**6) | round(4)  >> \cdot 10^6 \ Дж/кг $.
 
         </ endif />
 
@@ -948,7 +1194,8 @@
 
         \item Суммарная работа всех ступеней:
         \[
-            L_{т\Sigma} = << L_t_sum_exp >> = << (turb.L_t_sum / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
+            L_{т\Sigma} = \sum_{i=1}^{i=n}{L_{тi}^{\prime}} =
+            << L_t_sum_exp >> = << (turb.L_t_sum / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
         \]
 
         \item Средняя теплоемкость газа в интервале температур от 273 К до $T_г^*$:
@@ -991,25 +1238,10 @@
         \]
 
         \item Статический теплоперепад на турбине:
-        \begin{gather*}
-            H_т = c_{pг} T_г^* \left[
-                        1 - \left(
-                                \frac{p_г^*}{p_т} ^
-                                \frac{1 - k_г}{k_г}
-                    \right)
-                \right] =\\
-            = << turb.c_p_gas | round(2) >> \cdot << turb.T_g_stag | round(2) >>
-                \left[
-                    1 - \left(
-                            \frac{
-                                << (turb.p_g_stag / 10**6) | round(4) >> \cdot 10^6
-                            }{
-                                << (turb.last.p2 / 10**6) | round(4) >> \cdot 10^6 } ^
-                            \frac{ 1 - << turb.k_gas | round(4) >> }{ << turb.k_gas | round(4) >> }
-                    \right)
-            \right] =
-            << (turb.H_t / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг\\
-        \end{gather*}
+        \[
+            H_т = \sum_{i=1}^{i=n-1}H_{0ад\ т\ i}^{*\prime} + H_{0\ ад\ т\ n}^\prime =
+            << (turb.H_t / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
+        \]
 
         \item Средняя теплоемкость газа в интервале температур от 273 К до $T_т^*$:
         \[
@@ -1044,26 +1276,11 @@
             = << turb.k_gas_stag | round(4) >>
         \]
 
-        \item Теплоерепад на турбине оп параметрам торможения:
-        \begin{gather*}
-            H_т^* = c_{pг}^* T_г^* \left[
-                        1 - \left(
-                                \frac{p_г^*}{p_т^*} ^
-                                \frac{1 - k_г^*}{k_г^*}
-                    \right)
-                \right] =\\
-            =<< turb.c_p_gas_stag | round(2) >> \cdot << turb.T_g_stag | round(2) >>
-                \left[
-                    1 - \left(
-                            \frac{
-                                << (turb.p_g_stag / 10**6) | round(4) >> \cdot 10^6
-                            }{
-                                << (turb.last.p2_stag / 10**6) | round(4) >> \cdot 10^6 } ^
-                            \frac{ 1 - << turb.k_gas_stag | round(4) >> }{ << turb.k_gas_stag | round(4) >> }
-                    \right)
-            \right] =
-            << (turb.H_t_stag / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг\\
-        \end{gather*}
+        \item Теплоперепад по параметрам торможения на турбине:
+        \[
+            H_т^* = \sum_{i=1}^{i=n}H_{0ад\ т\ i}^{*\prime} =
+            << (turb.H_t_stag / 10**6) | round(4) >> \cdot 10^6 \ Дж/кг
+        \]
 
         \item Мощностной КПД турбины:
         \[

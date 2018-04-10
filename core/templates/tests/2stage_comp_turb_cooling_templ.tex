@@ -1,0 +1,61 @@
+%%
+%% Author: User1
+%% 09.04.2018
+%%
+
+% Preamble
+\documentclass[a4paper,10pt]{article}
+
+% Packages
+\usepackage{mathtext}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{longtable}
+\usepackage[russian]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage[left=2cm,right=2cm,
+    top=2cm,bottom=2cm,bindingoffset=0cm]{geometry}
+\usepackage{color}
+\usepackage{gensymb}
+
+\usepackage{enumitem}
+\setlist[enumerate]{label*=\arabic*.}
+
+\usepackage{indentfirst}
+
+\usepackage{titlesec}
+
+
+% Document
+\begin{document}
+
+\section{Расчет охлаждения СА первой ступени.}
+
+    </ import 'cooling.tex' as cool />
+
+    \subsection{Алгоритм расчета пленки.}
+
+    << cool.film() >>
+
+    \subsection{Алгоритм расчета локальных параметров.}
+
+    << cool.local_params() >>
+
+    \subsection{Алгоритм расчета коэффициент теплоотдачи со стороны газа.}
+
+    << cool.alpha_gas() >>
+
+    \subsection{Результаты расчета.}
+
+    << cool.sector_params(film_params, caption='Значения параметров в отверстиях.') >>
+
+    << cool.sector_params(local_params, caption='Значения локальных параметров.') >>
+
+    \subsection{Интегральные параметры охлаждения.}
+
+    << cool.integrate_params(cooling_results, blade_num, G_comp) >>
+
+\end{document}

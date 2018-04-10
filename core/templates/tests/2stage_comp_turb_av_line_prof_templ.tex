@@ -36,7 +36,6 @@
 
     </ import 'average_streamline.tex' as avline />
     </ import 'profiling.tex' as prof />
-    </ import 'cooling.tex' as cool />
 
     \subsection{Расчет первой ступени}
 
@@ -70,31 +69,6 @@
     << prof.rad_dist_alg() >>
 
     << prof.rad_dist_res(st1_params, 'Параметры первой ступени на различных радиусах.', st1_prof_type) >>
-
-    \section{Расчет охлаждения СА первой ступени.}
-
-    \subsection{Алгоритм расчета пленки.}
-
-    << cool.film() >>
-
-    \subsection{Алгоритм расчета локальных параметров.}
-
-    << cool.local_params() >>
-
-    \subsection{Алгоритм расчета коэффициент теплоотдачи со стороны газа.}
-
-    << cool.alpha_gas() >>
-
-    \subsection{Результаты расчета.}
-
-    << cool.sector_params(film_params, caption='Значения параметров в отверстиях.') >>
-
-    << cool.sector_params(local_params, caption='Значения локальных параметров.') >>
-
-    \subsection{Интегральные параметры охлаждения.}
-
-    << cool.integrate_params(cooling_results, blade_num, G_comp) >>
-
 
 
 

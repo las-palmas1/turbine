@@ -124,7 +124,7 @@ class StageGasDynamicsTest(unittest.TestCase):
 class TurbineTest(unittest.TestCase):
     def setUp(self):
         self.precision = 0.0005
-        self.comp_turb_h0_auto = Turbine(TurbineType.Compressor,
+        self.comp_turb_h0_auto = Turbine(TurbineType.WORK,
                                          T_g_stag=1523,
                                          p_g_stag=16e5,
                                          G_turbine=40,
@@ -156,7 +156,7 @@ class TurbineTest(unittest.TestCase):
         self.comp_turb_h0_auto.compute_stages_gas_dynamics()
         self.comp_turb_h0_auto.compute_integrate_turbine_parameters()
 
-        self.comp_turb_h0_hand = Turbine(TurbineType.Compressor,
+        self.comp_turb_h0_hand = Turbine(TurbineType.WORK,
                                          T_g_stag=1523,
                                          p_g_stag=16e5,
                                          G_turbine=40,
@@ -180,7 +180,7 @@ class TurbineTest(unittest.TestCase):
         self.comp_turb_h0_hand.compute_stages_gas_dynamics()
         self.comp_turb_h0_hand.compute_integrate_turbine_parameters()
 
-        self.comp_turb_rho_hand = Turbine(TurbineType.Compressor,
+        self.comp_turb_rho_hand = Turbine(TurbineType.WORK,
                                           T_g_stag=1400,
                                           p_g_stag=5.5e5,
                                           G_turbine=25,
@@ -206,7 +206,7 @@ class TurbineTest(unittest.TestCase):
         self.comp_turb_rho_hand.compute_stages_gas_dynamics()
         self.comp_turb_rho_hand.compute_integrate_turbine_parameters()
 
-        self.power_turb_h0_auto = Turbine(TurbineType.Power,
+        self.power_turb_h0_auto = Turbine(TurbineType.PRESSURE,
                                           T_g_stag=1400,
                                           p_g_stag=5.5e5,
                                           G_turbine=25,
@@ -366,7 +366,7 @@ class TestSpecificHeatAveraging(unittest.TestCase):
     def setUp(self):
         self.precision = 0.00001
         self.comp_turbine_ker_wcool = Turbine(
-            TurbineType.Compressor,
+            TurbineType.WORK,
             T_g_stag=1523,
             p_g_stag=16e5,
             G_turbine=40,
@@ -393,7 +393,7 @@ class TestSpecificHeatAveraging(unittest.TestCase):
         self.comp_turbine_ker_wcool.compute_integrate_turbine_parameters()
 
         self.comp_turbine_ngas_wcool = Turbine(
-            TurbineType.Compressor,
+            TurbineType.WORK,
             T_g_stag=1523,
             p_g_stag=16e5,
             G_turbine=40,
@@ -420,7 +420,7 @@ class TestSpecificHeatAveraging(unittest.TestCase):
         self.comp_turbine_ngas_wcool.compute_integrate_turbine_parameters()
 
         self.power_turbine_ngas_wcool = Turbine(
-            TurbineType.Power,
+            TurbineType.PRESSURE,
             T_g_stag=1523,
             p_g_stag=16e5,
             G_turbine=40,
@@ -455,7 +455,7 @@ class TestSpecificHeatAveraging(unittest.TestCase):
             eta_t_res = abs(eta_t_stag_old - eta_t_stag_new) / eta_t_stag_old
 
         self.comp_turbine_ngas_cool = Turbine(
-            TurbineType.Compressor,
+            TurbineType.WORK,
             T_g_stag=1523,
             p_g_stag=16e5,
             G_turbine=40,

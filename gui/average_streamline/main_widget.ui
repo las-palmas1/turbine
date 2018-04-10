@@ -497,12 +497,12 @@
                </property>
                <item>
                 <property name="text">
-                 <string>Силовая</string>
+                 <string>Расчет для заданного выходному давлению</string>
                 </property>
                </item>
                <item>
                 <property name="text">
-                 <string>Компрессорная</string>
+                 <string>Расчет для заданной работе</string>
                 </property>
                </item>
               </widget>
@@ -542,7 +542,7 @@
                 </font>
                </property>
                <property name="text">
-                <string>Тип турбины</string>
+                <string>Тип расчета турбины</string>
                </property>
               </widget>
              </item>

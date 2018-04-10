@@ -79,9 +79,6 @@ class StageGasDynamics:
         self.k_res = None
         self.L_t_res = None
         self.p2_stag_res = None
-        self.T_st_stag = 500
-        self.T2_ad_t = 500
-        self.T2_stag_ad_t = 500
 
     @classmethod
     def _get_turbine_type_specific_params(cls, **kwargs):
@@ -177,9 +174,10 @@ class StageGasDynamics:
         while self.L_t_res >= self.precision:
             self.iter_number_L_t += 1
             logging.info('%s ИТЕРАЦИЯ %s %s\n' % ('-' * 10, self.iter_number_L_t, '-' * 10))
+            self.eta_t_old = self.eta_t
             self.H0 = L_t / self.eta_t
             self._specified_heat_drop_calculation(self.H0)
-            self.L_t_res = abs(self.L_t - L_t) / self.L_t
+            self.L_t_res = abs(self.L_t - L_t) / L_t
             logging.info('')
             logging.info('Residual(eta_t) = %.4f\n' % self.L_t_res)
 

@@ -99,7 +99,7 @@ class SectionTest(unittest.TestCase):
 
 class StageProfilerTest(unittest.TestCase):
     def setUp(self):
-        self.turbine = Turbine(TurbineType.Compressor,
+        self.turbine = Turbine(TurbineType.WORK,
                                T_g_stag=1400,
                                p_g_stag=300e3,
                                G_turbine=25,
@@ -344,7 +344,7 @@ class StageProfilerTest(unittest.TestCase):
 
 class TurbineProfilerTest(unittest.TestCase):
     def setUp(self):
-        self.turbine = Turbine(TurbineType.Compressor,
+        self.turbine = Turbine(TurbineType.WORK,
                                T_g_stag=1450,
                                p_g_stag=400e3,
                                G_turbine=25,

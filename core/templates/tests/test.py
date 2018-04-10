@@ -12,7 +12,7 @@ import core.templates
 
 class TemplateTester(unittest.TestCase):
     def setUp(self):
-        self.comp_turb_2st = Turbine(TurbineType.Compressor,
+        self.comp_turb_2st = Turbine(TurbineType.WORK,
                                      T_g_stag=1400,
                                      p_g_stag=5.5e5,
                                      G_turbine=25,
@@ -75,10 +75,8 @@ class TemplateTester(unittest.TestCase):
             cool_fluid=Air(),
             cover_thickness=0,
         )
-        self.cooler.compute()
-        # self.cooler.plot_T_wall(T_material=1100)
 
-    def test_comp_turb_2st(self):
+    def test_comp_turb_2st_av_line_profiling(self):
         loader = FileSystemLoader(
             [
                 core.templates.__path__[0],
@@ -97,16 +95,42 @@ class TemplateTester(unittest.TestCase):
         )
         st1_params = self.turb_profiler[0].get_flow_params(r_rel=np.array([0, 0.5, 1.0]))
 
+        template = env.get_template('2stage_comp_turb_av_line_prof_templ.tex')
+        content = template.render(
+            turb=self.comp_turb_2st,
+            st1_params=st1_params,
+            st1_prof_type='const angle',
+        )
+
+        with open('2stage_comp_turb_av_line_prof.tex', 'w', encoding='utf-8') as file:
+            file.write(content)
+
+    def test_comp_turb_2st_cooling(self):
+        self.cooler.compute()
+        loader = FileSystemLoader(
+            [
+                core.templates.__path__[0],
+                core.templates.tests.__path__[0],
+            ]
+        )
+        env = Environment(
+            loader=loader,
+            autoescape=select_autoescape(['tex']),
+            block_start_string='</',
+            block_end_string='/>',
+            variable_start_string='<<',
+            variable_end_string='>>',
+            comment_start_string='<#',
+            comment_end_string='#>'
+        )
+
         film_params = self.cooler.sectors[1].get_film_params()
         local_params = self.cooler.sectors[1].get_local_params()
 
         cooling_results = self.cooler.get_cooling_results()
 
-        template = env.get_template('2stage_comp_turb_templ.tex')
+        template = env.get_template('2stage_comp_turb_cooling_templ.tex')
         content = template.render(
-            turb=self.comp_turb_2st,
-            st1_params=st1_params,
-            st1_prof_type='const angle',
             film_params=film_params,
             local_params=local_params,
             cooling_results=cooling_results,
@@ -114,5 +138,5 @@ class TemplateTester(unittest.TestCase):
             blade_num=self.turb_profiler[0].z_sa
         )
 
-        with open('2stage_comp_turb.tex', 'w', encoding='utf-8') as file:
+        with open('2stage_comp_turb_cooling.tex', 'w', encoding='utf-8') as file:
             file.write(content)

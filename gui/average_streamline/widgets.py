@@ -449,9 +449,9 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
         auto_compute_heat_drop = self.checkBox_h0_auto.isChecked()
         precise_heat_drop = self.checkBox_precise_h0.isChecked()
         if self.turbine_type.currentIndex() == 0:
-            turbine_type = TurbineType.Power
+            turbine_type = TurbineType.PRESSURE
         else:
-            turbine_type = TurbineType.Compressor
+            turbine_type = TurbineType.WORK
 
         if self.fuel.currentIndex() == 0:
             work_fluid = KeroseneCombustionProducts()
@@ -718,7 +718,7 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             turb_input.work_fluid = self.turbine.work_fluid
             turb_input.write_input_file(fname)
         else:
-            turb_input = TurbineInput(TurbineType.Power, self.turbine.last.T_mix_stag, self.turbine.last.p2_stag,
+            turb_input = TurbineInput(TurbineType.PRESSURE, self.turbine.last.T_mix_stag, self.turbine.last.p2_stag,
                                       self.turbine.last.G_stage_out, self.turbine.last.G_fuel,
                                       self.turbine.work_fluid, self.turbine.last.T_mix_stag - 200,
                                       self.turbine.eta_t_stag_cycle)
@@ -739,9 +739,9 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_data.set_profiling_type(self.profiling_type_list[i])
 
     def set_data_from_turbine_input(self, turb_input: TurbineInput):
-        if turb_input.turbine_type == TurbineType.Power:
+        if turb_input.turbine_type.value == 0:
             self.turbine_type.setCurrentIndex(0)
-        elif turb_input.turbine_type == TurbineType.Compressor:
+        elif turb_input.turbine_type.value == 1:
             self.turbine_type.setCurrentIndex(1)
         if type(turb_input.work_fluid) == KeroseneCombustionProducts:
             self.fuel.setCurrentIndex(0)
@@ -761,9 +761,9 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
 
         self.stage_number.setValue(turbine.stage_number)
 
-        if turbine.turbine_type == TurbineType.Power:
+        if turbine.turbine_type.value == 0:
             self.turbine_type.setCurrentIndex(0)
-        elif turbine.turbine_type == TurbineType.Compressor:
+        elif turbine.turbine_type.value == 1:
             self.turbine_type.setCurrentIndex(1)
 
         if type(turbine.work_fluid) == KeroseneCombustionProducts:
