@@ -41,6 +41,7 @@
     </property>
     <addaction name="act_new"/>
     <addaction name="act_open"/>
+    <addaction name="act_write_par_file"/>
     <addaction name="act_load_input_data"/>
     <addaction name="act_write_input_data"/>
     <addaction name="separator"/>
@@ -94,6 +95,11 @@
   <action name="act_write_input_data">
    <property name="text">
     <string>Записать файл входных данных для следующей турбины</string>
+   </property>
+  </action>
+  <action name="act_write_par_file">
+   <property name="text">
+    <string>Записать файл параметров</string>
    </property>
   </action>
  </widget>

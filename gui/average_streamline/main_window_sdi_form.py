@@ -44,8 +44,11 @@ class Ui_MainWindow(object):
         self.act_load_input_data.setObjectName("act_load_input_data")
         self.act_write_input_data = QtWidgets.QAction(MainWindow)
         self.act_write_input_data.setObjectName("act_write_input_data")
+        self.act_write_par_file = QtWidgets.QAction(MainWindow)
+        self.act_write_par_file.setObjectName("act_write_par_file")
         self.menu.addAction(self.act_new)
         self.menu.addAction(self.act_open)
+        self.menu.addAction(self.act_write_par_file)
         self.menu.addAction(self.act_load_input_data)
         self.menu.addAction(self.act_write_input_data)
         self.menu.addSeparator()
@@ -72,4 +75,5 @@ class Ui_MainWindow(object):
         self.act_exit.setText(_translate("MainWindow", "Выход"))
         self.act_load_input_data.setText(_translate("MainWindow", "Загрузить файл входных данных"))
         self.act_write_input_data.setText(_translate("MainWindow", "Записать файл входных данных для следующей турбины"))
+        self.act_write_par_file.setText(_translate("MainWindow", "Записать файл параметров"))
 

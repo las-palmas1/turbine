@@ -10,6 +10,7 @@ from scipy.interpolate import interp1d
 import os
 from gas_turbine_cycle.tools.functions import eta_turb_stag_p
 import pickle as pk
+import xlwt as xl
 
 
 # TODO: поменять названия типов турбин
@@ -387,6 +388,50 @@ class Turbine:
         self.eta_t_stag = self.L_t_sum / self.H_t_stag
         self.eta_t_stag_p = eta_turb_stag_p(self.pi_t_stag, self.k_gas_stag, self.eta_t_stag)
         self.N = self.L_t_sum * self.G_turbine * self.eta_m
+
+    def write_compass_parameter_file(self, fname, prefix='turb'):
+        wb = xl.Workbook()
+        ws = wb.add_sheet('VarTable')
+        ws.write(0, 0, 'Комментарий')
+        ws.write(1, 0, 'row')
+        length = sum([i.length for i in self.geom])
+        ws.write(0, 1, '%s_length' % prefix)
+        ws.write(1, 1, length * 1e3)
+        ws.write(0, 2, '%s_D_inlet_av' % prefix)
+        ws.write(1, 2, self.geom.first.D0 * 1e3)
+        ws.write(0, 3, '%s_l_inlet' % prefix)
+        ws.write(1, 3, self.geom.first.l0 * 1e3)
+        ws.write(0, 4, '%s_D_outlet_av' % prefix)
+        ws.write(1, 4, self.geom.last.D2 * 1e3)
+        ws.write(0, 5, '%s_l_outlet' % prefix)
+        ws.write(1, 5, self.geom.last.l2 * 1e3)
+        start = 5
+        for i in range(self.stage_number):
+            ws.write(0, start + i * 4 + 1, '%s_b_sa_%s' % (prefix, i + 1))
+            ws.write(1, start + i * 4 + 1, self.geom[i].b_sa * 1e3)
+            ws.write(0, start + i * 4 + 2, '%s_delta_a_sa_%s' % (prefix, i + 1))
+            ws.write(1, start + i * 4 + 2, self.geom[i].delta_a_sa * 1e3)
+            ws.write(0, start + i * 4 + 3, '%s_b_rk_%s' % (prefix, i + 1))
+            ws.write(1, start + i * 4 + 3, self.geom[i].b_rk * 1e3)
+            ws.write(0, start + i * 4 + 4, '%s_delta_a_rk_%s' % (prefix, i + 1))
+            ws.write(1, start + i * 4 + 4, self.geom[i].delta_a_rk * 1e3)
+        wb.save(os.path.splitext(fname)[0] + '.xls')
+
+    def write_nx_parameter_file(self, fname, prefix='turb'):
+        lines = []
+        length = sum([i.length for i in self.geom])
+        lines.append('[mm]%s_length=%s\n' % (prefix, length * 1e3))
+        lines.append('[mm]%s_D_inlet_av=%s\n' % (prefix, self.geom.first.D0 * 1e3))
+        lines.append('[mm]%s_l_inlet=%s\n' % (prefix, self.geom.first.l0 * 1e3))
+        lines.append('[mm]%s_D_outlet_av=%s\n' % (prefix, self.geom.last.D2 * 1e3))
+        lines.append('[mm]%s_l_outlet=%s\n' % (prefix, self.geom.last.l2 * 1e3))
+        for i in range(self.stage_number):
+            lines.append('[mm]%s_b_sa_%s=%s\n' % (prefix, i + 1, self.geom[i].b_sa * 1e3))
+            lines.append('[mm]%s_delta_a_sa_%s=%s\n' % (prefix, i + 1, self.geom[i].delta_a_sa * 1e3))
+            lines.append('[mm]%s_b_rk_%s=%s\n' % (prefix, i + 1, self.geom[i].b_rk * 1e3))
+            lines.append('[mm]%s_delta_a_rk_%s=%s\n' % (prefix, i + 1, self.geom[i].delta_a_rk * 1e3))
+        with open(os.path.splitext(fname)[0] + '.exp', 'w') as f:
+            f.writelines(lines)
 
     def save(self, filename='average_streamline_calculation_results'):
         file = open(os.path.join(os.path.dirname(__file__), filename), 'wb')

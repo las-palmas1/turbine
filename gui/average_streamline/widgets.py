@@ -17,6 +17,7 @@ from PyQt5.QtWidgets import QFileDialog
 import gui.average_streamline.main_window_sdi_form as main_window_sdi_form
 import logging
 import typing
+import gui.average_streamline.save_par_file_dialog_form as save_par_file_dialog_form
 
 logger = create_logger(__name__, filename=os.path.join(os.getcwd(), 'error.log'),
                        loggerlevel=logging.ERROR,
@@ -836,12 +837,33 @@ class AveLineWidget(QtWidgets.QWidget, Ui_Form):
             stage_data.T_cool.setValue(turbine.geom[i].T_cool)
 
 
+class SaveParFileDialog(QtWidgets.QDialog, save_par_file_dialog_form.Ui_Dialog):
+    def __init__(self):
+        QtWidgets.QDialog.__init__(self)
+        self.setupUi(self)
+        self.rad_btn_compass.toggled.connect(self.rad_button_compass_toggle)
+        self.overview_btn.clicked.connect(self.on_overview_btn_click)
+        self.file_ext = '.xls'
+
+    def rad_button_compass_toggle(self):
+        if self.rad_btn_compass.isChecked():
+            self.file_ext = '.xls'
+        if self.rad_btn_nx.isChecked():
+            self.file_ext = '.exp'
+
+    def on_overview_btn_click(self):
+        fname, _ = QFileDialog.getSaveFileName(self, 'Сохрани как...', os.getcwd(),
+                                               'Parameters files (*%s)' % self.file_ext[1:])
+        self.filename.setText(os.path.splitext(fname)[0] + self.file_ext)
+
+
 class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_MainWindow):
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
         self.save_count = 0
         self.setupUi(self)
         self.file_ext = '.avl'
+        self.cwd = os.getcwd()
         self.setCentralWidget(AveLineWidget())
         self.act_exit.triggered.connect(self.close)
         self.act_new.triggered.connect(self.on_new_action)
@@ -850,6 +872,7 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
         self.act_save.triggered.connect(self.on_save_action)
         self.act_load_input_data.triggered.connect(self.on_load_input_data_action)
         self.act_write_input_data.triggered.connect(self.on_write_input_data_action)
+        self.act_write_par_file.triggered.connect(self.on_write_par_file_action)
 
     def show_error_message(self, message, process_name='saving'):
         err_message = QtWidgets.QMessageBox(self)
@@ -864,6 +887,23 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
         self.setWindowTitle('Unnamed')
         self.save_count = 0
 
+    def on_write_par_file_action(self):
+        try:
+            save_par_file_dialog = SaveParFileDialog()
+
+            if save_par_file_dialog.exec_():
+                fname = save_par_file_dialog.filename.text()
+                prefix = save_par_file_dialog.prefix.text()
+                if save_par_file_dialog.rad_btn_compass.isChecked():
+                    ave_line_widget: AveLineWidget = self.centralWidget()
+                    ave_line_widget.turbine.write_compass_parameter_file(fname, prefix)
+                if save_par_file_dialog.rad_btn_nx.isChecked():
+                    ave_line_widget: AveLineWidget = self.centralWidget()
+                    ave_line_widget.turbine.write_nx_parameter_file(fname, prefix)
+        except Exception as ex:
+            logger.error(ex)
+            self.show_error_message(str(ex), 'writing parameters file')
+
     @classmethod
     def get_turbine_input(cls, fname) -> TurbineInput:
         with open(fname, 'rb') as f:
@@ -871,7 +911,7 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
         return turb_input
 
     def on_write_input_data_action(self):
-        fname, _ = QFileDialog.getOpenFileName(self, 'Сохранить как...', os.getcwd(),
+        fname, _ = QFileDialog.getOpenFileName(self, 'Сохранить как...', self.cwd,
                                                'Turbine Input files  (*%s)' % TurbineInput.ext[1:])
         if fname:
             try:
@@ -882,7 +922,7 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
                 self.show_error_message(str(ex), 'loading input file')
 
     def on_load_input_data_action(self):
-        fname, _ = QFileDialog.getOpenFileName(self, 'Открыть файл', os.getcwd(),
+        fname, _ = QFileDialog.getOpenFileName(self, 'Открыть файл', self.cwd,
                                                'Turbine Input files  (*%s)' % TurbineInput.ext[1:])
         if fname:
             try:
@@ -894,7 +934,7 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
                 self.show_error_message(str(ex), 'loading input file')
 
     def on_open_action(self):
-        fname, _ = QFileDialog.getOpenFileName(self, 'Открыть файл', os.getcwd(),
+        fname, _ = QFileDialog.getOpenFileName(self, 'Открыть файл', self.cwd,
                                                'Turbine AveLine files  (*%s)' % self.file_ext[1:])
 
         if fname:
@@ -904,18 +944,20 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
                 ave_line_widget.set_input_from_save_data(data)
                 self.setWindowTitle(fname)
                 self.save_count = 1
+                self.cwd = os.path.dirname(fname)
             except Exception as ex:
                 logger.error(ex)
                 self.show_error_message(str(ex), 'opening')
 
     def on_save_as_action(self):
-        fname, _ = QFileDialog.getSaveFileName(self, 'Сохранить как...', os.getcwd(),
+        fname, _ = QFileDialog.getSaveFileName(self, 'Сохранить как...', self.cwd,
                                                'Turbine AveLine files (*%s)' % self.file_ext[1:])
         if fname:
             try:
                 ave_line_widget: AveLineWidget = self.centralWidget()
                 ave_line_widget.save_data_to_file(os.path.splitext(fname)[0] + self.file_ext)
                 self.setWindowTitle(os.path.splitext(fname)[0] + self.file_ext)
+                self.cwd = os.path.dirname(fname)
                 self.save_count += 1
             except Exception as ex:
                 logger.error(ex)
@@ -931,7 +973,7 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
                 logger.error(ex)
                 self.show_error_message(str(ex), 'saving')
         else:
-            fname, _ = QFileDialog.getSaveFileName(self, 'Сохранить как...', os.getcwd(),
+            fname, _ = QFileDialog.getSaveFileName(self, 'Сохранить как...', self.cwd,
                                                    'Turbine AveLine files (*%s)' % self.file_ext[1:])
             if fname:
                 try:
@@ -939,10 +981,14 @@ class AveStreamLineMainWindow(QtWidgets.QMainWindow, main_window_sdi_form.Ui_Mai
                     ave_line_widget.save_data_to_file(os.path.splitext(fname)[0] + self.file_ext)
                     self.setWindowTitle(os.path.splitext(fname)[0] + self.file_ext)
                     self.save_count += 1
+                    self.cwd = os.path.dirname(fname)
                 except Exception as ex:
                     logger.error(ex)
                     self.show_error_message(str(ex), 'saving')
 
 
 if __name__ == '__main__':
-    pass
+    app = QtWidgets.QApplication(sys.argv)
+    window = SaveParFileDialog()
+    window.show()
+    sys.exit(app.exec_())
