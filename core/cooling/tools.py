@@ -5,6 +5,7 @@ import typing
 import matplotlib.pyplot as plt
 from scipy.optimize import fsolve
 from scipy.interpolate import interp1d
+from numpy.linalg import solve
 
 
 def get_theta(r_in, r_out, r_max_rel, theta_max):
@@ -269,6 +270,10 @@ class LocalParamCalculator:
         self.x_s_arr = None
         self.x_k_arr = None
         self.x_arr = None
+        self.M_s, self.N_s = None, None
+        self.M_k, self.N_k = None, None
+        self.T_wall_s_arr = None
+        self.T_wall_k_arr = None
 
     def _get_heat_transfer_coef(self, x, T_cool_fluid):
         return 1 / (1 / self.alpha_cool(x, T_cool_fluid) +
@@ -296,10 +301,43 @@ class LocalParamCalculator:
             return -(self.height * (self.T_out_stag(x) - T_cool_fluid) * heat_trans_coef /
                      (self.G_cool(x) * self.cool_fluid.c_p_real_func(T_cool_fluid)))
 
-    def _get_T_wall(self, x, T_cool_fluid):
-        heat_trans_coef_gas_wall = 1 / (1 / self.alpha_out(x) + self.cover_thickness / self.lam_cover)
-        heat_trans_coef = self._get_heat_transfer_coef(x, T_cool_fluid)
-        return self.T_out_stag(x) - heat_trans_coef / heat_trans_coef_gas_wall * (self.T_out_stag(x) - T_cool_fluid)
+    def _get_matrix_coefficients(self, x_arr: np.ndarray, T_cool_fluid_arr: np.ndarray):
+        dx = max(x_arr.__abs__()) / (self.node_num - 1)
+        A_arr, B_arr, C_arr, D_arr = [], [], [], []
+        for x, T_cool_fluid in zip(x_arr, T_cool_fluid_arr):
+            A = 1 / dx**2
+            C = 1 / dx**2
+            k_out = 1 / (1 / self.alpha_out(x) + self.cover_thickness / self.lam_cover)
+            B = -2 / dx**2 - (k_out + self.alpha_cool(x, T_cool_fluid)) / (self.lam_blade(self.T_wall_av) *
+                                                                           self.wall_thickness)
+            D = -(k_out * self.T_out_stag(x) + self.alpha_cool(x, T_cool_fluid) *
+                  T_cool_fluid) / (self.lam_blade(self.T_wall_av) * self.wall_thickness)
+            A_arr.append(A)
+            B_arr.append(B)
+            C_arr.append(C)
+            D_arr.append(D)
+        M = np.zeros([self.node_num, self.node_num])
+        N = np.zeros([self.node_num])
+        for i1 in range(self.node_num):
+            for i2 in range(self.node_num):
+                if i1 == 0:
+                    N[i1] = 0
+                    M[i1, 0] = 1
+                    M[i1, 1] = -1
+                elif i1 == self.node_num - 1:
+                    N[i1] = 0
+                    M[i1, i1] = 1
+                    M[i1, i1 - 1] = -1
+                else:
+                    N[i1] = D_arr[i1]
+                    M[i1, i1 - 1] = A_arr[i1]
+                    M[i1, i1] = B_arr[i1]
+                    M[i1, i1 + 1] = C_arr[i1]
+        return M, N
+
+    def _get_T_wall_arr(self, M: np.ndarray, N: np.ndarray):
+        res = solve(M, N)
+        return res
 
     def compute(self):
         self.x_s_arr = np.array(np.linspace(0, -self.section.length_in_edge_s - self.section.length_s, self.node_num))
@@ -323,11 +361,14 @@ class LocalParamCalculator:
         self.T_cool_fluid_arr = np.array(T_cool_fluid_s_list + list(self.T_cool_fluid_k_arr))
         self._T_cool_int = interp1d(self.x_arr, self.T_cool_fluid_arr)
 
-        self.T_wall_arr = []
+        self.M_s, self.N_s = self._get_matrix_coefficients(self.x_s_arr, self.T_cool_fluid_s_arr)
+        self.M_k, self.N_k = self._get_matrix_coefficients(self.x_k_arr, self.T_cool_fluid_k_arr)
+        self.T_wall_s_arr = self._get_T_wall_arr(self.M_s, self.N_s)
+        self.T_wall_k_arr = self._get_T_wall_arr(self.M_k, self.N_k)
 
-        for T_cool_fluid, x in zip(self.T_cool_fluid_arr, self.x_arr):
-            T_wall = self._get_T_wall(x, T_cool_fluid)
-            self.T_wall_arr.append(T_wall)
+        T_wall_s_list = list(self.T_wall_s_arr[1: self.T_wall_s_arr.shape[0]])
+        T_wall_s_list.reverse()
+        self.T_wall_arr = np.array(T_wall_s_list + list(self.T_wall_k_arr))
 
         self.alpha_cool_fluid_arr = []
         for T_cool_fluid, x in zip(self.T_cool_fluid_arr, self.x_arr):
