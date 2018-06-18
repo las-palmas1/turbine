@@ -22,6 +22,214 @@
 % Document
 \begin{document}
 
+    </ macro stage_tables(turb) />
+
+    </ set degr = 180 / 3.141592653589793 />
+    \begin{longtable}{
+    |p{8cm}|
+%    </ for i in range(turb.stage_number)/>
+    c|
+%    </ endfor />
+    }
+        \caption{Параметры ступеней турбины.} \\ \hline
+        Номер ступени
+%        </ for i in range(turb.stage_number) />
+        & << i + 1 >>
+%        </ endfor />
+        \\ \hline
+        Средний диаметр на входе в РК $D_1$, м
+%        </ for i in range(turb.stage_number) />
+        & << turb[i].D1 | round(3) >>
+%        </ endfor />
+        \\ \hline
+        Средний диаметр на выходе в РК $D_1$, м
+%        </ for i in range(turb.stage_number) />
+        & << turb[i].D2 | round(3) >>
+%        </ endfor />
+        \\ \hline
+        Длина лопатки на входе  $l_1$, м
+%        </ for i in range(turb.stage_number) />
+        & << turb[i].l1 | round(3) >>
+%        </ endfor />
+        \\ \hline
+        Длина лопатки на выходе  $l_2$, м
+%        </ for i in range(turb.stage_number) />
+        & << turb[i].l2 | round(3) >>
+%        </ endfor />
+        \\ \hline
+        Степень реактивности
+%        </ for i in range(turb.stage_number) />
+        & << turb[i].rho | round(3) >>
+%        </ endfor />
+        \\ \hline
+        Давление на входе в ступень $p_0^*$, МПа
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].p0_stag / 10**6) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        Температура на входе в ступень $T_0^*$, К
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].T0_stag) | round(2) >>
+%        </ endfor />
+        \\ \hline
+        Расход на входе в ступень $G_{вх}$, кг/с
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].G_stage_in) | round(2) >>
+%        </ endfor />
+        \\ \hline
+        Статический теплоперепад $H_0$, МДж/кг
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].H0 / 10**6) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        Относительный расход охлаждающего воздуха $g_{охл}$
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].g_cool) | round(3) >>
+%        </ endfor />
+        \\ \hline
+        Теплоперепад на СА $H_с$, МДж/кг
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].H_s / 10**6) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        Окружная скорость $u_1$, м/с
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].u1 ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Скорость истечения из СА $c_1$, м/с
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].c1 ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Статическая температура на выходе из СА $T_1$, К
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].T1 ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Статическое давление на выходе из СА $p_1$, МПа
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].p1 / 10**6) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        Угол потока на выходе из СА $\alpha_1$, град
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].alpha1 * degr ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Относительная скорость на выходе из СА $w_1$, м/с
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].w1 ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Угол потока в относительном движении на выходе из СА $\beta_1$, град
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].beta1 * degr ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Теплоперепад на РК $H_л$, МДж/кг
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].H_l / 10**6) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        Окружная скорость на выходе из РК $u_2$, м/с
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].u2 ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Полная температура в относительном движении на выходе из СА $T_{1w}^*$, К
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].T1_w_stag ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Относительная скорость на выходе из РК $w_2$, м/с
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].w2 ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Статическая температура на выходе из HR $T_2$, К
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].T2 ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Статическое давление на выходе из РК $p_2$, МПа
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].p2 / 10**6) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        Абсолютная скорость истечения из РК $c_2$, м/с
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].c2 ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Угол потока на выходе из РК $\alpha_2$, град
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].alpha2 * degr ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Угол потока в относительном движении на выходе из РК $\beta_2$, град
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].beta2 * degr ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Работа на окружности колеса $L_u$, МДж/кг
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].L_u / 10**6) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        КПД на окружности колеса $\eta_u$
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].eta_u ) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        Мощностной КПД $\eta_т$
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].eta_t ) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        Лопаточный КПД $\eta_л$
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].eta_l ) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        Удельная работа ступени $L_т$, МДж/кг
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].L_t / 10**6) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        Статическая температура за ступенью $T_{ст}$, К
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].T_st) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Температура торможения за ступенью $T_{ст}^*$, К
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].T_st_stag) | round(1) >>
+%        </ endfor />
+        \\ \hline
+        Давление торможения за ступенью $p_2^*$, МПа
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].p2_stag / 10**6) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        Теплоперепад по параметрам торможения $H_0^*$, МДж/кг
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].L_t / 10**6) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        КПД по параметрам торможения $\eta_т^*$
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].eta_t_stag ) | round(4) >>
+%        </ endfor />
+        \\ \hline
+        Температура после подмешивания охлаждающего воздуха $T_{см^*}$
+%        </ for i in range(turb.stage_number) />
+        & << (turb[i].T_mix_stag ) | round(1) >>
+%        </ endfor />
+        \\ \hline
+    \end{longtable}
+    </ endmacro />
+
     \begin{enumerate}
 
         </ macro stage_core(stgd) />

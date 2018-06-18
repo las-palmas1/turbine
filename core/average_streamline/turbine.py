@@ -435,26 +435,31 @@ class Turbine:
         wb.save(os.path.splitext(fname)[0] + '.xls')
 
     def write_nx_parameter_file(self, fname, prefix='turb'):
+        if prefix:
+            prefix = prefix + '_'
         lines = []
         length = sum([i.length for i in self.geom])
-        lines.append('[mm]%s_length=%s\n' % (prefix, length * 1e3))
-        lines.append('[mm]%s_D_inlet_av=%s\n' % (prefix, self.geom.first.D0 * 1e3))
-        lines.append('[mm]%s_l_inlet=%s\n' % (prefix, self.geom.first.l0 * 1e3))
-        lines.append('[mm]%s_D_outlet_av=%s\n' % (prefix, self.geom.last.D2 * 1e3))
-        lines.append('[mm]%s_l_outlet=%s\n' % (prefix, self.geom.last.l2 * 1e3))
+        lines.append('[mm]%slength=%s\n' % (prefix, length * 1e3))
+        lines.append('[mm]%sD_inlet_av=%s\n' % (prefix, self.geom.first.D0 * 1e3))
+        lines.append('[mm]%sl_inlet=%s\n' % (prefix, self.geom.first.l0 * 1e3))
+        lines.append('[mm]%sD_outlet_av=%s\n' % (prefix, self.geom.last.D2 * 1e3))
+        lines.append('[mm]%sl_outlet=%s\n' % (prefix, self.geom.last.l2 * 1e3))
         for i in range(self.stage_number):
-            lines.append('[mm]%s_b_sa_%s=%s\n' % (prefix, i + 1, self.geom[i].b_sa * 1e3))
-            lines.append('[mm]%s_delta_a_sa_%s=%s\n' % (prefix, i + 1, self.geom[i].delta_a_sa * 1e3))
-            lines.append('[mm]%s_b_rk_%s=%s\n' % (prefix, i + 1, self.geom[i].b_rk * 1e3))
-            lines.append('[mm]%s_delta_a_rk_%s=%s\n' % (prefix, i + 1, self.geom[i].delta_a_rk * 1e3))
-            lines.append('[mm]%s_D0_%s=%s\n' % (prefix, i + 1, self.geom[i].D0 * 1e3))
-            lines.append('[mm]%s_D05_%s=%s\n' % (prefix, i + 1, self.geom[i].D05 * 1e3))
-            lines.append('[mm]%s_D1_%s=%s\n' % (prefix, i + 1, self.geom[i].D1 * 1e3))
-            lines.append('[mm]%s_D2_%s=%s\n' % (prefix, i + 1, self.geom[i].D2 * 1e3))
-            lines.append('[mm]%s_l0_%s=%s\n' % (prefix, i + 1, self.geom[i].l0 * 1e3))
-            lines.append('[mm]%s_l05_%s=%s\n' % (prefix, i + 1, self.geom[i].l05 * 1e3))
-            lines.append('[mm]%s_l1_%s=%s\n' % (prefix, i + 1, self.geom[i].l1 * 1e3))
-            lines.append('[mm]%s_l2_%s=%s\n' % (prefix, i + 1, self.geom[i].l2 * 1e3))
+            lines.append('[mm]%sb_sa_%s=%s\n' % (prefix, i + 1, self.geom[i].b_sa * 1e3))
+            lines.append('[mm]%sdelta_a_sa_%s=%s\n' % (prefix, i + 1, self.geom[i].delta_a_sa * 1e3))
+            lines.append('[mm]%sb_rk_%s=%s\n' % (prefix, i + 1, self.geom[i].b_rk * 1e3))
+            lines.append('[mm]%sdelta_a_rk_%s=%s\n' % (prefix, i + 1, self.geom[i].delta_a_rk * 1e3))
+            lines.append('[mm]%sD0_%s=%s\n' % (prefix, i + 1, self.geom[i].D0 * 1e3))
+            lines.append('[mm]%sD05_%s=%s\n' % (prefix, i + 1, self.geom[i].D05 * 1e3))
+            lines.append('[mm]%sD1_%s=%s\n' % (prefix, i + 1, self.geom[i].D1 * 1e3))
+            lines.append('[mm]%sD2_%s=%s\n' % (prefix, i + 1, self.geom[i].D2 * 1e3))
+            lines.append('[mm]%sl0_%s=%s\n' % (prefix, i + 1, self.geom[i].l0 * 1e3))
+            lines.append('[mm]%sl05_%s=%s\n' % (prefix, i + 1, self.geom[i].l05 * 1e3))
+            lines.append('[mm]%sl1_%s=%s\n' % (prefix, i + 1, self.geom[i].l1 * 1e3))
+            lines.append('[mm]%sl2_%s=%s\n' % (prefix, i + 1, self.geom[i].l2 * 1e3))
+            lines.append('[mm]%sdelta_r_%s=%s\n' % (prefix, i + 1, self.geom[i].delta_r_rk * 1e3))
+            lines.append('[mm]%sp_in_%s=%s\n' % (prefix, i + 1, self.geom[i].p_r_in * 1e3))
+            lines.append('[mm]%sp_out_%s=%s\n' % (prefix, i + 1, self.geom[i].p_r_out * 1e3))
 
         with open(os.path.splitext(fname)[0] + '.exp', 'w') as f:
             f.writelines(lines)
