@@ -36,13 +36,19 @@
 
     </ import 'turb_cooling.tex' as cool />
 
+    \subsection{Описание алгоритма расчета температурного поля лопатки.}
+    << cool.description() >>
+
     \subsection{Алгоритм расчета пленки.}
 
     << cool.film() >>
 
-    \subsection{Алгоритм расчета локальных параметров.}
+    \subsection{Алгоритм температуры водуха.}
 
-    << cool.local_params() >>
+    << cool.air_temp() >>
+
+    \subsection{Методика расчета температуры стенки.}
+    << cool.wall_temp() >>
 
     \subsection{Алгоритм расчета коэффициент теплоотдачи со стороны газа.}
 

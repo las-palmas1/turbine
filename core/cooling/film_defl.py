@@ -408,6 +408,7 @@ class FilmSectorCooler(GasBladeHeatExchange):
                     r'$\phi$',
                     r'$G_{отв},\ г/с$',
                     r'$G_{отв}/G_{в0}$',
+                    r'$v_в,\ м/с$'
                 ],
                 'Value': [
                     [round(x * 1e3, 1) for x in self.film.x_hole],
@@ -418,6 +419,7 @@ class FilmSectorCooler(GasBladeHeatExchange):
                     [round(phi, 3) for phi in self.film.phi_temp],
                     [round(G * 1e3, 3) for G in self.film.dG_cool_hole],
                     [round(G / self.film.G_cool0, 3) for G in self.film.dG_cool_hole],
+                    [round(v_hole) for v_hole in self.film.v_cool_hole_out],
                 ]
             }
         )
