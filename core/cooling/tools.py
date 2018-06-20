@@ -8,6 +8,7 @@ from scipy.interpolate import interp1d
 from numpy.linalg import solve
 
 
+
 def get_theta(r_in, r_out, r_max_rel, theta_max):
     """Возвращает функцию нервномерности с заданным аксимальным значением неравномерности,
     заданным положением масимума на заданном интервале."""
@@ -388,12 +389,19 @@ class LocalParamCalculator:
     def get_T_cool(self, x):
         return self._T_cool_int(x).__float__()
 
-    def plot_T_wall(self, T_material_max, figsize=(8, 6), filename=None, label=True):
+    def plot_T_wall(self, T_material_max, figsize=(8, 6), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
         plt.figure(figsize=figsize)
         plt.plot(self.x_arr * 1e3, self.T_wall_arr, lw=2, color='red')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
+        if ylim:
+            plt.ylim(*ylim)
+            if rnd_y > 0:
+                yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            else:
+                yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
         plt.plot([min(self.x_arr) * 1e3, max(self.x_arr) * 1e3],
-                 [T_material_max, T_material_max], lw=2, linestyle='--', color='black')
+                 [T_material_max, T_material_max], lw=2, linestyle='--', color='black', label=r'$T_{мат}$')
         T_max = max(self.T_wall_arr)
         plt.text(0.7 * min(self.x_arr) * 1e3, T_max - 100, r'$спинка$', fontsize=16)
         plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 100, r'$корыто$', fontsize=16)
@@ -401,16 +409,24 @@ class LocalParamCalculator:
             plt.xlabel(r'$x,\ мм$', fontsize=14)
             plt.ylabel(r'$T_{ст},\ К$', fontsize=14)
         plt.grid(linewidth=1)
+        plt.legend(fontsize=14)
         plt.xticks(fontsize=12)
         plt.yticks(fontsize=12)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_cool(self, figsize=(8, 6), filename=None, label=True):
+    def plot_T_cool(self, figsize=(8, 6), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
         plt.figure(figsize=figsize)
         plt.plot(self.x_arr * 1e3, self.T_cool_fluid_arr, lw=2, color='red')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
+        if ylim:
+            plt.ylim(*ylim)
+            if rnd_y > 0:
+                yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            else:
+                yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
         T_max = max(self.T_cool_fluid_arr)
         plt.text(0.7 * min(self.x_arr) * 1e3, T_max - 100, r'$спинка$', fontsize=16)
         plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 100, r'$корыто$', fontsize=16)
@@ -425,11 +441,18 @@ class LocalParamCalculator:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_out(self, figsize=(8, 6), filename=None, label=True):
+    def plot_T_out(self, figsize=(8, 6), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
         plt.figure(figsize=figsize)
         T_arr = [self.T_out_stag(x) for x in self.x_arr]
         plt.plot(self.x_arr * 1e3, T_arr, lw=2, color='red')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
+        if ylim:
+            plt.ylim(*ylim)
+            if rnd_y > 0:
+                yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            else:
+                yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
         T_max = max(T_arr)
         plt.text(0.7 * min(self.x_arr) * 1e3, T_max - 100, r'$спинка$', fontsize=16)
         plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 100, r'$корыто$', fontsize=16)
@@ -444,13 +467,20 @@ class LocalParamCalculator:
             plt.savefig(filename)
         plt.show()
 
-    def plot_all(self, figsize=(8, 6), filename=None, label=True):
+    def plot_all(self, figsize=(8, 6), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
         plt.figure(figsize=figsize)
         T_arr = [self.T_out_stag(x) for x in self.x_arr]
         plt.plot(self.x_arr * 1e3, T_arr, lw=2, color='red', label=r'$T_{обт.среды}^*$')
         plt.plot(self.x_arr * 1e3, self.T_cool_fluid_arr, lw=2, color='blue', label='$T_{в}$')
         plt.plot(self.x_arr * 1e3, self.T_wall_arr, lw=2, color='green', label=r'$T_{ст}$')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
+        if ylim:
+            plt.ylim(*ylim)
+            if rnd_y > 0:
+                yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            else:
+                yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
         T_max = max(max(T_arr), max(self.T_cool_fluid_arr), max(self.T_wall_arr))
         plt.text(0.7 * min(self.x_arr) * 1e3, T_max - 100, r'$спинка$', fontsize=16)
         plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 100, r'$корыто$', fontsize=16)
@@ -806,7 +836,8 @@ class FilmCalculator:
     def get_integrate_film_eff(self, x):
         return (self.T_gas_stag - self.get_T_film(x)) / (self.T_gas_stag - self.T_cool(x))
 
-    def plot_integrate_film_eff(self, x_arr, figsize=(7, 5), filename=None, label=True):
+    def plot_integrate_film_eff(self, x_arr, figsize=(7, 5), filename=None, label=True, ylim=None,
+                                n_y=None, rnd_y=0):
         plt.figure(figsize=figsize)
         x_arr_new = [x * 1e3 for x in x_arr]
         plt.plot(x_arr_new, [self.get_integrate_film_eff(x) for x in x_arr], lw=2, color='red')
@@ -816,13 +847,21 @@ class FilmCalculator:
             plt.xlabel(r'$x,\ мм$', fontsize=14)
             plt.ylabel(r'$\theta_{пл}$', fontsize=14)
         plt.xlim(min(x_arr_new), max(x_arr_new))
+        if ylim:
+            plt.ylim(*ylim)
+            if rnd_y > 0:
+                yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            else:
+                yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
         plt.xticks(fontsize=12)
         plt.yticks(fontsize=12)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_film(self, x_arr, places=-2, delta=50, figsize=(7, 5), filename=None, label=True):
+    def plot_T_film(self, x_arr, places=-2, delta=50, figsize=(7, 5), filename=None, label=True, ylim=None,
+                    n_y=None, rnd_y=0):
         plt.figure(figsize=figsize)
         T_arr = [self.get_T_film(x) for x in x_arr]
 
@@ -832,7 +871,15 @@ class FilmCalculator:
         for x in self.x_hole:
             plt.plot([x * 1e3, x * 1e3], [T_min, T_max], color='black', lw=1.5, linestyle='--')
         plt.grid(linewidth=1)
-        plt.ylim(T_min, T_max)
+        if ylim:
+            plt.ylim(*ylim)
+            if rnd_y > 0:
+                yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            else:
+                yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+        else:
+            plt.ylim(T_min, T_max)
         plt.xlim(min(x_arr_new), max(x_arr_new))
         plt.xticks(fontsize=12)
         plt.yticks(fontsize=12)
@@ -843,7 +890,8 @@ class FilmCalculator:
             plt.savefig(filename)
         plt.show()
 
-    def plot_film_eff(self, hole_num, x_arr, create_fig=False, show=False, figsize=(9, 7), filename=None, label=True):
+    def plot_film_eff(self, hole_num, x_arr, create_fig=False, show=False, figsize=(9, 7), filename=None,
+                      label=True, ylim=None, n_y=None, rnd_y=0):
         if self.x_hole[hole_num] == 0:
             if hole_num > 0:
                 if self.x_hole[hole_num - 1] == 0:
@@ -873,42 +921,59 @@ class FilmCalculator:
             plt.ylabel(r'$\theta_{пл}$', fontsize=14)
         plt.grid(True, axis='both', linewidth=1)
         plt.xlim(min(x_arr_new), max(x_arr_new))
+        if ylim:
+            plt.ylim(*ylim)
+            if rnd_y > 0:
+                yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            else:
+                yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
         if filename:
             plt.savefig(filename)
         if show:
             plt.show()
 
-    def plot_alpha_film(self, x_arr, ylim, figsize=(7, 5), filename=None, label=True):
+    def plot_alpha_film(self, x_arr, ylim, figsize=(7, 5), filename=None, label=True, n_y=None, rnd_y=0):
         plt.figure(figsize=figsize)
-        alpha_arr = [self.get_alpha_film(x) for x in x_arr]
+        alpha_arr = [self.get_alpha_film(x) / 1e3 for x in x_arr]
         x_arr_new = [x * 1e3 for x in x_arr]
         plt.plot(x_arr_new, alpha_arr, lw=2)
         alpha_min, alpha_max = ylim
-        for x in self.x_hole:
-            plt.plot([x * 1e3, x * 1e3], [alpha_min, alpha_max], color='black', lw=1.5, linestyle='--')
         plt.grid(linewidth=1)
         plt.ylim(alpha_min, alpha_max)
+        if rnd_y > 0:
+            yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
+        else:
+            yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
+        plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
         plt.xlim(min(x_arr_new), max(x_arr_new))
         plt.xticks(fontsize=12)
         plt.yticks(fontsize=12)
         if label:
             plt.xlabel(r'$x,\ мм$', fontsize=14)
-            plt.ylabel(r'$\alpha_{пл},\ \frac{Вт}{м^2 \cdot К}$', fontsize=14)
+            plt.ylabel(r'$\alpha_{пл},\ \frac{кВт}{м^2 \cdot К}$', fontsize=14)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_G_cool(self, x_arr, places=4, delta=1e-4, figsize=(7, 5), filename=None, label=True):
+    def plot_G_cool(self, x_arr, places=4, delta=1e-4, figsize=(7, 5), filename=None, label=True, ylim=None,
+                    n_y=None, rnd_y=0):
         plt.figure(figsize=figsize)
         G_arr = [self.get_G_cool(x) for x in x_arr]
         x_arr_new = [x * 1e3 for x in x_arr]
         plt.plot(x_arr_new, G_arr, lw=2)
 
         G_min, G_max = self._get_lim(G_arr, places, delta)
-        for x in self.x_hole:
-            plt.plot([x * 1e3, x * 1e3], [0, G_max], color='black', lw=1.5, linestyle='--')
         plt.grid(linewidth=1)
-        plt.ylim(0, G_max)
+        if ylim:
+            plt.ylim(*ylim)
+            if rnd_y > 0:
+                yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            else:
+                yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+        else:
+            plt.ylim(0, G_max)
         plt.xlim(min(x_arr_new), max(x_arr_new))
         plt.xticks(fontsize=12)
         plt.yticks(fontsize=12)
