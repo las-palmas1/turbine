@@ -389,9 +389,10 @@ class LocalParamCalculator:
     def get_T_cool(self, x):
         return self._T_cool_int(x).__float__()
 
-    def plot_T_wall(self, T_material_max, figsize=(8, 6), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_T_wall(self, T_material_max, figsize=(8, 6), filename=None, label=True, ylim=None, n_y=None,
+                    rnd_y=0, legend_font=14, ticks_font=14):
         plt.figure(figsize=figsize)
-        plt.plot(self.x_arr * 1e3, self.T_wall_arr, lw=2, color='red')
+        plt.plot(self.x_arr * 1e3, self.T_wall_arr, lw=2, color='red', label=r'$T_{ст}$')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
         if ylim:
             plt.ylim(*ylim)
@@ -399,7 +400,8 @@ class LocalParamCalculator:
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
         plt.plot([min(self.x_arr) * 1e3, max(self.x_arr) * 1e3],
                  [T_material_max, T_material_max], lw=2, linestyle='--', color='black', label=r'$T_{мат}$')
         T_max = max(self.T_wall_arr)
@@ -409,14 +411,15 @@ class LocalParamCalculator:
             plt.xlabel(r'$x,\ мм$', fontsize=14)
             plt.ylabel(r'$T_{ст},\ К$', fontsize=14)
         plt.grid(linewidth=1)
-        plt.legend(fontsize=14)
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
+        plt.legend(fontsize=legend_font)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_cool(self, figsize=(8, 6), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_T_cool(self, figsize=(8, 6), filename=None, label=True, ylim=None, n_y=None,
+                    rnd_y=0, ticks_font=14):
         plt.figure(figsize=figsize)
         plt.plot(self.x_arr * 1e3, self.T_cool_fluid_arr, lw=2, color='red')
         plt.xlim(min(self.x_arr) * 1e3, max(self.x_arr) * 1e3)
@@ -426,7 +429,8 @@ class LocalParamCalculator:
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
         T_max = max(self.T_cool_fluid_arr)
         plt.text(0.7 * min(self.x_arr) * 1e3, T_max - 100, r'$спинка$', fontsize=16)
         plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 100, r'$корыто$', fontsize=16)
@@ -435,13 +439,14 @@ class LocalParamCalculator:
             plt.ylabel(r'$T_{в},\ К$', fontsize=14)
 
         plt.grid(linewidth=1)
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_out(self, figsize=(8, 6), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_T_out(self, figsize=(8, 6), filename=None, label=True, ylim=None, n_y=None,
+                   rnd_y=0, ticks_font=14):
         plt.figure(figsize=figsize)
         T_arr = [self.T_out_stag(x) for x in self.x_arr]
         plt.plot(self.x_arr * 1e3, T_arr, lw=2, color='red')
@@ -452,7 +457,8 @@ class LocalParamCalculator:
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
         T_max = max(T_arr)
         plt.text(0.7 * min(self.x_arr) * 1e3, T_max - 100, r'$спинка$', fontsize=16)
         plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 100, r'$корыто$', fontsize=16)
@@ -461,13 +467,14 @@ class LocalParamCalculator:
             plt.xlabel(r'$x,\ мм$', fontsize=14)
             plt.ylabel(r'$T_{обт.среды}^*,\ К$', fontsize=14)
         plt.grid(linewidth=1)
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_all(self, figsize=(8, 6), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_all(self, figsize=(8, 6), filename=None, label=True, ylim=None, n_y=None,
+                 rnd_y=0, legend_font=14, ticks_font=14):
         plt.figure(figsize=figsize)
         T_arr = [self.T_out_stag(x) for x in self.x_arr]
         plt.plot(self.x_arr * 1e3, T_arr, lw=2, color='red', label=r'$T_{обт.среды}^*$')
@@ -480,17 +487,18 @@ class LocalParamCalculator:
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
         T_max = max(max(T_arr), max(self.T_cool_fluid_arr), max(self.T_wall_arr))
-        plt.text(0.7 * min(self.x_arr) * 1e3, T_max - 100, r'$спинка$', fontsize=16)
-        plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 100, r'$корыто$', fontsize=16)
+        plt.text(0.7 * min(self.x_arr) * 1e3, T_max - 350, r'$спинка$', fontsize=16)
+        plt.text(0.3 * max(self.x_arr) * 1e3, T_max - 350, r'$корыто$', fontsize=16)
         if label:
             plt.xlabel(r'$x,\ мм$', fontsize=14)
             plt.ylabel(r'$T,\ К$', fontsize=14)
-        plt.legend(fontsize=14)
+        plt.legend(fontsize=legend_font)
         plt.grid(linewidth=1)
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
         if filename:
             plt.savefig(filename)
         plt.show()
@@ -837,7 +845,7 @@ class FilmCalculator:
         return (self.T_gas_stag - self.get_T_film(x)) / (self.T_gas_stag - self.T_cool(x))
 
     def plot_integrate_film_eff(self, x_arr, figsize=(7, 5), filename=None, label=True, ylim=None,
-                                n_y=None, rnd_y=0):
+                                n_y=None, rnd_y=0, ticks_font=14):
         plt.figure(figsize=figsize)
         x_arr_new = [x * 1e3 for x in x_arr]
         plt.plot(x_arr_new, [self.get_integrate_film_eff(x) for x in x_arr], lw=2, color='red')
@@ -853,15 +861,16 @@ class FilmCalculator:
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
         if filename:
             plt.savefig(filename)
         plt.show()
 
     def plot_T_film(self, x_arr, places=-2, delta=50, figsize=(7, 5), filename=None, label=True, ylim=None,
-                    n_y=None, rnd_y=0):
+                    n_y=None, rnd_y=0, ticks_font=14):
         plt.figure(figsize=figsize)
         T_arr = [self.get_T_film(x) for x in x_arr]
 
@@ -881,8 +890,8 @@ class FilmCalculator:
         else:
             plt.ylim(T_min, T_max)
         plt.xlim(min(x_arr_new), max(x_arr_new))
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
         if label:
             plt.xlabel(r'$x,\ мм$', fontsize=14)
             plt.ylabel(r'$T_{пл}^*,\ К$', fontsize=14)
@@ -891,7 +900,7 @@ class FilmCalculator:
         plt.show()
 
     def plot_film_eff(self, hole_num, x_arr, create_fig=False, show=False, figsize=(9, 7), filename=None,
-                      label=True, ylim=None, n_y=None, rnd_y=0):
+                      label=True, ylim=None, n_y=None, rnd_y=0, legend_font=14, ticks_font=14):
         if self.x_hole[hole_num] == 0:
             if hole_num > 0:
                 if self.x_hole[hole_num - 1] == 0:
@@ -912,9 +921,9 @@ class FilmCalculator:
             plt.figure(figsize=figsize)
         x_arr_new = [x * 1e3 for x in x_arr]
         plt.plot(x_arr_new, [self.film_eff_list[hole_num](x) for x in x_arr], lw=2.0, label=line_label)
-        plt.legend(fontsize=10)
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
+        plt.legend(fontsize=legend_font)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
 
         if label:
             plt.xlabel(r'$x,\ мм$', fontsize=14)
@@ -927,13 +936,15 @@ class FilmCalculator:
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
         if filename:
             plt.savefig(filename)
         if show:
             plt.show()
 
-    def plot_alpha_film(self, x_arr, ylim, figsize=(7, 5), filename=None, label=True, n_y=None, rnd_y=0):
+    def plot_alpha_film(self, x_arr, ylim, figsize=(7, 5), filename=None, label=True, n_y=None,
+                        rnd_y=0, ticks_font=14):
         plt.figure(figsize=figsize)
         alpha_arr = [self.get_alpha_film(x) / 1e3 for x in x_arr]
         x_arr_new = [x * 1e3 for x in x_arr]
@@ -945,10 +956,11 @@ class FilmCalculator:
             yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
         else:
             yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-        plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+        plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                   fontsize=ticks_font)
         plt.xlim(min(x_arr_new), max(x_arr_new))
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
         if label:
             plt.xlabel(r'$x,\ мм$', fontsize=14)
             plt.ylabel(r'$\alpha_{пл},\ \frac{кВт}{м^2 \cdot К}$', fontsize=14)
@@ -957,7 +969,7 @@ class FilmCalculator:
         plt.show()
 
     def plot_G_cool(self, x_arr, places=4, delta=1e-4, figsize=(7, 5), filename=None, label=True, ylim=None,
-                    n_y=None, rnd_y=0):
+                    n_y=None, rnd_y=0, ticks_font=14):
         plt.figure(figsize=figsize)
         G_arr = [self.get_G_cool(x) for x in x_arr]
         x_arr_new = [x * 1e3 for x in x_arr]
@@ -971,12 +983,13 @@ class FilmCalculator:
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
         else:
             plt.ylim(0, G_max)
         plt.xlim(min(x_arr_new), max(x_arr_new))
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
         if label:
             plt.xlabel(r'$x,\ мм$', fontsize=14)
             plt.ylabel(r'$G_в,\ кг/с$', fontsize=14)

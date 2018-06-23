@@ -350,15 +350,16 @@
 
         \item Определим относительную скорость на входе в РК:
 
-	    \begin{gather*}
-	        w_1 = \sqrt{c_1^2 + u_1^2 - 2 c_1 u_1 \cos \alpha_1} =\\
-	        = \sqrt{
+	    \[
+	        w_1 = \sqrt{c_1^2 + u_1^2 - 2 c_1 u_1 \cos \alpha_1} =
+        \]
+	    \[    = \sqrt{
             << stgd.c1 | round(2) >> ^ 2 +
             << stgd.u1 | round(2) >> ^ 2 -
             2 \cdot << stgd.c1 | round(2) >> \cdot << stgd.u1 | round(2) >> \cdot \cos 16.<< (stgd.alpha1 * degr) | round(3) >> \degree
             }
-            = << stgd.w1 | round(2) >> \/\ м/с\\
-	    \end{gather*}
+            = << stgd.w1 | round(2) >> \/\ м/с
+        \]
 
         \item Угол потока в относительном движении:
 
@@ -416,33 +417,37 @@
 
         \item Определим относительную скорость истечения газа из РК:
 
-	    \begin{gather*}
-	        w_2 = \psi \sqrt{w_1^2 + 2H_л +\left( u_2^2 - u_1^2 \right)} =\\
-	        = << stgd.psi | round(3) >> \cdot
+	    \[
+	        w_2 = \psi \sqrt{w_1^2 + 2H_л +\left( u_2^2 - u_1^2 \right)} =
+        \]
+        \[   = << stgd.psi | round(3) >> \cdot
             \sqrt{
                 << stgd.w1 | round(2) >> ^ 2 +
                 2 \cdot << (stgd.H_l / 10**6) | round(4) >> \cdot 10^6 +
                 \left( << stgd.u2 | round(2) >> ^ 2 - << stgd.u1 | round(2) >> ^ 2 \right)
             } =
-            << stgd.w2 | round(2) >> \/\ м/с\\
-	    \end{gather*}
+            << stgd.w2 | round(2) >> \/\ м/с
+        \]
+
 
         \item Определим статическую температуру на выходе из РК:
 
-	    \begin{gather*}
+	    \[
 	        T_2 = T_1 + \frac{
 	 	        \left( w_1^2  - w_2^2 \right) + \left( u_2^2 - u_1^2 \right)
             }{
                 2 c_{pг}
-            } =\\
-	        = << stgd.T1 | round(2) >> + \frac{
+            } =
+        \]
+	    \[
+            = << stgd.T1 | round(2) >> + \frac{
 	 	        \left( << stgd.w1 | round(2) >> ^ 2  - << stgd.w2 | round(2) >> ^ 2 \right) +
                 \left( << stgd.u2 | round(2) >> ^ 2 - << stgd.u1 | round(2) >> ^ 2 \right)
 	        }{
             2 \cdot << stgd.c_p_gas | round(2) >>
             }
-            = << stgd.T2 | round(2) >> \/\ К\\
-	    \end{gather*}
+            = << stgd.T2 | round(2) >> \/\ К
+        \]
 
         \item Определим статическую температуру при адиабатическом процессе в РК:
 
@@ -644,7 +649,7 @@
 
         \item Определим удельные потери в радиальном зазоре:
 
-	    \begin{gather*}
+	    \[
 	        h_з = 1.37 \cdot
                 \left(
                     1 + 1.6 \rho
@@ -652,8 +657,8 @@
                 \left(
                     1 + \frac{l_2}{D_{ср}}
                 \right)
-            \frac{ \delta_r }{ l_2 } \cdot L_u =\\
-	        = 1.37 \cdot
+            \frac{ \delta_r }{ l_2 } \cdot L_u =\]
+        \[   = 1.37 \cdot
             \left(
                 1 + 1.6 \cdot << stgd.rho | round(2) >>
             \right)
@@ -662,8 +667,8 @@
             \right)
             \frac{ << stgd.delta_r_rk | round(5) >> }{ << stgd.l2 | round(4) >> } \cdot
             << (stgd.L_u / 10**6) | round(4) >> \cdot 10^6 =
-	        << (stgd.h_z / 10**3) | round(4) >> \cdot 10^3 \/\ Дж/кг\\
-	    \end{gather*}
+	        << (stgd.h_z / 10**3) | round(4) >> \cdot 10^3 \/\ Дж/кг\]
+
 
         \item Относительные удельные потери в радиальном зазоре:
         \[
@@ -707,15 +712,16 @@
         \]
 
         \item Затраты мощности на трение и вентиляцию:
-        \begin{gather*}
+        \[
             N_{т.в} = \left[
                     1.07 \cdot D_{av}^2 + 61 \cdot (1 - \varepsilon) \cdot D_{av} l_{av}
             \right] \cdot
             \left(
                 \frac{ u_{av} }{ 100 }
             \right) ^ 3 \cdot
-            \rho =\\
-            = \left[
+            \rho =
+        \]
+        \[    = \left[
                 1.07 \cdot << stgd.D_av | round(4) >>^2 +
                 61 \cdot (1 - << stgd.epsilon | round(3) >>) \cdot
                 << stgd.D_av | round(4) >> \cdot << stgd.l_av | round(4) >>
@@ -723,9 +729,11 @@
             \left(
                 \frac{ << stgd.u_av | round(2) >> }{ 100 }
             \right) ^ 3 \cdot
-            << stgd.rho | round(4) >>=\\
-            = << (stgd.N_tv / 10**3) | round(4) >> \cdot 10^3 \ Вт \\
-        \end{gather*}
+            << stgd.rho | round(4) >>=
+        \]
+        \[
+            = << (stgd.N_tv / 10**3) | round(4) >> \cdot 10^3 \ Вт
+        \]
 
         \item Удельные потери на трение и вентиляцию:
         \[
@@ -803,20 +811,20 @@
         \]
 
         \item Средняя теплоемкость газа в интервале температур от $T_0^*$ до $T_{ст}^*$:
-        \begin{gather*}
+        \[
             c_{pг}^\prime = \frac{
 		        c_{pг\ ср} (T_0^*, \alpha_{вх}) (T_0^* - T_0) - c_{pг\ ср} (T_{ст}^*, \alpha_{вх})(T_{ст}^* - T_0)
 		    }{
-		        T_0^* - T_{ст}^*} =\\
-            =\frac{
+		        T_0^* - T_{ст}^*} =\]
+        \[    =\frac{
 		        << stgd.work_fluid.c_p_av_func(stgd.T0_stag, alpha=stgd.alpha_air_in) | round(2) >> \cdot
                 (<< stgd.T0_stag | round(2) >> - 273) -
 		        << stgd.work_fluid.c_p_av_func(stgd.T_st_stag, alpha=stgd.alpha_air_in) | round(2) >> \cdot
                 (<< stgd.T_st_stag | round(2) >> - 273)
 		    }{
 		        << stgd.T0_stag | round(2) >> - << stgd.T_st_stag | round(2) >>} =
-		    << stgd.work_fluid.c_p_av_int_func(stgd.T_st_stag, stgd.T0_stag, alpha=stgd.alpha_air_in) | round(2) >> \ Дж / (кг \cdot К)\\
-        \end{gather*}
+		    << stgd.work_fluid.c_p_av_int_func(stgd.T_st_stag, stgd.T0_stag, alpha=stgd.alpha_air_in) | round(2) >> \ Дж / (кг \cdot К)
+        \]
 
         \item Новое значение показателя адиабаты:
         \[
@@ -931,20 +939,20 @@
         \]
 
         \item Средняя теплоемкость газа в интервале температур от $T_{0ад\ т}^*$ до $T_{2ад\ т}$:
-        \begin{gather*}
+        \[
             c_{pг\ ад\ т}^\prime = \frac{
 		        c_{pг\ ср} (T_{0ад\ т}^*, \alpha_{вх}) (T_{0ад\ т}^* - T_0) - c_{pг\ ср} (T_{2ад\ т}, \alpha_{вх})(T_{2ад\ т} - T_0)
 		    }{
-		        T_{0ад\ т}^* - T_{2ад\ т}} =\\
-            =\frac{
+		        T_{0ад\ т}^* - T_{2ад\ т}} =\]
+        \[    =\frac{
 		        << stgd.work_fluid.c_p_av_func(stgd.T0_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \cdot
                 (<< stgd.T0_stag_ad_t | round(2) >> - 273) -
 		        << stgd.work_fluid.c_p_av_func(stgd.T2_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \cdot
                 (<< stgd.T2_ad_t | round(2) >> - 273)
 		    }{
 		        << stgd.T0_stag_ad_t | round(2) >> - << stgd.T2_ad_t | round(2) >>} =
-		    << stgd.work_fluid.c_p_av_int_func(stgd.T2_ad_t, stgd.T0_stag, alpha=stgd.alpha_air_in) | round(2) >> \ Дж / (кг \cdot К)\\
-        \end{gather*}
+		    << stgd.work_fluid.c_p_av_int_func(stgd.T2_ad_t, stgd.T0_stag, alpha=stgd.alpha_air_in) | round(2) >> \ Дж / (кг \cdot К)
+        \]
 
         \item Новое значение показателя адиабаты:
         \[
@@ -964,20 +972,20 @@
         \]
 
         \item Средняя теплоемкость газа в интервале температур от $T_{0ад\ т}^*$ до $T_{2ад\ т}$:
-        \begin{gather*}
+        \[
             c_{pг\ ад\ т}^{*\prime} = \frac{
 		        c_{pг\ ср}(T_{0ад\ т}^*, \alpha_{вх}) (T_{0ад\ т}^* - T_0) - c_{pг\ ср}(T_{2ад\ т}^*, \alpha_{вх}) (T_{2ад\ т}^* - T_0)
 		    }{
-		        T_{0ад\ т}^* - T_{2ад\ т}^*} =\\
-            =\frac{
+		        T_{0ад\ т}^* - T_{2ад\ т}^*} =\]
+        \[    =\frac{
 		        << stgd.work_fluid.c_p_av_func(stgd.T0_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \cdot
                 (<< stgd.T0_stag_ad_t | round(2) >> - 273) -
 		        << stgd.work_fluid.c_p_av_func(stgd.T2_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \cdot
                 (<< stgd.T2_stag_ad_t | round(2) >> - 273)
 		    }{
 		        << stgd.T0_stag_ad_t | round(2) >> - << stgd.T2_stag_ad_t | round(2) >>} =
-		    << stgd.work_fluid.c_p_av_int_func(stgd.T2_stag_ad_t, stgd.T0_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \ Дж / (кг \cdot К)\\
-        \end{gather*}
+		    << stgd.work_fluid.c_p_av_int_func(stgd.T2_stag_ad_t, stgd.T0_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >> \ Дж / (кг \cdot К)
+        \]
 
         \item Новое значение показателя адиабаты:
         \[
@@ -991,14 +999,14 @@
         \]
 
         \item Теплоперепад по параметрам торможения:
-        \begin{gather*}
+        \[
             H_0^* = c_{pг} T_0^* \left[
                         1 - \left(
                                 \frac{p_2^*}{p_0^*}
                             \right) ^
                         \frac{k_г - 1}{k_г}
-                    \right] =\\
-            << stgd.c_p_gas | round(2) >> \cdot << stgd.T0_stag | round(2) >> \cdot
+                    \right] =\]
+        \[    << stgd.c_p_gas | round(2) >> \cdot << stgd.T0_stag | round(2) >> \cdot
                     \left[
                         1 - \left(
                                 \frac{
@@ -1009,8 +1017,8 @@
                             \right) ^
                         \frac{<< stgd.k_gas | round(4) >> - 1}{<< stgd.k_gas | round(4) >>}
                     \right]
-            = << (stgd.H0_stag / 10**6) | round(4)  >> \cdot 10^6 \ Дж/кг\\
-        \end{gather*}
+            = << (stgd.H0_stag / 10**6) | round(4)  >> \cdot 10^6 \ Дж/кг
+        \]
 
         \item КПД по параметрам торможения:
         \[
@@ -1073,13 +1081,14 @@
             \]
 
             \item Новое значение температуры смеси:
-            \begin{gather*}
+            \[
                 T_{см}^*\prime = \frac{
                         c_{pг\ ср} (T_{ст}^*, \alpha_{вх}) T_{ст}^* G_{вх} + c_{pв\ ср} (T_{охл}) T_{охл} G_{охл}
                     }{
                         c_{pг\ ср} (T_{см}^{*}, \alpha_{вых}) G_{вых}
-                    } =\\
-                = \frac{
+                    } =
+            \]
+            \[    = \frac{
                     << stgd.work_fluid.c_p_av_func(stgd.T_st_stag, alpha=stgd.alpha_air_in) | round(2) >>
                     \cdot << stgd.T_st_stag | round(2) >> \cdot << stgd.G_stage_in | round(2) >> +
                     << stgd.cool_fluid.c_p_av_func(stgd.T_cool) | round(2) >>
@@ -1088,8 +1097,8 @@
                     << stgd.work_fluid.c_p_av_func(stgd.T_mix_stag, alpha=stgd.alpha_air_out) | round(2) >>
                     \cdot  << stgd.G_stage_out | round(2) >>
                 } =
-                << stgd.T_mix_stag_new | round(2) >>\ К\\
-            \end{gather*}
+                << stgd.T_mix_stag_new | round(2) >>\ К
+            \]
 
             \item Значение невязки:
             \[
@@ -1127,13 +1136,14 @@
             \]
 
             \item Новое значение температуры смеси:
-            \begin{gather*}
+            \[
                 T_{см\ ад\ т}^*\prime = \frac{
                         c_{pг\ ср} (T_{2ад\ т}^*, \alpha_{вх}) T_{2ад\ т}^* G_{вх} + c_{pв\ ср} (T_{охл}) T_{охл} G_{охл}
                     }{
                         c_{pг\ ср} (T_{см\ ад\ т}^{*}, \alpha_{вых}) G_{вых}
-                    } =\\
-                = \frac{
+                    } =
+            \]
+            \[    = \frac{
                     << stgd.work_fluid.c_p_av_func(stgd.T2_stag_ad_t, alpha=stgd.alpha_air_in) | round(2) >>
                     \cdot << stgd.T2_stag_ad_t | round(2) >> \cdot << stgd.G_stage_in | round(2) >> +
                     << stgd.cool_fluid.c_p_av_func(stgd.T_cool) | round(2) >>
@@ -1142,8 +1152,8 @@
                     << stgd.work_fluid.c_p_av_func(stgd.T_mix_stag_ad_t, alpha=stgd.alpha_air_out) | round(2) >>
                     \cdot  << stgd.G_stage_out | round(2) >>
                 } =
-                << stgd.T_mix_stag_ad_t_new | round(2) >>\ К\\
-            \end{gather*}
+                << stgd.T_mix_stag_ad_t_new | round(2) >>\ К
+            \]
 
             \item Значение невязки:
             \[
@@ -1419,20 +1429,21 @@
         \]
 
         \item Средняя теплоемкость газа в интервале температур от $T_0^*$ до $T_т$:
-        \begin{gather*}
+        \[
             c_{pг} = \frac{
 		         c_{pг\ ср} (T_г^*, \alpha_{вх}) (T_г^* - T_0) - c_{pг\ ср} (T_{т}, \alpha_{вх})(T_т - T_0)
 		    }{
-		        T_г^* - T_т} =\\
-            =\frac{
+		        T_г^* - T_т} =
+        \]
+        \[    =\frac{
                 << turb.work_fluid.c_p_av_func(turb.T_g_stag, alpha=turb.first.alpha_air_in) | round(2) >> \cdot
                 (<< turb.T_g_stag | round(2) >> - 273) -
 		        << turb.work_fluid.c_p_av_func(turb.last.T_st, alpha=turb.first.alpha_air_in) | round(2) >> \cdot
                 (<< turb.last.T_st | round(2) >> - 273)
 		    }{
 		        << turb.T_g_stag | round(2) >> - << turb.last.T_st | round(2) >>} =
-		    << turb.c_p_gas | round(2) >> \ Дж / (кг \cdot К)\\
-        \end{gather*}
+		    << turb.c_p_gas | round(2) >> \ Дж / (кг \cdot К)
+        \]
 
         \item Средний показателя адиабаты:
         \[
@@ -1458,20 +1469,22 @@
         \]
 
         \item Средняя теплоемкость газа в интервале температур от $T_0^*$ до $T_т^*$:
-        \begin{gather*}
+        \[
             c_{pг}^* = \frac{
 		         c_{pг\ ср} (T_г^*, \alpha_{вх}) (T_г^* - T_0) - c_{pг\ ср} (T_т^*, \alpha_{вх})(T_т^* - T_0)
 		    }{
-		        T_г^* - T_т^*} =\\
-            =\frac{
+		        T_г^* - T_т^*} =
+        \]
+        \[    =\frac{
                 << turb.work_fluid.c_p_av_func(turb.T_g_stag, alpha=turb.first.alpha_air_in) | round(2) >> \cdot
                 (<< turb.T_g_stag | round(2) >> - 273) -
 		        << turb.work_fluid.c_p_av_func(turb.last.T_mix_stag, alpha=turb.first.alpha_air_in) | round(2) >> \cdot
                 (<< turb.last.T_mix_stag | round(2) >> - 273)
 		    }{
-		        << turb.T_g_stag | round(2) >> - << turb.last.T_mix_stag | round(2) >>} =\\
-		     = << turb.c_p_gas_stag | round(2) >> \ Дж / (кг \cdot К)\\
-        \end{gather*}
+		        << turb.T_g_stag | round(2) >> - << turb.last.T_mix_stag | round(2) >>} =
+        \]
+		\[     = << turb.c_p_gas_stag | round(2) >> \ Дж / (кг \cdot К)
+        \]
 
         \item Средний показателя адиабаты по параметрам торможения:
         \[

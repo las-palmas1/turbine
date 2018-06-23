@@ -92,17 +92,16 @@
         A_{i-1} T_{ст\ i-1} + A_{i} T_{ст\ i} + A_{i+1} T_{ст\ i+1} = S,
     \]
     где
-    \begin{gather*}
-        A_{i-1} = \frac{1}{\Delta x^2},\\
-        A_i = -\frac{2}{\Delta x^2} - \frac{\alpha_{пл} + \alpha_в}{\lambda \Delta},\\
-        A_{i+1} =\frac{1}{\Delta x^2},\\
-        S = - \frac{\alpha_{пл} T_{пл} + \alpha_в T_в}{\lambda \Delta}\\
-    \end{gather*}
+    \[
+        A_{i-1} = \frac{1}{\Delta x^2},\]
+    \[    A_i = -\frac{2}{\Delta x^2} - \frac{\alpha_{пл} + \alpha_в}{\lambda \Delta},\]
+    \[    A_{i+1} =\frac{1}{\Delta x^2},\]
+    \[    S = - \frac{\alpha_{пл} T_{пл} + \alpha_в T_в}{\lambda \Delta}\]
     Линеаризованные граничные условия имеют вид (для случая теплоизолированных торцев):
-    \begin{gather*}
-        T_{ст\ 1} - T_{ст\ 0} = 0,\\
-        T_{ст\ N} - T_{ст\ N-1} = 0\\
-    \end{gather*}
+    \[
+        T_{ст\ 1} - T_{ст\ 0} = 0,\]
+    \[   T_{ст\ N} - T_{ст\ N-1} = 0
+    \]
     Далее по полученной линеаризованной модели составляется матрица коэффициентов уравнений и столбец правых частей,
     и полученная система уравнений решается одним из стандартных методов решения СЛАУ.
 
@@ -132,7 +131,7 @@
         \item Зададим распределение приведенной скорости по корыту $\lambda_к \left( \overline{x} \right)$ и
         спинке $\lambda_с \left( \overline{x} \right)$:
 
-		\begin{gather*}
+		\[
 		    \lambda_к \left( \overline{x} \right) =
 			\left\{
 				1 +
@@ -141,8 +140,8 @@
 						\frac{\lambda_1}{\lambda_0}
 					\right)^{0.5}
 				\right]\overline{x}
-			\right\}^{2} \lambda_0, \/\ \overline{x} = \frac{x}{l_к}\\
-		    \lambda_с \left( \overline{x} \right) =
+			\right\}^{2} \lambda_0, \/\ \overline{x} = \frac{x}{l_к}\]
+        \[   \lambda_с \left( \overline{x} \right) =
 			\left\{
 				1 +
 				\left[
@@ -151,8 +150,7 @@
 					\right)^{4}
 				\right]\overline{x}
 			\right\}^{0.25}\lambda_0, \/\ \overline{x} = \frac{x}{l_с}
-		,\\
-		\end{gather*}
+		,\]
 		где $l_к$ - длина профиля со стороны корыта, $l_с$ - длина профиля со стороны спинки,
         $\lambda_0$ - приведенная скорость на входе в лопаточный венец, $\lambda_1$ - приведенная
         скорость на выходе из лопаточного венца.
@@ -165,10 +163,10 @@
 		\]
 
         \item Определим скорость газа на корыте $v_к$ и на спинке $v_с$:
-            \begin{gather*}
-                v_к\left( x \right) = \lambda_к \left( \frac{x}{l_к} \right)\\
-                v_c\left( x \right) = \lambda_к \left( \frac{x}{l_c} \right)\\
-            \end{gather*}
+            \[
+                v_к\left( x \right) = \lambda_к \left( \frac{x}{l_к} \right)\]
+            \[
+                v_c\left( x \right) = \lambda_к \left( \frac{x}{l_c} \right)\]
 
         Дальнейший расчет идентичен для спинки и корыта, поэтому скорость газа будем обозначать как $v_г$.
         \item Определим эквивалентную ширину щели:

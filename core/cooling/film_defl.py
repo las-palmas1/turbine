@@ -343,7 +343,8 @@ class FilmSectorCooler(GasBladeHeatExchange):
     def get_cool_eff(self, x):
         return (self.T_gas_stag - self.local_param.get_T_wall(x)) / (self.T_gas_stag - self.local_param.get_T_cool(x))
 
-    def plot_cool_eff(self, figsize=(7, 5), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_cool_eff(self, figsize=(7, 5), filename=None, label=True, ylim=None, n_y=None,
+                      rnd_y=0, ticks_font=14):
         plt.figure(figsize=figsize)
         plt.plot(self.local_param.x_arr * 1e3,
                  [self.get_cool_eff(x) for x in self.local_param.x_arr], lw=2, color='red')
@@ -358,15 +359,17 @@ class FilmSectorCooler(GasBladeHeatExchange):
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
         plt.grid(linewidth=1)
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_alpha_gas(self, figsize=(7, 5), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_alpha_gas(self, figsize=(7, 5), filename=None, label=True, ylim=None, n_y=None,
+                       rnd_y=0, ticks_font=14):
         plt.figure(figsize=figsize)
         plt.plot(self.local_param.x_arr * 1e3,
                  [self._get_alpha_gas(x) / 1e3 for x in self.local_param.x_arr], lw=2, color='red')
@@ -376,15 +379,16 @@ class FilmSectorCooler(GasBladeHeatExchange):
             plt.ylabel(r'$\alpha_г,\ \frac{кВт}{м^2 \cdot К}$', fontsize=14)
         plt.xlim(min(self.local_param.x_arr) * 1e3, max(self.local_param.x_arr) * 1e3)
         plt.grid(linewidth=1)
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
         if ylim:
             plt.ylim(*ylim)
             if rnd_y > 0:
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
         else:
             plt.ylim(ymin=0)
         if filename:
@@ -883,11 +887,9 @@ class FilmBladeCooler(GasBladeHeatExchange):
 
         plt.ylim(min(r_arr), max(r_arr))
         plt.grid(linewidth=1)
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
-        plt.legend(fontsize=14)
 
-    def plot_lam_gas_in(self, figsize=(6, 4), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_lam_gas_in(self, figsize=(6, 4), filename=None, label=True, ylim=None, n_y=None,
+                        rnd_y=0, legend_font=14, ticks_font=14):
         self._plot_partition(self.lam_gas_in_arr, self.lam_gas_in, figsize)
         if ylim:
             plt.ylim(*ylim)
@@ -895,7 +897,11 @@ class FilmBladeCooler(GasBladeHeatExchange):
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
+        plt.legend(fontsize=legend_font)
         if label:
             plt.ylabel(r'$r,\ м$', fontsize=14)
             plt.xlabel(r'$\lambda_{вх}$', fontsize=14)
@@ -903,7 +909,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
             plt.savefig(filename)
         plt.show()
 
-    def plot_lam_gas_out(self, figsize=(6, 4), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_lam_gas_out(self, figsize=(6, 4), filename=None, label=True, ylim=None, n_y=None,
+                         rnd_y=0, legend_font=14, ticks_font=14):
         self._plot_partition(self.lam_gas_out_arr, self.lam_gas_out, figsize)
         if ylim:
             plt.ylim(*ylim)
@@ -911,7 +918,11 @@ class FilmBladeCooler(GasBladeHeatExchange):
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
+        plt.legend(fontsize=legend_font)
         if label:
             plt.ylabel(r'$r,\ м$', fontsize=14)
             plt.xlabel(r'$\lambda_{вых}$', fontsize=14)
@@ -919,7 +930,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
             plt.savefig(filename)
         plt.show()
 
-    def plot_p_gas_stag(self, figsize=(6, 4), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_p_gas_stag(self, figsize=(6, 4), filename=None, label=True, ylim=None, n_y=None,
+                        rnd_y=0, legend_font=14, ticks_font=14):
         self._plot_partition(self.p_gas_stag_arr, self.p_gas_stag, figsize)
         if ylim:
             plt.ylim(*ylim)
@@ -927,7 +939,11 @@ class FilmBladeCooler(GasBladeHeatExchange):
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
+        plt.legend(fontsize=legend_font)
         if label:
             plt.ylabel(r'$r,\ м$', fontsize=14)
             plt.xlabel(r'$p_{г}^*,\ Па$', fontsize=14)
@@ -935,7 +951,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_gas_stag(self, figsize=(6, 4), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_T_gas_stag(self, figsize=(6, 4), filename=None, label=True, ylim=None, n_y=None,
+                        rnd_y=0, legend_font=14, ticks_font=14):
         self._plot_partition(self.T_gas_stag_arr, self.T_gas_stag, figsize)
         if ylim:
             plt.ylim(*ylim)
@@ -943,7 +960,11 @@ class FilmBladeCooler(GasBladeHeatExchange):
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
+        plt.legend(fontsize=legend_font)
         if label:
             plt.ylabel(r'$r,\ м$', fontsize=14)
             plt.xlabel(r'$T_{г}^*,\ К$', fontsize=14)
@@ -951,7 +972,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
             plt.savefig(filename)
         plt.show()
 
-    def plot_g_gas(self, figsize=(6, 4), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_g_gas(self, figsize=(6, 4), filename=None, label=True, ylim=None, n_y=None,
+                   rnd_y=0, legend_font=14, ticks_font=14):
         self._plot_partition(self.g_gas_arr, self._get_g_gas, figsize)
         if ylim:
             plt.ylim(*ylim)
@@ -959,7 +981,11 @@ class FilmBladeCooler(GasBladeHeatExchange):
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
+        plt.legend(fontsize=legend_font)
         if label:
             plt.ylabel(r'$r,\ м$', fontsize=14)
             plt.xlabel(r'$g_г$', fontsize=14)
@@ -967,7 +993,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
             plt.savefig(filename)
         plt.show()
 
-    def plot_g_cool(self, figsize=(6, 4), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_g_cool(self, figsize=(6, 4), filename=None, label=True, ylim=None, n_y=None,
+                    rnd_y=0, legend_font=14, ticks_font=14):
         self._plot_partition(self.g_cool0_arr, self.g_cool0, figsize)
         if ylim:
             plt.ylim(*ylim)
@@ -975,7 +1002,11 @@ class FilmBladeCooler(GasBladeHeatExchange):
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
+        plt.legend(fontsize=legend_font)
         if label:
             plt.ylabel(r'$r$', fontsize=14)
             plt.xlabel(r'$g_в$', fontsize=14)
@@ -983,7 +1014,8 @@ class FilmBladeCooler(GasBladeHeatExchange):
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_wall(self, T_material, figsize=(7, 5), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_T_wall(self, T_material, figsize=(7, 5), filename=None, label=True, ylim=None, n_y=None,
+                    rnd_y=0, legend_font=14, ticks_font=14):
         plt.figure(figsize=figsize)
 
         for i, sector in enumerate(self.sectors):
@@ -999,19 +1031,21 @@ class FilmBladeCooler(GasBladeHeatExchange):
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
         if label:
             plt.xlabel(r'$x,\ мм$', fontsize=14)
             plt.ylabel(r'$T_{ст},\ К$', fontsize=14)
         plt.grid(linewidth=1)
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
-        plt.legend(fontsize=12)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
+        plt.legend(fontsize=legend_font)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_film(self, figsize=(7, 5), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_T_film(self, figsize=(7, 5), filename=None, label=True, ylim=None, n_y=None,
+                    rnd_y=0, legend_font=14, ticks_font=14):
         plt.figure(figsize=figsize)
 
         for i, sector in enumerate(self.sectors):
@@ -1027,19 +1061,21 @@ class FilmBladeCooler(GasBladeHeatExchange):
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
         if label:
             plt.xlabel(r'$x,\ мм$', fontsize=14)
             plt.ylabel(r'$T_{пл}^*,\ К$', fontsize=14)
         plt.grid(linewidth=1)
-        plt.legend(fontsize=12)
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
+        plt.legend(fontsize=legend_font)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
         if filename:
             plt.savefig(filename)
         plt.show()
 
-    def plot_T_cool(self, figsize=(7, 5), filename=None, label=True, ylim=None, n_y=None, rnd_y=0):
+    def plot_T_cool(self, figsize=(7, 5), filename=None, label=True, ylim=None, n_y=None,
+                    rnd_y=0, legend_font=14, ticks_font=14):
         plt.figure(figsize=figsize)
 
         for i, sector in enumerate(self.sectors):
@@ -1055,24 +1091,25 @@ class FilmBladeCooler(GasBladeHeatExchange):
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
         if label:
             plt.xlabel(r'$x,\ мм$', fontsize=14)
             plt.ylabel(r'$T_{в}^*,\ К$', fontsize=14)
         plt.grid(linewidth=1)
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
-        plt.legend(fontsize=12)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
+        plt.legend(fontsize=legend_font)
         if filename:
             plt.savefig(filename)
         plt.show()
 
     def plot_T_wall_in_point(self, x, T_material_max, figsize=(7, 5), filename=None, label=True, ylim=None,
-                             n_y=None, rnd_y=0):
+                             n_y=None, rnd_y=0, legend_font=14, ticks_font=14):
         plt.figure(figsize=figsize)
         r_arr = self.D_av_arr * 0.5
         T_arr = [self.sectors[i].local_param.get_T_wall(x) for i in range(self.sector_num)]
-        plt.plot(T_arr, r_arr, lw=2)
+        plt.plot(T_arr, r_arr, lw=2, label=r'$T_{ст}$')
         plt.plot([T_material_max, T_material_max], [min(r_arr), max(r_arr)], lw=2, linestyle='--', color='black',
                  label=r'$T_{мат}$')
         if ylim:
@@ -1081,16 +1118,17 @@ class FilmBladeCooler(GasBladeHeatExchange):
                 yticks = [round(i, rnd_y) for i in np.linspace(ylim[0], ylim[1], n_y)]
             else:
                 yticks = [int(round(i, rnd_y)) for i in np.linspace(ylim[0], ylim[1], n_y)]
-            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks])
+            plt.yticks(np.linspace(ylim[0], ylim[1], n_y), [str(i).replace('.', ',') for i in yticks],
+                       fontsize=ticks_font)
         else:
             plt.ylim(min(r_arr), max(r_arr))
         if label:
             plt.ylabel(r'$r,\ м$', fontsize=14)
             plt.xlabel(r'$T_{ст},\ К$', fontsize=14)
         plt.grid(linewidth=1)
-        plt.xticks(fontsize=12)
-        plt.yticks(fontsize=12)
-        plt.legend(fontsize=14)
+        plt.xticks(fontsize=ticks_font)
+        plt.yticks(fontsize=ticks_font)
+        plt.legend(fontsize=legend_font)
         if filename:
             plt.savefig(filename)
         plt.show()
